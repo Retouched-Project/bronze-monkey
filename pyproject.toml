@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bronze-monkey"
-version = "0.2.1"
+version = "1.0.0"
 description = "Bronze Monkey Python bindings"
 authors = [{ name = "ddavef" }]
 license = { text = "MIT" }
