@@ -12,3 +12,6 @@ A Sans I/O library that implements the Brass Monkey protocol specification.
 
 This project is licensed under the MIT License.  
 See the [LICENSE](LICENSE) file for details.
+
+Images in this repository are licensed under the Creative Commons Attribution 4.0 International License.  
+See the [LICENSE-IMAGES.md](LICENSE-IMAGES.md) file for details.
