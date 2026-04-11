@@ -1,0 +1,4 @@
+FROM ghcr.io/pyo3/maturin:latest
+
+WORKDIR /io
+ENTRYPOINT ["maturin"]

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["maturin>=1.4"]
+build-backend = "maturin"
+
+[project]
+name = "bronze-monkey"
+version = "0.2.1"
+description = "Bronze Monkey Python bindings"
+authors = [{ name = "ddavef" }]
+license = { text = "MIT" }
+requires-python = ">=3.8"
+classifiers = [
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Rust",
+]
+
+[tool.maturin]
+features = ["pyo3"]
+module-name = "bronze_monkey"
+

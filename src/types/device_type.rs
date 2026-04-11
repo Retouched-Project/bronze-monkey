@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: MIT
+// Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
+
+use serde::Serialize;
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Default, Serialize)]
+pub enum DeviceType {
+    #[default]
+    Any,
+    Unity,
+    IPhone,
+    Flash,
+    Android,
+    Native,
+    Palm,
+    Server,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum DeviceTypeError {
+    OutOfRange(i32),
+}
+
+impl std::fmt::Display for DeviceTypeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DeviceTypeError::OutOfRange(v) => write!(f, "DeviceType out of range: {v}"),
+        }
+    }
+}
+
+impl std::error::Error for DeviceTypeError {}
+
+impl DeviceType {
+    pub fn code(self) -> i32 {
+        match self {
+            DeviceType::Any => 0,
+            DeviceType::Unity => 1,
+            DeviceType::IPhone => 2,
+            DeviceType::Flash => 3,
+            DeviceType::Android => 4,
+            DeviceType::Native => 5,
+            DeviceType::Palm => 6,
+            DeviceType::Server => 7,
+        }
+    }
+
+    pub fn for_value(v: i32) -> Result<Self, DeviceTypeError> {
+        Ok(match v {
+            0 => DeviceType::Any,
+            1 => DeviceType::Unity,
+            2 => DeviceType::IPhone,
+            3 => DeviceType::Flash,
+            4 => DeviceType::Android,
+            5 => DeviceType::Native,
+            6 => DeviceType::Palm,
+            7 => DeviceType::Server,
+            _ => return Err(DeviceTypeError::OutOfRange(v)),
+        })
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            DeviceType::Any => "ANY",
+            DeviceType::Unity => "UNITY",
+            DeviceType::IPhone => "IPHONE",
+            DeviceType::Flash => "FLASH",
+            DeviceType::Android => "ANDROID",
+            DeviceType::Native => "NATIVE",
+            DeviceType::Palm => "PALM",
+            DeviceType::Server => "SERVER",
+        }
+    }
+}
+
+impl std::fmt::Display for DeviceType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[DeviceType {}]", self.label())
+    }
+}

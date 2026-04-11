@@ -1,0 +1,212 @@
+name: Release Library
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-ios:
+    name: Build iOS (Static Lib)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+
+      - name: Build Static Lib
+        run: cargo rustc --release --target aarch64-apple-ios --lib -- --crate-type staticlib
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-lib
+          path: target/aarch64-apple-ios/release/libbronze_monkey.a
+
+  build-ios-sim:
+    name: Build iOS Simulator (Static Lib)
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [aarch64-apple-ios-sim, x86_64-apple-ios]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build Static Lib
+        run: cargo rustc --release --target ${{ matrix.target }} --lib -- --crate-type staticlib
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-lib-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/libbronze_monkey.a
+
+  build-android:
+    name: Build Android (JNI Libs)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android, i686-linux-android]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Install Cargo NDK
+        run: cargo install cargo-ndk
+
+      - name: Build Library
+        run: cargo ndk -t ${{ matrix.target }} -o ./jniLibs build --release
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-libs-${{ matrix.target }}
+          path: jniLibs/
+
+  build-desktop:
+    name: Build Desktop (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: libbronze_monkey.so
+            asset_name: libbronze_monkey-linux.so
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: libbronze_monkey.dylib
+            asset_name: libbronze_monkey-macos.dylib
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: bronze_monkey.dll
+            asset_name: bronze_monkey-windows.dll
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      
+      
+      - name: Install Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev
+
+      - name: Build Library
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Prepare Artifact
+        shell: bash
+        run: |
+          mkdir -p release_assets
+          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} release_assets/${{ matrix.asset_name }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-lib-${{ matrix.os }}
+          path: release_assets/
+
+  build-wheels:
+    name: Build Wheels (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: ubuntu-latest
+            target_args: ''
+          - os: windows-latest
+            name: windows-latest
+            target_args: ''
+          - os: macos-latest
+            name: macos-arm64
+            target_args: '--target aarch64-apple-darwin'
+          - os: macos-latest
+            name: macos-intel
+            target_args: '--target x86_64-apple-darwin'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          args: --release --out dist ${{ matrix.target_args }}
+          sccache: 'true'
+          manylinux: auto
+
+      
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.name }}
+          path: dist
+
+  release:
+    name: Create Release
+    needs: [build-ios, build-ios-sim, build-android, build-desktop, build-wheels]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display Artifacts structure
+        run: ls -R artifacts
+
+      - name: Zip Android Libs
+        run: |
+          mkdir -p final_assets/android/jniLibs
+          cp -r artifacts/android-libs-*/* final_assets/android/jniLibs/
+          cd final_assets/android
+          zip -r ../../bronze_monkey-android-jniLibs.zip jniLibs
+          cd ../..
+
+      - name: Move Desktop Libs
+        run: |
+          cp artifacts/desktop-lib-*/* .
+
+      - name: Move iOS Lib
+        run: |
+          cp artifacts/ios-lib/libbronze_monkey.a .
+
+      - name: Move iOS Simulator Libs
+        run: |
+          mkdir -p ios-sim-aarch64
+          cp artifacts/ios-lib-aarch64-apple-ios-sim/libbronze_monkey.a ios-sim-aarch64/
+          zip -j bronze_monkey-ios-sim-aarch64.zip ios-sim-aarch64/libbronze_monkey.a
+          
+          mkdir -p ios-sim-x86_64
+          cp artifacts/ios-lib-x86_64-apple-ios/libbronze_monkey.a ios-sim-x86_64/
+          zip -j bronze_monkey-ios-sim-x86_64.zip ios-sim-x86_64/libbronze_monkey.a
+
+      - name: Move Wheels
+        run: |
+          mkdir -p wheels
+          cp artifacts/wheels-*/*.whl wheels/
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            libbronze_monkey.a
+            bronze_monkey-ios-sim-aarch64.zip
+            bronze_monkey-ios-sim-x86_64.zip
+            bronze_monkey-android-jniLibs.zip
+            libbronze_monkey-linux.so
+            libbronze_monkey-macos.dylib
+            bronze_monkey-windows.dll
+            wheels/*.whl
