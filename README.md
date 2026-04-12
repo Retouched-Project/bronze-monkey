@@ -6,7 +6,13 @@
 > **This is not an officially supported Ntrome Ltd. or Infrared5 Inc. product.**
 
 # Bronze Monkey
-A Sans I/O library that implements the Brass Monkey protocol specification.
+A Sans I/O library that implements the Brass Monkey protocol specification.    
+API stability not guaranteed.
+
+## TODO
+- [ ] Extensive documentation. (Before v2.0.0)
+- [ ] Stabilize API and assess lib usage flexibility. (v2.0.0 requirement)
+- [ ] Game-side BM protocol support. (v2.0.0)
 
 ## License
 
