@@ -6,7 +6,7 @@
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
-use crate::engine::actions::{Action, LogLevel, RegistryEventKind};
+use crate::engine::actions::{Action, RegistryEventKind};
 use crate::engine::processing::Engine;
 use crate::engine::protocol::{
     deserialize_packet as protocol_deserialize_packet, serialize_packet,
@@ -1126,11 +1126,6 @@ fn action_to_py(py: Python<'_>, action: Action) -> PyResult<Option<Py<PyAny>>> {
             dict.set_item("current", current)?;
             dict.set_item("total", total)?;
         }
-        Action::Log { level, message } => {
-            dict.set_item("type", "log")?;
-            dict.set_item("level", log_level_to_str(level))?;
-            dict.set_item("message", message)?;
-        }
         Action::RegistryEvent {
             kind,
             infos,
@@ -1306,16 +1301,6 @@ fn address_to_py(py: Python<'_>, addr: &BMAddress) -> PyResult<Py<PyAny>> {
     d.set_item("unreliable_port", addr.unreliable_port)?;
     d.set_item("reliable_port", addr.reliable_port)?;
     Ok(d.into())
-}
-
-fn log_level_to_str(level: LogLevel) -> &'static str {
-    match level {
-        LogLevel::Trace => "trace",
-        LogLevel::Debug => "debug",
-        LogLevel::Info => "info",
-        LogLevel::Warn => "warn",
-        LogLevel::Error => "error",
-    }
 }
 
 fn registry_kind_to_str(kind: RegistryEventKind) -> &'static str {

@@ -2,7 +2,7 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 use crate::devices::device_core::DeviceCore;
-use crate::engine::actions::{Action, LogLevel, RegistryEventKind};
+use crate::engine::actions::{Action, RegistryEventKind};
 use crate::engine::protocol::{deserialize_packet, serialize_packet};
 use crate::engine::registry::{DeviceRecord, DeviceRegistry};
 use crate::externals::bm_array::BMArray;
@@ -237,10 +237,8 @@ impl Engine {
             Err(e) => {
                 #[cfg(target_arch = "wasm32")]
                 web_sys::console::log_1(&format!("WASM: deserialize failed: {}", e).into());
-                vec![Action::Log {
-                    level: LogLevel::Warn,
-                    message: format!("failed to deserialize packet: {}", e),
-                }]
+                log::warn!("failed to deserialize packet: {}", e);
+                Vec::new()
             }
         }
     }
@@ -286,13 +284,10 @@ impl Engine {
             PacketType::Ping => out.extend(self.handle_ping(pkt, channel, sender_id)),
             PacketType::Ack => out.extend(self.handle_ack(pkt)),
             PacketType::Data => out.extend(self.handle_data(pkt, channel)),
-            _ => out.push(Action::Log {
-                level: LogLevel::Info,
-                message: format!(
-                    "rx packet type {:?} channel {channel} reliability {reliability}",
-                    pkt_type
-                ),
-            }),
+            _ => log::info!(
+                "rx packet type {:?} channel {channel} reliability {reliability}",
+                pkt_type
+            ),
         }
         out
     }
@@ -304,10 +299,7 @@ impl Engine {
         sender_id: Option<String>,
     ) -> Vec<Action> {
         let mut out = Vec::new();
-        out.push(Action::Log {
-            level: LogLevel::Info,
-            message: "rx ping".into(),
-        });
+        log::info!("rx ping");
 
         if let Some(id) = sender_id {
             out.extend(self.make_packet(
@@ -327,10 +319,7 @@ impl Engine {
         if let Some(rec) = self.device_record_from_packet(pkt) {
             out.push(self.push_registry_update(rec));
         }
-        out.push(Action::Log {
-            level: LogLevel::Info,
-            message: "rx ack".into(),
-        });
+        log::info!("rx ack");
         out
     }
 
@@ -366,14 +355,11 @@ impl Engine {
                                 out.extend(self.handle_chunk(device_id, chunk));
                             }
                             _ => {
-                                out.push(Action::Log {
-                                    level: LogLevel::Debug,
-                                    message: format!(
-                                        "rx data object {:?} channel={}",
-                                        obj.class_id(),
-                                        channel
-                                    ),
-                                });
+                                log::debug!(
+                                    "rx data object {:?} channel={}",
+                                    obj.class_id(),
+                                    channel
+                                );
                             }
                         }
                     }
@@ -391,16 +377,13 @@ impl Engine {
                         } else {
                             "too short".into()
                         };
-                        out.push(Action::Log {
-                            level: LogLevel::Debug,
-                            message: format!(
-                                "rx data message decode failed len={} channel={} head={} err={}",
-                                msg.len(),
-                                channel,
-                                head,
-                                e
-                            ),
-                        });
+                        log::debug!(
+                            "rx data message decode failed len={} channel={} head={} err={}",
+                            msg.len(),
+                            channel,
+                            head,
+                            e
+                        );
                     }
                 }
             }
@@ -426,15 +409,13 @@ impl Engine {
         if end <= buffer.len() {
             buffer[start..end].copy_from_slice(&chunk.data);
         } else {
-            return vec![Action::Log {
-                level: LogLevel::Error,
-                message: format!(
-                    "Chunk out of bounds: {}..{} (total {})",
-                    start,
-                    end,
-                    buffer.len()
-                ),
-            }];
+            log::error!(
+                "Chunk out of bounds: {}..{} (total {})",
+                start,
+                end,
+                buffer.len()
+            );
+            return Vec::new();
         }
 
         let current = end as u32;
@@ -510,10 +491,7 @@ impl Engine {
         }
 
         let Some(target_id) = sender_id else {
-            out.push(Action::Log {
-                level: LogLevel::Warn,
-                message: "registry.register missing sender id".into(),
-            });
+            log::warn!("registry.register missing sender id");
             return out;
         };
 
@@ -924,10 +902,8 @@ impl Engine {
         let msg = match self.build_object_bytes(Object::DPadUpdate(DPadUpdate::new(x, y))) {
             Ok(m) => m,
             Err(e) => {
-                return vec![Action::Log {
-                    level: LogLevel::Error,
-                    message: format!("build dpad failed: {e}"),
-                }];
+                log::error!("build dpad failed: {e}");
+                return Vec::new();
             }
         };
         self.make_packet(
@@ -953,10 +929,8 @@ impl Engine {
         let msg = match self.build_object_bytes(Object::TouchSet(touch_set)) {
             Ok(m) => m,
             Err(e) => {
-                return vec![Action::Log {
-                    level: LogLevel::Error,
-                    message: format!("build touch failed: {e}"),
-                }];
+                log::error!("build touch failed: {e}");
+                return Vec::new();
             }
         };
         self.make_packet(
@@ -979,10 +953,8 @@ impl Engine {
         let msg = match self.build_object_bytes(Object::Acceleration(Acceleration::new(x, y, z))) {
             Ok(m) => m,
             Err(e) => {
-                return vec![Action::Log {
-                    level: LogLevel::Error,
-                    message: format!("build accel failed: {e}"),
-                }];
+                log::error!("build accel failed: {e}");
+                return Vec::new();
             }
         };
         self.make_packet(
@@ -1039,10 +1011,8 @@ impl Engine {
         let msg = match self.build_object_bytes(Object::BMGyro(BMGyro::new(x, y, z))) {
             Ok(m) => m,
             Err(e) => {
-                return vec![Action::Log {
-                    level: LogLevel::Error,
-                    message: format!("build gyro failed: {e}"),
-                }];
+                log::error!("build gyro failed: {e}");
+                return Vec::new();
             }
         };
         self.make_packet(
@@ -1066,10 +1036,8 @@ impl Engine {
         let msg = match self.build_object_bytes(Object::Orientation(Orientation::new(x, y, z, w))) {
             Ok(m) => m,
             Err(e) => {
-                return vec![Action::Log {
-                    level: LogLevel::Error,
-                    message: format!("build orientation failed: {e}"),
-                }];
+                log::error!("build orientation failed: {e}");
+                return Vec::new();
             }
         };
         self.make_packet(
@@ -1236,10 +1204,8 @@ impl Engine {
         let msg = match self.build_invoke_payload("registry.register", Some("onRegister"), params) {
             Ok(m) => m,
             Err(e) => {
-                return vec![Action::Log {
-                    level: LogLevel::Error,
-                    message: format!("build register invoke failed: {e}"),
-                }];
+                log::error!("build register invoke failed: {e}");
+                return Vec::new();
             }
         };
         self.make_packet(
@@ -1255,10 +1221,8 @@ impl Engine {
         let msg = match self.build_invoke_payload("registry.list", Some("onList"), Vec::new()) {
             Ok(m) => m,
             Err(e) => {
-                return vec![Action::Log {
-                    level: LogLevel::Error,
-                    message: format!("build list invoke failed: {e}"),
-                }];
+                log::error!("build list invoke failed: {e}");
+                return Vec::new();
             }
         };
         self.make_packet(
@@ -1281,10 +1245,8 @@ impl Engine {
         let msg = match self.build_invoke_payload("registry.relay", Some(""), params) {
             Ok(m) => m,
             Err(e) => {
-                return vec![Action::Log {
-                    level: LogLevel::Error,
-                    message: format!("build relay invoke failed: {e}"),
-                }];
+                log::error!("build relay invoke failed: {e}");
+                return Vec::new();
             }
         };
         self.make_packet(
@@ -1321,10 +1283,8 @@ impl Engine {
         let msg = match self.build_invoke_payload(method, return_method, params) {
             Ok(m) => m,
             Err(e) => {
-                return vec![Action::Log {
-                    level: LogLevel::Error,
-                    message: format!("build invoke failed: {e}"),
-                }];
+                log::error!("build invoke failed: {e}");
+                return Vec::new();
             }
         };
         self.make_packet(
@@ -1354,16 +1314,12 @@ impl Engine {
         message: Option<Vec<u8>>,
     ) -> Vec<Action> {
         if target.is_empty() {
-            return vec![Action::Log {
-                level: LogLevel::Warn,
-                message: "target device id is empty".into(),
-            }];
+            log::warn!("target device id is empty");
+            return Vec::new();
         }
         let Some(rec) = self.registry.get(target).cloned() else {
-            return vec![Action::Log {
-                level: LogLevel::Warn,
-                message: format!("unknown target device: {target}"),
-            }];
+            log::warn!("unknown target device: {target}");
+            return Vec::new();
         };
 
         let rel = reliability.unwrap_or_else(|| Self::default_reliability_for_channel(channel));
@@ -1394,10 +1350,10 @@ impl Engine {
                 reliability: rel,
                 payload: bytes,
             }],
-            Err(e) => vec![Action::Log {
-                level: LogLevel::Error,
-                message: format!("packet build failed: {e}"),
-            }],
+            Err(e) => {
+                log::error!("packet build failed: {e}");
+                Vec::new()
+            }
         }
     }
 

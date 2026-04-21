@@ -11,6 +11,6 @@ pub mod registry;
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
 
-pub use actions::{Action, LogLevel};
+pub use actions::Action;
 pub use processing::Engine;
 pub use registry::{DeviceRecord, DeviceRegistry};

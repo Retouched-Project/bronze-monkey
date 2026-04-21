@@ -9,7 +9,7 @@ use std::ptr;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::device_core::DeviceCoreC;
 use crate::engine::actions::{
-    Action, ActionC, ActionListC, ActionTagC, LogLevel, RegistryEventKind, action_free,
+    Action, ActionC, ActionListC, ActionTagC, RegistryEventKind, action_free,
     action_set_addr_inner, action_set_chunk_set_id_inner, action_set_control_portal_id_inner,
     action_set_control_return_app_id_inner, action_set_device_id_inner,
     action_set_device_name_inner, action_set_invoke_method_inner,
@@ -25,28 +25,6 @@ use crate::externals::bm_registry_info::{
 use crate::messages::bm_invoke::BMInvokeC;
 use crate::messages::touch::Touch;
 use crate::types::touch_state::TouchState;
-
-#[repr(i32)]
-#[derive(Debug, Clone, Copy)]
-pub enum LogLevelC {
-    Trace = 0,
-    Debug = 1,
-    Info = 2,
-    Warn = 3,
-    Error = 4,
-}
-
-impl From<LogLevel> for LogLevelC {
-    fn from(l: LogLevel) -> Self {
-        match l {
-            LogLevel::Trace => LogLevelC::Trace,
-            LogLevel::Debug => LogLevelC::Debug,
-            LogLevel::Info => LogLevelC::Info,
-            LogLevel::Warn => LogLevelC::Warn,
-            LogLevel::Error => LogLevelC::Error,
-        }
-    }
-}
 
 #[repr(i32)]
 #[derive(Debug, Clone, Copy)]
@@ -389,12 +367,6 @@ fn action_to_c(action: Action) -> ActionC {
             set_string_field(set_id, |p| action_set_chunk_set_id_inner(&mut out, p));
             out.chunk_current = current;
             out.chunk_total = total;
-        }
-        Action::Log { level, message } => {
-            out.tag = ActionTagC::Log;
-            out.log_level = LogLevelC::from(level);
-            let bytes = message.into_bytes();
-            action_set_payload_inner(&mut out, bytes.as_ptr(), bytes.len());
         }
         Action::RegistryEvent {
             kind,

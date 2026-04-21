@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::engine::ffi::LogLevelC;
 use crate::engine::registry::DeviceRecord;
 use crate::externals::bm_registry_info::{BMRegistryInfo, BMRegistryInfoC};
 use crate::messages::bm_encoding::Value;
@@ -9,15 +8,6 @@ use std::os::raw::{c_char, c_uchar};
 use std::ptr;
 
 use serde::Serialize;
-
-#[derive(Debug, Clone, Copy, Serialize)]
-pub enum LogLevel {
-    Trace,
-    Debug,
-    Info,
-    Warn,
-    Error,
-}
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all_fields = "camelCase")]
@@ -41,10 +31,6 @@ pub enum Action {
         set_id: String,
         current: u32,
         total: u32,
-    },
-    Log {
-        level: LogLevel,
-        message: String,
     },
     RegistryEvent {
         kind: RegistryEventKind,
@@ -95,7 +81,6 @@ pub enum ActionTagC {
     UpdateRegistry = 1,
     ChunkSetComplete = 2,
     ChunkProgress = 3,
-    Log = 4,
     RegistryEvent = 5,
     Invoke = 6,
     ControlConfig = 7,
@@ -113,7 +98,6 @@ pub struct ActionListC {
 #[derive(Debug)]
 pub struct ActionC {
     pub tag: ActionTagC,
-    pub log_level: LogLevelC,
     pub channel: i32,
     pub reliability: i32,
 
@@ -173,8 +157,7 @@ pub struct ActionC {
 impl Default for ActionC {
     fn default() -> Self {
         Self {
-            tag: ActionTagC::Log,
-            log_level: LogLevelC::Debug,
+            tag: ActionTagC::Send,
             channel: 0,
             reliability: 0,
             payload_ptr: ptr::null_mut(),
