@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::externals::registry;
-use crate::io::io::{DataInput, DataOutput, Result};
+use crate::codec::externals::registry;
+use crate::codec::io::{DataInput, DataOutput, Result};
 
 use serde::Serialize;
 

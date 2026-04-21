@@ -3,8 +3,8 @@
 
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
-use crate::externals::registry;
-use crate::io::io::{DataInput, DataOutput, Result};
+use crate::codec::externals::registry;
+use crate::codec::io::{DataInput, DataOutput, Result};
 use crate::types::device_type::DeviceType;
 use std::os::raw::c_char;
 use std::panic::{AssertUnwindSafe, catch_unwind};

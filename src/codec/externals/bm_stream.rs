@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::io::io::{DataInput, DataOutput, Result};
+use crate::codec::io::{DataInput, DataOutput, Result};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write};
 

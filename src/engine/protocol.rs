@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::externals::bm_packet::BMPacket;
-use crate::externals::registry;
-use crate::io::io::Result;
+use crate::codec::externals::bm_packet::BMPacket;
+use crate::codec::externals::registry;
+use crate::codec::io::Result;
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
 use byteorder::{LittleEndian, ReadBytesExt};

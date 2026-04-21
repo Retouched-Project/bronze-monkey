@@ -2,22 +2,22 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 use crate::devices::bm_address::BMAddress;
-use crate::externals::bm_array::BMArray;
-use crate::externals::bm_registry_info::BMRegistryInfo;
-use crate::externals::registry;
-use crate::io::io::{DataInput, DataOutput, Result};
-use crate::messages::acceleration::Acceleration;
-use crate::messages::ack_packet::AckPacket;
-use crate::messages::bm_byte_chunk::BMByteChunk;
-use crate::messages::bm_encoding::Value;
-use crate::messages::bm_gyro::BMGyro;
-use crate::messages::bm_invoke::BMInvoke;
-use crate::messages::dpad_update::DPadUpdate;
-use crate::messages::orientation::Orientation;
-use crate::messages::ping::Ping;
-use crate::messages::shake::Shake;
-use crate::messages::string_literal::StringLiteral;
-use crate::messages::touch_set::TouchSet;
+use crate::codec::externals::bm_array::BMArray;
+use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+use crate::codec::externals::registry;
+use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::messages::acceleration::Acceleration;
+use crate::codec::messages::ack_packet::AckPacket;
+use crate::codec::messages::bm_byte_chunk::BMByteChunk;
+use crate::codec::messages::bm_encoding::Value;
+use crate::codec::messages::bm_gyro::BMGyro;
+use crate::codec::messages::bm_invoke::BMInvoke;
+use crate::codec::messages::dpad_update::DPadUpdate;
+use crate::codec::messages::orientation::Orientation;
+use crate::codec::messages::ping::Ping;
+use crate::codec::messages::shake::Shake;
+use crate::codec::messages::string_literal::StringLiteral;
+use crate::codec::messages::touch_set::TouchSet;
 
 use serde::Serialize;
 
@@ -100,7 +100,7 @@ impl Object {
             DPadUpdate::CLASS_ID => Ok(Object::DPadUpdate(DPadUpdate::read_from(input)?)),
             BMInvoke::CLASS_ID => Ok(Object::BMInvoke(BMInvoke::read_from(input)?)),
             registry::BM_CLASS_ID_PARAMETER => {
-                use crate::messages::bm_encoding::BMEncoding;
+                use crate::codec::messages::bm_encoding::BMEncoding;
                 let val = BMEncoding::decode(input)?;
                 Ok(Object::BMParameter(Box::new(val)))
             }
@@ -126,7 +126,7 @@ impl Object {
             Object::DPadUpdate(x) => x.write_to(out),
             Object::BMInvoke(x) => x.write_to(out),
             Object::BMParameter(v) => {
-                use crate::messages::bm_encoding::BMEncoding;
+                use crate::codec::messages::bm_encoding::BMEncoding;
                 BMEncoding::encode(v, out)
             }
         }

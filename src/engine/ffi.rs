@@ -17,13 +17,13 @@ use crate::engine::actions::{
 };
 use crate::engine::processing::Engine;
 use crate::engine::registry::DeviceRecord;
-use crate::externals::bm_registry_info::{
+use crate::codec::externals::bm_registry_info::{
     BMRegistryInfoC, bm_registry_info_free, bm_registry_info_set_addr_inner,
     bm_registry_info_set_app_id_inner, bm_registry_info_set_device_id_inner,
     bm_registry_info_set_device_name_inner,
 };
-use crate::messages::bm_invoke::BMInvokeC;
-use crate::messages::touch::Touch;
+use crate::codec::messages::bm_invoke::BMInvokeC;
+use crate::codec::messages::touch::Touch;
 use crate::types::touch_state::TouchState;
 
 #[repr(i32)]
@@ -569,7 +569,7 @@ pub extern "C" fn bm_engine_handshake(out_ptr: *mut u8, out_len: usize) -> bool 
         if out_ptr.is_null() || out_len < 12 {
             return false;
         }
-        let bytes = crate::externals::handshake::Handshake::default_version().to_bytes();
+        let bytes = crate::codec::externals::handshake::Handshake::default_version().to_bytes();
         unsafe {
             std::ptr::copy_nonoverlapping(bytes.as_ptr(), out_ptr, 12);
         }
@@ -786,7 +786,7 @@ pub struct TouchPointC {
     pub state: i32,
 }
 
-fn registry_info_to_c(src: crate::externals::bm_registry_info::BMRegistryInfo) -> BMRegistryInfoC {
+fn registry_info_to_c(src: crate::codec::externals::bm_registry_info::BMRegistryInfo) -> BMRegistryInfoC {
     let mut out = BMRegistryInfoC::default();
     out.slot_id = src.slot_id as i32;
     out.current_players = src.current_players.unwrap_or(0) as i32;

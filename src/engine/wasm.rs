@@ -6,9 +6,9 @@ use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::actions::Action;
 use crate::engine::registry::DeviceRecord;
-use crate::externals::bm_registry_info::BMRegistryInfo;
-use crate::messages::bm_encoding::Value;
-use crate::messages::touch::Touch;
+use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+use crate::codec::messages::bm_encoding::Value;
+use crate::codec::messages::touch::Touch;
 use crate::types::device_type::DeviceType;
 use console_error_panic_hook;
 use js_sys;
@@ -41,7 +41,7 @@ pub fn parse_control_scheme_xml(xml_data: &str) -> Result<Vec<u8>, JsError> {
 
 #[wasm_bindgen]
 pub fn make_handshake_bytes() -> Vec<u8> {
-    crate::externals::handshake::Handshake::default_version()
+    crate::codec::externals::handshake::Handshake::default_version()
         .to_bytes()
         .to_vec()
 }
@@ -129,8 +129,8 @@ impl BmEngineWasm {
         }
     }
 
-    fn serialize_object(obj: &crate::io::object::Object) -> Result<JsValue, JsError> {
-        use crate::io::object::Object;
+    fn serialize_object(obj: &crate::codec::object::Object) -> Result<JsValue, JsError> {
+        use crate::codec::object::Object;
         let js_obj = js_sys::Object::new();
 
         match obj {
@@ -540,7 +540,7 @@ impl BmEngineWasm {
         return_method: Option<String>,
         params: JsValue,
     ) -> Result<JsValue, JsError> {
-        let rust_params: Vec<crate::messages::bm_encoding::Value> =
+        let rust_params: Vec<crate::codec::messages::bm_encoding::Value> =
             if params.is_undefined() || params.is_null() {
                 Vec::new()
             } else {
@@ -590,7 +590,7 @@ impl BmEngineWasm {
             device_address: addr,
         };
 
-        let rust_params: Vec<crate::messages::bm_encoding::Value> =
+        let rust_params: Vec<crate::codec::messages::bm_encoding::Value> =
             if inner_params.is_undefined() || inner_params.is_null() {
                 Vec::new()
             } else {
@@ -602,7 +602,7 @@ impl BmEngineWasm {
                 out
             };
 
-        let inner = crate::messages::bm_invoke::BMInvoke {
+        let inner = crate::codec::messages::bm_invoke::BMInvoke {
             id: 0,
             method: inner_method.to_string(),
             return_method: inner_return_method,
@@ -990,8 +990,8 @@ impl BmEngineWasm {
     }
 }
 
-fn js_to_value(v: JsValue) -> Result<crate::messages::bm_encoding::Value, JsError> {
-    use crate::messages::bm_encoding::Value;
+fn js_to_value(v: JsValue) -> Result<crate::codec::messages::bm_encoding::Value, JsError> {
+    use crate::codec::messages::bm_encoding::Value;
     if let Some(s) = v.as_string() {
         return Ok(Value::String(s));
     }
@@ -1006,11 +1006,11 @@ fn js_to_value(v: JsValue) -> Result<crate::messages::bm_encoding::Value, JsErro
     }
     if js_sys::Array::is_array(&v) {
         let arr = js_sys::Array::from(&v);
-        let mut bm_arr = crate::externals::bm_array::BMArray::default();
+        let mut bm_arr = crate::codec::externals::bm_array::BMArray::default();
         for i in 0..arr.length() {
             bm_arr.push(js_to_value(arr.get(i))?);
         }
-        return Ok(Value::Object(crate::io::object::Object::BMArray(bm_arr)));
+        return Ok(Value::Object(crate::codec::object::Object::BMArray(bm_arr)));
     }
     Err(JsError::new("unsupported JS value for BM encoding"))
 }

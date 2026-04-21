@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::externals::registry;
-use crate::io::io::{DataInput, DataOutput, Result};
-use crate::messages::bm_encoding::{BMEncoding, Value};
+use crate::codec::externals::registry;
+use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::messages::bm_encoding::{BMEncoding, Value};
 use std::fmt;
 
 use serde::Serialize;

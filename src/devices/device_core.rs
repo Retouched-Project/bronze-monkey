@@ -2,7 +2,7 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 use crate::devices::bm_address::BMAddress;
-use crate::io::io::{DataInput, DataOutput, Result};
+use crate::codec::io::{DataInput, DataOutput, Result};
 use crate::types::device_type::DeviceType;
 use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::c_char;

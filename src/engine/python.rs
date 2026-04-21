@@ -12,17 +12,17 @@ use crate::engine::protocol::{
     deserialize_packet as protocol_deserialize_packet, serialize_packet,
 };
 use crate::engine::registry::DeviceRecord;
-use crate::externals::bm_array::BMArray;
-use crate::externals::bm_packet::BMPacket;
-use crate::externals::bm_registry_info::BMRegistryInfo;
-use crate::externals::bm_version::BMVersion;
-use crate::externals::handshake::handshake_bytes;
-use crate::externals::registry;
-use crate::io::io::DataOutput;
-use crate::io::object::Object;
-use crate::messages::bm_encoding::Value;
-use crate::messages::bm_invoke::BMInvoke;
-use crate::messages::bm_parameter::VecOutput;
+use crate::codec::externals::bm_array::BMArray;
+use crate::codec::externals::bm_packet::BMPacket;
+use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+use crate::codec::externals::bm_version::BMVersion;
+use crate::codec::externals::handshake::handshake_bytes;
+use crate::codec::externals::registry;
+use crate::codec::io::DataOutput;
+use crate::codec::object::Object;
+use crate::codec::messages::bm_encoding::Value;
+use crate::codec::messages::bm_invoke::BMInvoke;
+use crate::codec::messages::bm_parameter::VecOutput;
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
 use prost::Message;
@@ -634,7 +634,7 @@ impl BMEnginePy {
         touches: Bound<'py, PyList>,
         reliability: i32,
     ) -> PyResult<Bound<'py, PyList>> {
-        use crate::messages::touch::Touch;
+        use crate::codec::messages::touch::Touch;
         use crate::types::touch_state::TouchState;
         let mut rust_touches = Vec::new();
         for t in touches.iter() {

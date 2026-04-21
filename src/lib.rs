@@ -1,18 +1,38 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+pub mod codec;
 pub mod controls;
 pub mod devices;
 pub mod engine;
-pub mod externals;
 mod ffi_macros;
-pub mod io;
-pub mod messages;
 pub mod types;
+
+#[deprecated(
+    since = "2.0.0",
+    note = "use `bronze_monkey::codec::externals` instead"
+)]
+pub use codec::externals;
+#[deprecated(
+    since = "2.0.0",
+    note = "use `bronze_monkey::codec::messages` instead"
+)]
+pub use codec::messages;
+
+#[deprecated(
+    since = "2.0.0",
+    note = "use `bronze_monkey::codec::io` / `bronze_monkey::codec::object` instead"
+)]
+pub mod io {
+    #[deprecated(since = "2.0.0", note = "use `bronze_monkey::codec::io` instead")]
+    pub use crate::codec::io;
+    #[deprecated(since = "2.0.0", note = "use `bronze_monkey::codec::object` instead")]
+    pub use crate::codec::object;
+}
 
 #[cfg(feature = "pyo3")]
 pub use engine::python::*;
-pub use externals::bm_stream;
+pub use codec::externals::bm_stream;
 
 use base64::prelude::*;
 use std::cell::RefCell;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::io::io::{DataInput, DataOutput};
+use crate::codec::io::{DataInput, DataOutput};
 use crate::types::touch_state::TouchState;
 
 use serde::{Deserialize, Serialize};
@@ -17,7 +17,7 @@ pub struct Touch {
 }
 
 impl Touch {
-    pub fn read_from(input: &mut dyn DataInput) -> crate::io::io::Result<Self> {
+    pub fn read_from(input: &mut dyn DataInput) -> crate::codec::io::Result<Self> {
         let x = input.read_float()?;
         let y = input.read_float()?;
         let screen_width = input.read_short()?;
@@ -35,7 +35,7 @@ impl Touch {
         })
     }
 
-    pub fn write_to(&self, out: &mut dyn DataOutput) -> crate::io::io::Result<()> {
+    pub fn write_to(&self, out: &mut dyn DataOutput) -> crate::codec::io::Result<()> {
         out.write_float(self.x)?;
         out.write_float(self.y)?;
         out.write_short(self.screen_width)?;

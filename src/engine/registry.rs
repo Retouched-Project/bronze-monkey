@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use crate::devices::device_core::DeviceCore;
-use crate::externals::bm_registry_info::BMRegistryInfo;
+use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 
 use serde::Serialize;
 

@@ -1,41 +1,44 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::externals::registry;
-use crate::io::io::{DataInput, DataOutput, Result};
+use crate::codec::externals::registry;
+use crate::codec::io::{DataInput, DataOutput, Result};
 
 use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, Serialize)]
-pub struct BMGyro {
+pub struct Orientation {
     pub x: f32,
     pub y: f32,
     pub z: f32,
+    pub w: f32,
 }
 
-impl BMGyro {
-    pub const CLASS_ID: u32 = registry::BM_CLASS_ID_GYRO;
+impl Orientation {
+    pub const CLASS_ID: u32 = registry::BM_CLASS_ID_ORIENTATION;
 
-    pub fn new(x: f32, y: f32, z: f32) -> Self {
-        Self { x, y, z }
+    pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
+        Self { x, y, z, w }
     }
 
     pub fn read_from(input: &mut dyn DataInput) -> Result<Self> {
         let x = input.read_float()?;
         let y = input.read_float()?;
         let z = input.read_float()?;
-        Ok(Self { x, y, z })
+        let w = input.read_float()?;
+        Ok(Self { x, y, z, w })
     }
 
     pub fn write_to(&self, out: &mut dyn DataOutput) -> Result<()> {
         out.write_float(self.x)?;
         out.write_float(self.y)?;
-        out.write_float(self.z)
+        out.write_float(self.z)?;
+        out.write_float(self.w)
     }
 }
 
-impl std::fmt::Display for BMGyro {
+impl std::fmt::Display for Orientation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Gyro{{{}, {}, {}}}", self.x, self.y, self.z)
+        write!(f, "{{{}, {}, {}, {}}}", self.x, self.y, self.z, self.w)
     }
 }

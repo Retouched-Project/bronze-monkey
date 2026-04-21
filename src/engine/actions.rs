@@ -2,8 +2,8 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 use crate::engine::registry::DeviceRecord;
-use crate::externals::bm_registry_info::{BMRegistryInfo, BMRegistryInfoC};
-use crate::messages::bm_encoding::Value;
+use crate::codec::externals::bm_registry_info::{BMRegistryInfo, BMRegistryInfoC};
+use crate::codec::messages::bm_encoding::Value;
 use std::os::raw::{c_char, c_uchar};
 use std::ptr;
 

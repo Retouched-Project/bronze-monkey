@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::externals::registry;
-use crate::io::io::{DataInput, DataOutput, Result};
-use crate::io::object::Object;
-use crate::messages::bm_encoding::Value;
-use crate::messages::bm_parameter::VecOutput;
+use crate::codec::externals::registry;
+use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::object::Object;
+use crate::codec::messages::bm_encoding::Value;
+use crate::codec::messages::bm_parameter::VecOutput;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read};
 use std::os::raw::c_char;

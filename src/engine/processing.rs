@@ -5,22 +5,22 @@ use crate::devices::device_core::DeviceCore;
 use crate::engine::actions::{Action, RegistryEventKind};
 use crate::engine::protocol::{deserialize_packet, serialize_packet};
 use crate::engine::registry::{DeviceRecord, DeviceRegistry};
-use crate::externals::bm_array::BMArray;
-use crate::externals::bm_packet::BMPacket;
-use crate::externals::bm_registry_info::BMRegistryInfo;
-use crate::externals::bm_reliability::BMReliability;
-use crate::io::io::Result;
-use crate::io::object::Object;
-use crate::messages::acceleration::Acceleration;
-use crate::messages::bm_byte_chunk::BMByteChunk;
-use crate::messages::bm_encoding::Value;
-use crate::messages::bm_gyro::BMGyro;
-use crate::messages::bm_invoke::BMInvoke;
-use crate::messages::bm_parameter::VecOutput;
-use crate::messages::dpad_update::DPadUpdate;
-use crate::messages::orientation::Orientation;
-use crate::messages::touch::Touch;
-use crate::messages::touch_set::TouchSet;
+use crate::codec::externals::bm_array::BMArray;
+use crate::codec::externals::bm_packet::BMPacket;
+use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+use crate::codec::externals::bm_reliability::BMReliability;
+use crate::codec::io::Result;
+use crate::codec::object::Object;
+use crate::codec::messages::acceleration::Acceleration;
+use crate::codec::messages::bm_byte_chunk::BMByteChunk;
+use crate::codec::messages::bm_encoding::Value;
+use crate::codec::messages::bm_gyro::BMGyro;
+use crate::codec::messages::bm_invoke::BMInvoke;
+use crate::codec::messages::bm_parameter::VecOutput;
+use crate::codec::messages::dpad_update::DPadUpdate;
+use crate::codec::messages::orientation::Orientation;
+use crate::codec::messages::touch::Touch;
+use crate::codec::messages::touch_set::TouchSet;
 use crate::types::channel_type::ChannelType;
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
@@ -214,7 +214,7 @@ impl Engine {
 
         if payload_safe.len() == 12 {
             if let Some(handshake) =
-                crate::externals::handshake::Handshake::from_bytes(&payload_safe)
+                crate::codec::externals::handshake::Handshake::from_bytes(&payload_safe)
             {
                 #[cfg(target_arch = "wasm32")]
                 web_sys::console::log_1(&"WASM: Handshake detected".into());
@@ -226,7 +226,7 @@ impl Engine {
             }
         }
 
-        use crate::externals::bm_packet::BMPacket;
+        use crate::codec::externals::bm_packet::BMPacket;
         let mut pkt = Box::new(BMPacket::default());
         match deserialize_packet(&payload_safe, &mut pkt) {
             Ok(_) => {
