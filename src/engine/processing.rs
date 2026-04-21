@@ -1,16 +1,11 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::devices::device_core::DeviceCore;
-use crate::engine::actions::{Action, RegistryEventKind};
-use crate::engine::protocol::{deserialize_packet, serialize_packet};
-use crate::engine::registry::{DeviceRecord, DeviceRegistry};
 use crate::codec::externals::bm_array::BMArray;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::externals::bm_reliability::BMReliability;
 use crate::codec::io::Result;
-use crate::codec::object::Object;
 use crate::codec::messages::acceleration::Acceleration;
 use crate::codec::messages::bm_byte_chunk::BMByteChunk;
 use crate::codec::messages::bm_encoding::Value;
@@ -21,10 +16,16 @@ use crate::codec::messages::dpad_update::DPadUpdate;
 use crate::codec::messages::orientation::Orientation;
 use crate::codec::messages::touch::Touch;
 use crate::codec::messages::touch_set::TouchSet;
+use crate::codec::object::Object;
+use crate::devices::device_core::DeviceCore;
+use crate::engine::actions::{Action, RegistryEventKind};
+use crate::engine::protocol::{deserialize_packet, serialize_packet};
+use crate::engine::registry::{DeviceRecord, DeviceRegistry};
+use crate::engine::state::EngineState;
 use crate::types::channel_type::ChannelType;
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::io::Cursor;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -40,13 +41,8 @@ type RpcHandler = fn(&mut Engine, &[Value], Option<&str>, i32) -> Vec<Action>;
 
 #[derive(Debug, Default, Clone)]
 pub struct Engine {
-    registry: DeviceRegistry,
-    seq_by_channel: HashMap<i32, i32>,
-    local_device: Option<DeviceCore>,
-    chunk_buffers: HashMap<String, Vec<u8>>,
-    invoke_counter: i32,
+    pub(crate) state: EngineState,
     rpc_handlers: HashMap<String, RpcHandler>,
-    used_slots: HashSet<i16>,
     pub auto_approve_registration: bool,
     pending_registrations: HashMap<String, (BMRegistryInfo, String)>,
 }
@@ -72,27 +68,15 @@ impl Engine {
         );
 
         Self {
-            registry: DeviceRegistry::default(),
-            seq_by_channel: HashMap::new(),
-            local_device: None,
-            chunk_buffers: HashMap::new(),
-            invoke_counter: 1,
+            state: EngineState::new(),
             rpc_handlers: handlers,
-            used_slots: HashSet::new(),
             auto_approve_registration: true,
             pending_registrations: HashMap::new(),
         }
     }
 
-    fn is_server(&self) -> bool {
-        self.local_device
-            .as_ref()
-            .map(|d| d.device_type == DeviceType::Server)
-            .unwrap_or(true)
-    }
-
     pub fn init_local_device(&mut self, core: DeviceCore) {
-        self.local_device = Some(core);
+        self.state.init_local_device(core);
     }
 
     pub fn approve_registration(&mut self, device_id: &str) -> Vec<Action> {
@@ -108,19 +92,20 @@ impl Engine {
         if is_game {
             let dev_id = info.device.device_id.clone();
             if let Some(existing) = self
+                .state
                 .registry
                 .get(&dev_id)
                 .and_then(|r| r.info.as_ref().map(|i| i.slot_id))
             {
                 if existing > 0 {
-                    self.used_slots.remove(&existing);
+                    self.state.used_slots.remove(&existing);
                 }
             }
-            info.slot_id = self.allocate_slot();
+            info.slot_id = self.state.allocate_slot();
         } else {
             info.slot_id = 0;
         }
-        self.upsert_registry_info(info.clone());
+        self.state.upsert_registry_info(info.clone());
 
         out.extend(self.make_message_invoke(
             &target_id,
@@ -145,6 +130,7 @@ impl Engine {
             ));
 
             let viewer_ids: Vec<String> = self
+                .state
                 .registry
                 .snapshot()
                 .into_iter()
@@ -193,11 +179,11 @@ impl Engine {
     }
 
     pub fn registry(&self) -> &DeviceRegistry {
-        &self.registry
+        &self.state.registry
     }
 
     pub fn registry_mut(&mut self) -> &mut DeviceRegistry {
-        &mut self.registry
+        &mut self.state.registry
     }
 
     pub fn process_incoming(&mut self, payload: &[u8]) -> Vec<Action> {
@@ -396,6 +382,7 @@ impl Engine {
         let set_id = chunk.set_id.clone();
 
         let buffer = self
+            .state
             .chunk_buffers
             .entry(set_id.clone())
             .or_insert_with(|| vec![0u8; chunk.total_size as usize]);
@@ -429,7 +416,7 @@ impl Engine {
         });
 
         if current >= total {
-            if let Some(blob) = self.chunk_buffers.remove(&set_id) {
+            if let Some(blob) = self.state.chunk_buffers.remove(&set_id) {
                 out.push(Action::ChunkSetComplete {
                     device_id,
                     set_id,
@@ -486,7 +473,7 @@ impl Engine {
             success: success.copied(),
         }];
 
-        if !engine.is_server() {
+        if !engine.state.is_server() {
             return out;
         }
 
@@ -507,19 +494,20 @@ impl Engine {
             if is_game {
                 let dev_id = info.device.device_id.clone();
                 if let Some(existing) = engine
+                    .state
                     .registry
                     .get(&dev_id)
                     .and_then(|r| r.info.as_ref().map(|i| i.slot_id))
                 {
                     if existing > 0 {
-                        engine.used_slots.remove(&existing);
+                        engine.state.used_slots.remove(&existing);
                     }
                 }
-                info.slot_id = engine.allocate_slot();
+                info.slot_id = engine.state.allocate_slot();
             } else {
                 info.slot_id = 0;
             }
-            engine.upsert_registry_info(info.clone());
+            engine.state.upsert_registry_info(info.clone());
 
             out.extend(engine.make_message_invoke(
                 target_id,
@@ -539,6 +527,7 @@ impl Engine {
                 ));
 
                 let viewer_ids: Vec<String> = engine
+                    .state
                     .registry
                     .snapshot()
                     .into_iter()
@@ -592,7 +581,7 @@ impl Engine {
             success: None,
         }];
 
-        if !engine.is_server() {
+        if !engine.state.is_server() {
             return out;
         }
 
@@ -600,13 +589,14 @@ impl Engine {
             return out;
         };
         let viewer_type = engine
+            .state
             .registry
             .get(target_id)
             .and_then(|r| r.info.as_ref())
             .map(|r| r.device.device_type)
             .unwrap_or(DeviceType::Server);
 
-        let list_infos = engine.registry_infos_for_viewer(viewer_type);
+        let list_infos = engine.state.registry_infos_for_viewer(viewer_type);
         let mut arr = BMArray::default();
         for r in list_infos {
             arr.push(Value::Object(Object::BMRegistryInfo(r)));
@@ -633,7 +623,7 @@ impl Engine {
             success: None,
         }];
 
-        if !engine.is_server() {
+        if !engine.state.is_server() {
             return out;
         }
 
@@ -695,11 +685,12 @@ impl Engine {
             success: None,
         }];
 
-        if !engine.is_server() {
+        if !engine.state.is_server() {
             return out;
         }
 
         let viewer_ids: Vec<String> = engine
+            .state
             .registry
             .snapshot()
             .into_iter()
@@ -714,7 +705,7 @@ impl Engine {
             .collect();
 
         for info in infos.into_iter() {
-            engine.upsert_registry_info(info.clone());
+            engine.state.upsert_registry_info(info.clone());
             if !matches!(
                 info.device.device_type,
                 DeviceType::Flash | DeviceType::Unity | DeviceType::Native
@@ -722,6 +713,7 @@ impl Engine {
                 continue;
             }
             let Some(stored) = engine
+                .state
                 .registry
                 .get(&info.device.device_id)
                 .and_then(|r| r.info.clone())
@@ -768,62 +760,6 @@ impl Engine {
         }]
     }
 
-    fn allocate_slot(&mut self) -> i16 {
-        let mut candidate = 1i16;
-        loop {
-            if !self.used_slots.contains(&candidate) {
-                self.used_slots.insert(candidate);
-                return candidate;
-            }
-            candidate = candidate.wrapping_add(1);
-        }
-    }
-
-    fn upsert_registry_info(&mut self, mut info: BMRegistryInfo) {
-        if let Some(existing) = self
-            .registry
-            .get(&info.device.device_id)
-            .and_then(|r| r.info.clone())
-        {
-            if info.slot_id <= 0 {
-                info.slot_id = existing.slot_id;
-            }
-            if info.current_players.is_none() {
-                info.current_players = existing.current_players;
-            }
-            if info.max_players.is_none() {
-                info.max_players = existing.max_players;
-            }
-        }
-        let record = DeviceRecord::new(info.device.clone(), None, Some(info));
-        self.registry.upsert(record);
-    }
-
-    fn registry_infos_for_viewer(&self, viewer_type: DeviceType) -> Vec<BMRegistryInfo> {
-        let viewer_is_game = matches!(
-            viewer_type,
-            DeviceType::Flash | DeviceType::Unity | DeviceType::Native
-        );
-        let mut out = Vec::new();
-        for rec in self.registry.snapshot() {
-            let Some(info) = rec.info else {
-                continue;
-            };
-            let is_game = matches!(
-                info.device.device_type,
-                DeviceType::Flash | DeviceType::Unity | DeviceType::Native
-            );
-            if viewer_is_game {
-                if !is_game && info.device.device_type != DeviceType::Server {
-                    out.push(info);
-                }
-            } else if is_game {
-                out.push(info);
-            }
-        }
-        out
-    }
-
     fn unwrap_value<'a>(&self, v: &'a Value) -> &'a Value {
         if let Value::Object(Object::BMParameter(inner)) = v {
             inner.as_ref()
@@ -852,16 +788,6 @@ impl Engine {
         out
     }
 
-    fn next_invoke_id(&mut self) -> i32 {
-        let id = self.invoke_counter;
-        self.invoke_counter = if self.invoke_counter == i32::MAX {
-            1
-        } else {
-            self.invoke_counter + 1
-        };
-        id
-    }
-
     pub fn build_invoke_payload(
         &mut self,
         method: &str,
@@ -869,7 +795,7 @@ impl Engine {
         params: Vec<Value>,
     ) -> Result<Vec<u8>> {
         let invoke = BMInvoke {
-            id: self.next_invoke_id(),
+            id: self.state.next_invoke_id(),
             method: method.to_string(),
             return_method: return_method.map(|s| s.to_string()),
             params,
@@ -1317,13 +1243,13 @@ impl Engine {
             log::warn!("target device id is empty");
             return Vec::new();
         }
-        let Some(rec) = self.registry.get(target).cloned() else {
+        let Some(rec) = self.state.registry.get(target).cloned() else {
             log::warn!("unknown target device: {target}");
             return Vec::new();
         };
 
         let rel = reliability.unwrap_or_else(|| Self::default_reliability_for_channel(channel));
-        let seq = self.next_sequence(channel);
+        let seq = self.state.next_sequence(channel);
 
         #[cfg(target_arch = "wasm32")]
         let timestamp_ms = js_sys::Date::now();
@@ -1334,7 +1260,7 @@ impl Engine {
             .unwrap_or_default()
             .as_millis() as f64;
 
-        let sender = self.local_device.as_ref().unwrap_or(&rec.core);
+        let sender = self.state.local_device.as_ref().unwrap_or(&rec.core);
         match self.build_packet_bytes(
             sender,
             channel,
@@ -1355,13 +1281,6 @@ impl Engine {
                 Vec::new()
             }
         }
-    }
-
-    fn next_sequence(&mut self, channel: i32) -> i32 {
-        let entry = self.seq_by_channel.entry(channel).or_insert(0);
-        let current = *entry;
-        *entry = entry.wrapping_add(1);
-        current
     }
 
     fn build_packet_bytes(
@@ -1411,7 +1330,7 @@ impl Engine {
                 &format!("WASM: checking existing for {}", record.device_id()).into(),
             );
 
-            if let Some(existing) = self.registry.get(record.device_id()) {
+            if let Some(existing) = self.state.registry.get(record.device_id()) {
                 #[cfg(target_arch = "wasm32")]
                 web_sys::console::log_1(&"WASM: found existing check".into());
                 record.info = existing.info.clone();
@@ -1421,7 +1340,7 @@ impl Engine {
         #[cfg(target_arch = "wasm32")]
         web_sys::console::log_1(&"WASM: upserting...".into());
 
-        self.registry.upsert(record.clone());
+        self.state.registry.upsert(record.clone());
 
         #[cfg(target_arch = "wasm32")]
         web_sys::console::log_1(&"WASM: upsert done.".into());
@@ -1430,10 +1349,10 @@ impl Engine {
 
     pub fn drop_device(&mut self, device_id: &str) -> Vec<Action> {
         let mut out = Vec::new();
-        if let Some(rec) = self.registry.remove(device_id) {
+        if let Some(rec) = self.state.registry.remove(device_id) {
             if let Some(info) = rec.info {
                 if info.slot_id > 0 {
-                    self.used_slots.remove(&info.slot_id);
+                    self.state.used_slots.remove(&info.slot_id);
                 }
 
                 // If a game disconnected, broadcast onHostDisconnected to all controllers
@@ -1442,9 +1361,10 @@ impl Engine {
                     info.device.device_type,
                     DeviceType::Flash | DeviceType::Unity | DeviceType::Native
                 );
-                if is_game && self.is_server() {
+                if is_game && self.state.is_server() {
                     let info_val = Value::Object(Object::BMRegistryInfo(info));
                     let viewer_ids: Vec<String> = self
+                        .state
                         .registry
                         .snapshot()
                         .into_iter()

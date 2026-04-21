@@ -8,9 +8,11 @@ pub mod protocol;
 #[cfg(feature = "pyo3")]
 pub mod python;
 pub mod registry;
+pub mod state;
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
 
 pub use actions::Action;
 pub use processing::Engine;
 pub use registry::{DeviceRecord, DeviceRegistry};
+pub use state::EngineState;
