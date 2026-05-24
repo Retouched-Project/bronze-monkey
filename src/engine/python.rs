@@ -203,7 +203,7 @@ impl BMEnginePy {
 
     fn set_auto_approve_registration(&self, value: bool) {
         let mut eng = self.inner.write().unwrap();
-        eng.auto_approve_registration = value;
+        eng.server_policy.auto_approve_registration = value;
     }
 
     fn approve_registration<'py>(

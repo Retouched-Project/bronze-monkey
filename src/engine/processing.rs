@@ -43,8 +43,7 @@ type RpcHandler = fn(&mut Engine, &[Value], Option<&str>, i32) -> Vec<Action>;
 pub struct Engine {
     pub(crate) state: EngineState,
     rpc_handlers: HashMap<String, RpcHandler>,
-    pub auto_approve_registration: bool,
-    pending_registrations: HashMap<String, (BMRegistryInfo, String)>,
+    pub server_policy: crate::policy::ServerPolicy,
 }
 
 impl Engine {
@@ -70,8 +69,7 @@ impl Engine {
         Self {
             state: EngineState::new(),
             rpc_handlers: handlers,
-            auto_approve_registration: true,
-            pending_registrations: HashMap::new(),
+            server_policy: crate::policy::ServerPolicy::new(),
         }
     }
 
@@ -81,7 +79,7 @@ impl Engine {
 
     pub fn approve_registration(&mut self, device_id: &str) -> Vec<Action> {
         let mut out = Vec::new();
-        let Some((mut info, target_id)) = self.pending_registrations.remove(device_id) else {
+        let Some((mut info, target_id)) = self.server_policy.pending_registrations.remove(device_id) else {
             return out;
         };
 
@@ -161,7 +159,7 @@ impl Engine {
 
     pub fn deny_registration(&mut self, device_id: &str) -> Vec<Action> {
         let mut out = Vec::new();
-        let Some((_info, target_id)) = self.pending_registrations.remove(device_id) else {
+        let Some((_info, target_id)) = self.server_policy.pending_registrations.remove(device_id) else {
             return out;
         };
         out.extend(self.make_message_invoke(
@@ -486,7 +484,7 @@ impl Engine {
             return out;
         };
 
-        if engine.auto_approve_registration {
+        if engine.server_policy.auto_approve_registration {
             let is_game = matches!(
                 info.device.device_type,
                 DeviceType::Flash | DeviceType::Unity | DeviceType::Native
@@ -554,7 +552,7 @@ impl Engine {
                 }
             }
         } else {
-            engine.pending_registrations.insert(
+            engine.server_policy.pending_registrations.insert(
                 info.device.device_id.clone(),
                 (info.clone(), target_id.to_string()),
             );

@@ -112,7 +112,7 @@ pub extern "C" fn bm_engine_set_auto_approve_registration(
             return false;
         }
         let engine = unsafe { &mut *ptr_engine };
-        engine.auto_approve_registration = value;
+        engine.server_policy.auto_approve_registration = value;
         true
     })
 }

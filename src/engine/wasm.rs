@@ -102,7 +102,7 @@ impl BmEngineWasm {
     }
 
     pub fn set_auto_approve_registration(&mut self, value: bool) {
-        self.inner.auto_approve_registration = value;
+        self.inner.server_policy.auto_approve_registration = value;
     }
 
     pub fn approve_registration(&mut self, device_id: &str) -> Result<JsValue, JsError> {
