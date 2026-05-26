@@ -2,6 +2,7 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 pub mod actions;
+pub mod events;
 pub mod ffi;
 pub mod processing;
 pub mod protocol;
@@ -13,6 +14,7 @@ pub mod state;
 pub mod wasm;
 
 pub use actions::Action;
+pub use events::{Command, ControlConfig, Event, Send};
 pub use processing::Engine;
 pub use registry::{DeviceRecord, DeviceRegistry};
 pub use state::EngineState;
