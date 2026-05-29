@@ -14,7 +14,7 @@ pub mod state;
 pub mod wasm;
 
 pub use actions::Action;
-pub use events::{Command, ControlConfig, Event, Send};
+pub use events::{Command, ControlConfig, Event, Outgoing, ProcessOutput};
 pub use processing::Engine;
 pub use registry::{DeviceRecord, DeviceRegistry};
 pub use state::EngineState;

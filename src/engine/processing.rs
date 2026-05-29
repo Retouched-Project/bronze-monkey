@@ -18,10 +18,11 @@ use crate::codec::messages::touch::Touch;
 use crate::codec::messages::touch_set::TouchSet;
 use crate::codec::object::Object;
 use crate::devices::device_core::DeviceCore;
-use crate::engine::actions::{Action, RegistryEventKind};
+use crate::engine::events::{Command, ControlConfig, Event, Outgoing, ProcessOutput};
 use crate::engine::protocol::{deserialize_packet, serialize_packet};
 use crate::engine::registry::{DeviceRecord, DeviceRegistry};
 use crate::engine::state::EngineState;
+use crate::policy::server::PendingRegistration;
 use crate::types::channel_type::ChannelType;
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
@@ -37,7 +38,7 @@ pub struct ReceivedInvoke {
     pub params: Vec<Value>,
 }
 
-type RpcHandler = fn(&mut Engine, &[Value], Option<&str>, i32) -> Vec<Action>;
+type RpcHandler = fn(&mut Engine, &ReceivedInvoke, Option<&str>, i32, &mut ProcessOutput);
 
 #[derive(Debug, Default, Clone)]
 pub struct Engine {
@@ -77,9 +78,14 @@ impl Engine {
         self.state.init_local_device(core);
     }
 
-    pub fn approve_registration(&mut self, device_id: &str) -> Vec<Action> {
+    pub fn approve_registration(&mut self, device_id: &str) -> Vec<Outgoing> {
         let mut out = Vec::new();
-        let Some((mut info, target_id)) = self.server_policy.pending_registrations.remove(device_id) else {
+        let Some(PendingRegistration {
+            mut info,
+            target_id,
+            return_method,
+        }) = self.server_policy.pending_registrations.remove(device_id)
+        else {
             return out;
         };
 
@@ -105,17 +111,13 @@ impl Engine {
         }
         self.state.upsert_registry_info(info.clone());
 
-        out.extend(self.make_message_invoke(
-            &target_id,
-            "onRegister",
-            None,
-            vec![Value::Bool(true)],
-        ));
-        out.push(Action::RegistryEvent {
-            kind: RegistryEventKind::OnRegister,
-            infos: vec![info.clone()],
-            success: Some(true),
-        });
+        if let Some(reply) = Self::reply_method(return_method.as_deref()) {
+            out.extend(self.make_message_invoke(&target_id, reply, None, vec![Value::Bool(true)]));
+        } else {
+            log::warn!(
+                "approve_registration for '{target_id}': no return method on record, skipping reply"
+            );
+        }
 
         if is_game {
             let info_val = Value::Object(Object::BMRegistryInfo(info.clone()));
@@ -157,23 +159,66 @@ impl Engine {
         out
     }
 
-    pub fn deny_registration(&mut self, device_id: &str) -> Vec<Action> {
+    pub fn deny_registration(&mut self, device_id: &str) -> Vec<Outgoing> {
         let mut out = Vec::new();
-        let Some((_info, target_id)) = self.server_policy.pending_registrations.remove(device_id) else {
+        let Some(PendingRegistration {
+            target_id,
+            return_method,
+            ..
+        }) = self.server_policy.pending_registrations.remove(device_id)
+        else {
             return out;
         };
-        out.extend(self.make_message_invoke(
-            &target_id,
-            "onRegister",
-            None,
-            vec![Value::Bool(false)],
-        ));
-        out.push(Action::RegistryEvent {
-            kind: RegistryEventKind::OnRegister,
-            infos: vec![_info],
-            success: Some(false),
-        });
+        if let Some(reply) = Self::reply_method(return_method.as_deref()) {
+            out.extend(self.make_message_invoke(&target_id, reply, None, vec![Value::Bool(false)]));
+        } else {
+            log::warn!(
+                "deny_registration for '{target_id}': no return method on record, skipping reply"
+            );
+        }
         out
+    }
+
+    fn reply_method(return_method: Option<&str>) -> Option<&str> {
+        return_method.filter(|m| !m.is_empty())
+    }
+
+    pub fn emit(&mut self, cmd: Command) -> Vec<Outgoing> {
+        match cmd {
+            Command::Raw {
+                target,
+                channel,
+                reliability,
+                payload,
+            } => {
+                if target.is_empty() {
+                    log::warn!("emit Raw: target device id is empty");
+                    return Vec::new();
+                }
+                vec![Outgoing {
+                    target_device_id: target,
+                    channel,
+                    reliability,
+                    payload,
+                }]
+            }
+            Command::Packet {
+                target,
+                channel,
+                reliability,
+                packet_type,
+                message,
+            } => self.make_packet(&target, channel, reliability, packet_type, message),
+            Command::Invoke {
+                target,
+                method,
+                return_method,
+                params,
+            } => self.make_message_invoke(&target, &method, return_method.as_deref(), params),
+            Command::DropDevice { device_id } => self.drop_device(&device_id),
+            Command::ApproveRegistration { device_id } => self.approve_registration(&device_id),
+            Command::DenyRegistration { device_id } => self.deny_registration(&device_id),
+        }
     }
 
     pub fn registry(&self) -> &DeviceRegistry {
@@ -184,16 +229,17 @@ impl Engine {
         &mut self.state.registry
     }
 
-    pub fn process_incoming(&mut self, payload: &[u8]) -> Vec<Action> {
+    pub fn process_incoming(&mut self, payload: &[u8]) -> ProcessOutput {
         #[cfg(target_arch = "wasm32")]
         web_sys::console::log_1(
             &format!("WASM: Engine::process_incoming len={}", payload.len()).into(),
         );
 
+        let mut out = ProcessOutput::new();
         let payload_safe = payload.to_vec();
 
         if payload_safe.is_empty() {
-            return Vec::new();
+            return out;
         }
 
         if payload_safe.len() == 12 {
@@ -203,10 +249,11 @@ impl Engine {
                 #[cfg(target_arch = "wasm32")]
                 web_sys::console::log_1(&"WASM: Handshake detected".into());
 
-                return vec![Action::Handshake {
+                out.events.push(Event::Handshake {
                     current: handshake.current.to_u32(),
                     minimum: handshake.minimum.to_u32(),
-                }];
+                });
+                return out;
             }
         }
 
@@ -216,29 +263,27 @@ impl Engine {
             Ok(_) => {
                 #[cfg(target_arch = "wasm32")]
                 web_sys::console::log_1(&"WASM: deserialize success, calling handle".into());
-                self.handle_deserialized_packet(&pkt)
+                self.handle_deserialized_packet(&pkt, &mut out);
             }
             Err(e) => {
                 #[cfg(target_arch = "wasm32")]
                 web_sys::console::log_1(&format!("WASM: deserialize failed: {}", e).into());
                 log::warn!("failed to deserialize packet: {}", e);
-                Vec::new()
             }
         }
+        out
     }
 
-    pub fn process_incoming_udp(&mut self, raw: &[u8]) -> Vec<Action> {
+    pub fn process_incoming_udp(&mut self, raw: &[u8]) -> ProcessOutput {
         let mut framed = Vec::with_capacity(4 + raw.len());
         framed.extend_from_slice(&(raw.len() as u32).to_le_bytes());
         framed.extend_from_slice(raw);
         self.process_incoming(&framed)
     }
 
-    fn handle_deserialized_packet(&mut self, pkt: &BMPacket) -> Vec<Action> {
+    fn handle_deserialized_packet(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
         #[cfg(target_arch = "wasm32")]
         web_sys::console::log_1(&"WASM: handle_deserialized_packet entry".into());
-
-        let mut out = Vec::new();
 
         #[cfg(target_arch = "wasm32")]
         web_sys::console::log_1(
@@ -251,7 +296,7 @@ impl Engine {
 
         let sender_id = if let Some(rec) = self.device_record_from_packet(pkt) {
             let id = rec.core.device_id.clone();
-            out.push(self.push_registry_update(rec));
+            out.events.push(self.push_registry_update(rec));
             Some(id)
         } else {
             None
@@ -265,15 +310,14 @@ impl Engine {
         web_sys::console::log_1(&format!("WASM: dispatching type={:?}", pkt_type).into());
 
         match pkt_type {
-            PacketType::Ping => out.extend(self.handle_ping(pkt, channel, sender_id)),
-            PacketType::Ack => out.extend(self.handle_ack(pkt)),
-            PacketType::Data => out.extend(self.handle_data(pkt, channel)),
+            PacketType::Ping => self.handle_ping(pkt, channel, sender_id, out),
+            PacketType::Ack => self.handle_ack(pkt, out),
+            PacketType::Data => self.handle_data(pkt, channel, out),
             _ => log::info!(
                 "rx packet type {:?} channel {channel} reliability {reliability}",
                 pkt_type
             ),
         }
-        out
     }
 
     fn handle_ping(
@@ -281,12 +325,12 @@ impl Engine {
         _pkt: &BMPacket,
         channel: i32,
         sender_id: Option<String>,
-    ) -> Vec<Action> {
-        let mut out = Vec::new();
+        out: &mut ProcessOutput,
+    ) {
         log::info!("rx ping");
 
         if let Some(id) = sender_id {
-            out.extend(self.make_packet(
+            out.outgoings.extend(self.make_packet(
                 &id,
                 channel,
                 Some(Self::default_reliability_for_channel(channel)),
@@ -294,21 +338,16 @@ impl Engine {
                 None,
             ));
         }
-
-        out
     }
 
-    fn handle_ack(&mut self, pkt: &BMPacket) -> Vec<Action> {
-        let mut out = Vec::new();
+    fn handle_ack(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
         if let Some(rec) = self.device_record_from_packet(pkt) {
-            out.push(self.push_registry_update(rec));
+            out.events.push(self.push_registry_update(rec));
         }
         log::info!("rx ack");
-        out
     }
 
-    fn handle_data(&mut self, pkt: &BMPacket, channel: i32) -> Vec<Action> {
-        let mut out = Vec::new();
+    fn handle_data(&mut self, pkt: &BMPacket, channel: i32, out: &mut ProcessOutput) {
         if let Some(msg) = &pkt.message {
             if !msg.is_empty() {
                 #[cfg(target_arch = "wasm32")]
@@ -324,19 +363,19 @@ impl Engine {
                         );
 
                         match obj {
-                            Object::BMInvoke(inv) => out.extend(self.handle_invoke(
+                            Object::BMInvoke(inv) => self.handle_invoke(
                                 ReceivedInvoke {
                                     method: inv.method,
                                     return_method: inv.return_method,
                                     params: inv.params,
                                 },
-                                msg.clone(),
                                 Some(pkt.device_id.clone()),
                                 channel,
-                            )),
+                                out,
+                            ),
                             Object::BMByteChunk(chunk) => {
                                 let device_id = pkt.device_id.clone();
-                                out.extend(self.handle_chunk(device_id, chunk));
+                                self.handle_chunk(device_id, chunk, out);
                             }
                             _ => {
                                 log::debug!(
@@ -372,11 +411,9 @@ impl Engine {
                 }
             }
         }
-        out
     }
 
-    fn handle_chunk(&mut self, device_id: String, chunk: BMByteChunk) -> Vec<Action> {
-        let mut out = Vec::new();
+    fn handle_chunk(&mut self, device_id: String, chunk: BMByteChunk, out: &mut ProcessOutput) {
         let set_id = chunk.set_id.clone();
 
         let buffer = self
@@ -400,13 +437,13 @@ impl Engine {
                 end,
                 buffer.len()
             );
-            return Vec::new();
+            return;
         }
 
         let current = end as u32;
         let total = chunk.total_size as u32;
 
-        out.push(Action::ChunkProgress {
+        out.events.push(Event::ChunkProgress {
             device_id: device_id.clone(),
             set_id: set_id.clone(),
             current,
@@ -415,73 +452,72 @@ impl Engine {
 
         if current >= total {
             if let Some(blob) = self.state.chunk_buffers.remove(&set_id) {
-                out.push(Action::ChunkSetComplete {
+                out.events.push(Event::ChunkComplete {
                     device_id,
                     set_id,
                     blob,
                 });
             }
         }
-
-        out
     }
 
     fn handle_invoke(
         &mut self,
         inv: ReceivedInvoke,
-        raw_bytes: Vec<u8>,
         sender_id: Option<String>,
         channel: i32,
-    ) -> Vec<Action> {
-        let mut out = Vec::new();
-        out.push(Action::Invoke {
+        out: &mut ProcessOutput,
+    ) {
+        out.events.push(Event::Invoke {
+            sender: sender_id.clone(),
             method: inv.method.clone(),
             return_method: inv.return_method.clone(),
             params: inv.params.clone(),
-            raw_bytes,
         });
 
         if let Some(cfg) = self.parse_control_rpc(&inv) {
-            out.push(cfg);
+            out.events.push(Event::ControlConfig(cfg));
         }
 
         if let Some(handler) = self.rpc_handlers.get(&inv.method).cloned() {
-            out.extend(handler(self, &inv.params, sender_id.as_deref(), channel));
+            handler(self, &inv, sender_id.as_deref(), channel, out);
         }
-        out
     }
 
     fn rpc_registry_register(
         engine: &mut Engine,
-        params: &[Value],
+        inv: &ReceivedInvoke,
         sender_id: Option<&str>,
         _channel: i32,
-    ) -> Vec<Action> {
-        let infos = engine.collect_registry_infos(params);
-        let success = params.iter().find_map(|p| {
+        out: &mut ProcessOutput,
+    ) {
+        let infos = engine.collect_registry_infos(&inv.params);
+        let success = inv.params.iter().find_map(|p| {
             if let Value::Bool(b) = engine.unwrap_value(p) {
-                Some(b)
+                Some(*b)
             } else {
                 None
             }
         });
-        let mut out = vec![Action::RegistryEvent {
-            kind: RegistryEventKind::OnRegister,
-            infos: infos.clone(),
-            success: success.copied(),
-        }];
 
         if !engine.state.is_server() {
-            return out;
+            // Controller/host received the `onRegister` result.
+            if let Some(success) = success {
+                for info in infos {
+                    out.events.push(Event::PeerRegistered { info, success });
+                }
+            }
+            return;
         }
 
+        // Server received a `registry.register` request.
         let Some(target_id) = sender_id else {
             log::warn!("registry.register missing sender id");
-            return out;
+            return;
         };
 
         let Some(mut info) = infos.first().cloned() else {
-            return out;
+            return;
         };
 
         if engine.server_policy.auto_approve_registration {
@@ -507,17 +543,27 @@ impl Engine {
             }
             engine.state.upsert_registry_info(info.clone());
 
-            out.extend(engine.make_message_invoke(
-                target_id,
-                "onRegister",
-                None,
-                vec![Value::Bool(true)],
-            ));
+            if let Some(reply) = Self::reply_method(inv.return_method.as_deref()) {
+                out.outgoings.extend(engine.make_message_invoke(
+                    target_id,
+                    reply,
+                    None,
+                    vec![Value::Bool(true)],
+                ));
+            } else {
+                log::warn!(
+                    "registry.register from '{target_id}' omitted a return method, skipping reply"
+                );
+            }
+            out.events.push(Event::PeerRegistered {
+                info: info.clone(),
+                success: true,
+            });
 
             if is_game {
                 let info_val = Value::Object(Object::BMRegistryInfo(info.clone()));
 
-                out.extend(engine.make_message_invoke(
+                out.outgoings.extend(engine.make_message_invoke(
                     target_id,
                     "onHostConnected",
                     None,
@@ -543,7 +589,7 @@ impl Engine {
                     .map(|r| r.device.device_id)
                     .collect();
                 for vid in viewer_ids {
-                    out.extend(engine.make_message_invoke(
+                    out.outgoings.extend(engine.make_message_invoke(
                         &vid,
                         "onHostConnected",
                         None,
@@ -552,39 +598,37 @@ impl Engine {
                 }
             }
         } else {
+            // Manual approval: stash the request (with the caller's return
+            // method) until the integrator calls approve/deny_registration.
             engine.server_policy.pending_registrations.insert(
                 info.device.device_id.clone(),
-                (info.clone(), target_id.to_string()),
+                PendingRegistration {
+                    info,
+                    target_id: target_id.to_string(),
+                    return_method: inv.return_method.clone(),
+                },
             );
-            out.push(Action::RegistryEvent {
-                kind: RegistryEventKind::OnRegister,
-                infos: vec![info],
-                success: None,
-            });
         }
-
-        out
     }
 
     fn rpc_registry_list(
         engine: &mut Engine,
-        params: &[Value],
+        inv: &ReceivedInvoke,
         sender_id: Option<&str>,
         _channel: i32,
-    ) -> Vec<Action> {
-        let infos = engine.collect_registry_infos(params);
-        let mut out = vec![Action::RegistryEvent {
-            kind: RegistryEventKind::OnList,
-            infos,
-            success: None,
-        }];
+        out: &mut ProcessOutput,
+    ) {
+        let infos = engine.collect_registry_infos(&inv.params);
 
         if !engine.state.is_server() {
-            return out;
+            // Received the full host-list snapshot in response to our request.
+            out.events.push(Event::HostList { infos });
+            return;
         }
 
+        // Server side: answer the list request via the caller's return method.
         let Some(target_id) = sender_id else {
-            return out;
+            return;
         };
         let viewer_type = engine
             .state
@@ -594,97 +638,97 @@ impl Engine {
             .map(|r| r.device.device_type)
             .unwrap_or(DeviceType::Server);
 
+        let Some(reply) = Self::reply_method(inv.return_method.as_deref()) else {
+            log::warn!(
+                "registry.list from '{target_id}' omitted a return method, not replying with host list"
+            );
+            return;
+        };
+
         let list_infos = engine.state.registry_infos_for_viewer(viewer_type);
         let mut arr = BMArray::default();
         for r in list_infos {
             arr.push(Value::Object(Object::BMRegistryInfo(r)));
         }
-        out.extend(engine.make_message_invoke(
+        out.outgoings.extend(engine.make_message_invoke(
             target_id,
-            "onList",
+            reply,
             None,
             vec![Value::Object(Object::BMArray(arr))],
         ));
-        out
     }
 
     fn rpc_registry_relay(
         engine: &mut Engine,
-        params: &[Value],
+        inv: &ReceivedInvoke,
         _sender_id: Option<&str>,
         _channel: i32,
-    ) -> Vec<Action> {
-        let infos = engine.collect_registry_infos(params);
-        let mut out = vec![Action::RegistryEvent {
-            kind: RegistryEventKind::DeviceConnectRequested,
-            infos: infos.clone(),
-            success: None,
-        }];
+        out: &mut ProcessOutput,
+    ) {
+        for info in engine.collect_registry_infos(&inv.params) {
+            out.events.push(Event::DeviceConnectRequested { info });
+        }
 
         if !engine.state.is_server() {
-            return out;
+            return;
         }
 
         let mut target_id = None;
-        let mut inner_invoke = None;
+        let mut relayed = None;
 
-        for p in params {
+        for p in &inv.params {
             match engine.unwrap_value(p) {
                 Value::Object(Object::BMRegistryInfo(r)) => {
                     target_id = Some(r.device.device_id.clone());
                 }
-                Value::Object(Object::BMInvoke(inv)) => {
-                    inner_invoke = Some(inv.clone());
+                Value::Object(Object::BMInvoke(bm_invoke)) => {
+                    relayed = Some(bm_invoke.clone());
                 }
                 _ => {}
             }
         }
 
         let Some(target_id) = target_id else {
-            return out;
+            return;
         };
-        let Some(inner) = inner_invoke else {
-            return out;
+        let Some(relayed) = relayed else {
+            return;
         };
 
-        out.extend(engine.make_message_invoke(
+        out.outgoings.extend(engine.make_message_invoke(
             &target_id,
-            &inner.method,
-            inner.return_method.as_deref(),
-            inner.params,
+            &relayed.method,
+            relayed.return_method.as_deref(),
+            relayed.params,
         ));
-        out
     }
 
     fn rpc_on_host_connected(
         engine: &mut Engine,
-        params: &[Value],
+        inv: &ReceivedInvoke,
         _sender_id: Option<&str>,
         _channel: i32,
-    ) -> Vec<Action> {
-        let infos = engine.collect_registry_infos(params);
-        vec![Action::RegistryEvent {
-            kind: RegistryEventKind::OnHostConnected,
-            infos,
-            success: None,
-        }]
+        out: &mut ProcessOutput,
+    ) {
+        for info in engine.collect_registry_infos(&inv.params) {
+            out.events.push(Event::HostConnected { info });
+        }
     }
 
     fn rpc_registry_update(
         engine: &mut Engine,
-        params: &[Value],
+        inv: &ReceivedInvoke,
         _sender_id: Option<&str>,
         _channel: i32,
-    ) -> Vec<Action> {
-        let infos = engine.collect_registry_infos(params);
-        let mut out = vec![Action::RegistryEvent {
-            kind: RegistryEventKind::OnHostUpdate,
-            infos: infos.clone(),
-            success: None,
-        }];
+        out: &mut ProcessOutput,
+    ) {
+        let infos = engine.collect_registry_infos(&inv.params);
+        for info in &infos {
+            out.events.push(Event::HostUpdated { info: info.clone() });
+        }
 
         if !engine.state.is_server() {
-            return out;
+            return;
         }
 
         let viewer_ids: Vec<String> = engine
@@ -719,7 +763,7 @@ impl Engine {
                 continue;
             };
             for vid in &viewer_ids {
-                out.extend(engine.make_message_invoke(
+                out.outgoings.extend(engine.make_message_invoke(
                     vid,
                     "onHostUpdate",
                     None,
@@ -727,35 +771,30 @@ impl Engine {
                 ));
             }
         }
-        out
     }
 
     fn rpc_on_host_disconnected(
         engine: &mut Engine,
-        params: &[Value],
+        inv: &ReceivedInvoke,
         _sender_id: Option<&str>,
         _channel: i32,
-    ) -> Vec<Action> {
-        let infos = engine.collect_registry_infos(params);
-        vec![Action::RegistryEvent {
-            kind: RegistryEventKind::OnHostDisconnected,
-            infos,
-            success: None,
-        }]
+        out: &mut ProcessOutput,
+    ) {
+        for info in engine.collect_registry_infos(&inv.params) {
+            out.events.push(Event::HostDisconnected { info });
+        }
     }
 
     fn rpc_device_connect_requested(
         engine: &mut Engine,
-        params: &[Value],
+        inv: &ReceivedInvoke,
         _sender_id: Option<&str>,
         _channel: i32,
-    ) -> Vec<Action> {
-        let infos = engine.collect_registry_infos(params);
-        vec![Action::RegistryEvent {
-            kind: RegistryEventKind::DeviceConnectRequested,
-            infos,
-            success: None,
-        }]
+        out: &mut ProcessOutput,
+    ) {
+        for info in engine.collect_registry_infos(&inv.params) {
+            out.events.push(Event::DeviceConnectRequested { info });
+        }
     }
 
     fn unwrap_value<'a>(&self, v: &'a Value) -> &'a Value {
@@ -812,7 +851,7 @@ impl Engine {
         target: &str,
         handler: &str,
         pressed: bool,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let state = if pressed { "down" } else { "up" };
         self.make_message_invoke(
             target,
@@ -822,7 +861,7 @@ impl Engine {
         )
     }
 
-    pub fn make_dpad_update(&mut self, target: &str, x: i16, y: i16) -> Vec<Action> {
+    pub fn make_dpad_update(&mut self, target: &str, x: i16, y: i16) -> Vec<Outgoing> {
         let msg = match self.build_object_bytes(Object::DPadUpdate(DPadUpdate::new(x, y))) {
             Ok(m) => m,
             Err(e) => {
@@ -844,7 +883,7 @@ impl Engine {
         target: &str,
         touches: Vec<Touch>,
         reliability: i32,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let mut map = std::collections::HashMap::with_capacity(touches.len());
         for t in touches {
             map.insert(t.id, t);
@@ -873,7 +912,7 @@ impl Engine {
         y: f64,
         z: f64,
         reliability: i32,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let msg = match self.build_object_bytes(Object::Acceleration(Acceleration::new(x, y, z))) {
             Ok(m) => m,
             Err(e) => {
@@ -896,7 +935,7 @@ impl Engine {
         width: i32,
         height: i32,
         requester_device_id: &str,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let params = vec![
             Value::I32(height),
             Value::I32(width),
@@ -905,7 +944,11 @@ impl Engine {
         self.make_message_invoke(target, "RequestXML", None, params)
     }
 
-    pub fn make_on_control_scheme_parsed(&mut self, target: &str, device_id: &str) -> Vec<Action> {
+    pub fn make_on_control_scheme_parsed(
+        &mut self,
+        target: &str,
+        device_id: &str,
+    ) -> Vec<Outgoing> {
         let params = vec![Value::String(device_id.to_string())];
         self.make_message_invoke(target, "onControlSchemeParsed", None, params)
     }
@@ -916,7 +959,7 @@ impl Engine {
         method: &str,
         return_method: Option<&str>,
         param_str: Option<&str>,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let mut params = Vec::new();
         if let Some(s) = param_str {
             params.push(Value::String(s.to_string()));
@@ -931,7 +974,7 @@ impl Engine {
         y: f32,
         z: f32,
         reliability: i32,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let msg = match self.build_object_bytes(Object::BMGyro(BMGyro::new(x, y, z))) {
             Ok(m) => m,
             Err(e) => {
@@ -956,7 +999,7 @@ impl Engine {
         z: f32,
         w: f32,
         reliability: i32,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let msg = match self.build_object_bytes(Object::Orientation(Orientation::new(x, y, z, w))) {
             Ok(m) => m,
             Err(e) => {
@@ -973,15 +1016,15 @@ impl Engine {
         )
     }
 
-    pub fn make_vibrate(&mut self, target: &str) -> Vec<Action> {
+    pub fn make_vibrate(&mut self, target: &str) -> Vec<Outgoing> {
         self.make_message_invoke(target, "vibrate", None, vec![])
     }
 
-    pub fn make_update_wallet(&mut self, target: &str) -> Vec<Action> {
+    pub fn make_update_wallet(&mut self, target: &str) -> Vec<Outgoing> {
         self.make_message_invoke(target, "updateWallet", None, vec![])
     }
 
-    pub fn make_get_cookie(&mut self, target: &str, name: &str) -> Vec<Action> {
+    pub fn make_get_cookie(&mut self, target: &str, name: &str) -> Vec<Outgoing> {
         self.make_message_invoke(
             target,
             "getCookie",
@@ -990,7 +1033,7 @@ impl Engine {
         )
     }
 
-    pub fn make_set_cookie(&mut self, target: &str, name: &str, value: &str) -> Vec<Action> {
+    pub fn make_set_cookie(&mut self, target: &str, name: &str, value: &str) -> Vec<Outgoing> {
         self.make_message_invoke(
             target,
             "setCookie",
@@ -1002,11 +1045,11 @@ impl Engine {
         )
     }
 
-    pub fn make_prompt_trial_upsell(&mut self, target: &str) -> Vec<Action> {
+    pub fn make_prompt_trial_upsell(&mut self, target: &str) -> Vec<Outgoing> {
         self.make_message_invoke(target, "promptTrialUpsell", None, vec![])
     }
 
-    pub fn make_wait_for_new_host(&mut self, target: &str, host_device_id: &str) -> Vec<Action> {
+    pub fn make_wait_for_new_host(&mut self, target: &str, host_device_id: &str) -> Vec<Outgoing> {
         self.make_message_invoke(
             target,
             "WaitForNewHost",
@@ -1020,7 +1063,7 @@ impl Engine {
         target: &str,
         mode: i32,
         text_content: Option<&str>,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let mut params = vec![Value::I32(mode)];
         if let Some(text) = text_content {
             params.push(Value::String(text.to_string()));
@@ -1033,7 +1076,7 @@ impl Engine {
         target: &str,
         enabled: bool,
         interval_seconds: Option<f64>,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let mut params = vec![Value::Bool(enabled)];
         if let Some(interval) = interval_seconds {
             params.push(Value::F64(interval));
@@ -1041,11 +1084,15 @@ impl Engine {
         self.make_message_invoke(target, "enableAccelerometer", None, params)
     }
 
-    pub fn make_enable_touch(&mut self, target: &str, enabled: bool) -> Vec<Action> {
+    pub fn make_enable_touch(&mut self, target: &str, enabled: bool) -> Vec<Outgoing> {
         self.make_message_invoke(target, "enableTouch", None, vec![Value::Bool(enabled)])
     }
 
-    pub fn make_set_touch_interval(&mut self, target: &str, interval_seconds: f64) -> Vec<Action> {
+    pub fn make_set_touch_interval(
+        &mut self,
+        target: &str,
+        interval_seconds: f64,
+    ) -> Vec<Outgoing> {
         self.make_message_invoke(
             target,
             "setTouchInterval",
@@ -1054,11 +1101,11 @@ impl Engine {
         )
     }
 
-    pub fn make_enable_gyro(&mut self, target: &str, enabled: bool) -> Vec<Action> {
+    pub fn make_enable_gyro(&mut self, target: &str, enabled: bool) -> Vec<Outgoing> {
         self.make_message_invoke(target, "enableGyro", None, vec![Value::Bool(enabled)])
     }
 
-    pub fn make_set_gyro_interval(&mut self, target: &str, interval_seconds: f64) -> Vec<Action> {
+    pub fn make_set_gyro_interval(&mut self, target: &str, interval_seconds: f64) -> Vec<Outgoing> {
         self.make_message_invoke(
             target,
             "setGyroInterval",
@@ -1067,7 +1114,7 @@ impl Engine {
         )
     }
 
-    pub fn make_enable_orientation(&mut self, target: &str, enabled: bool) -> Vec<Action> {
+    pub fn make_enable_orientation(&mut self, target: &str, enabled: bool) -> Vec<Outgoing> {
         self.make_message_invoke(
             target,
             "enableOrientation",
@@ -1080,7 +1127,7 @@ impl Engine {
         &mut self,
         target: &str,
         interval_seconds: f64,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         self.make_message_invoke(
             target,
             "setOrientationInterval",
@@ -1094,7 +1141,7 @@ impl Engine {
         target: &str,
         touch_reliability: i32,
         control_reliability: i32,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         self.make_message_invoke(
             target,
             "setReliabilityForTouch",
@@ -1106,7 +1153,7 @@ impl Engine {
         )
     }
 
-    pub fn make_set_capabilities(&mut self, target: &str, capabilities: u64) -> Vec<Action> {
+    pub fn make_set_capabilities(&mut self, target: &str, capabilities: u64) -> Vec<Outgoing> {
         self.make_message_invoke(
             target,
             "setCapabilities",
@@ -1120,7 +1167,7 @@ impl Engine {
         target: &str,
         info: BMRegistryInfo,
         domain: Option<String>,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let mut params = vec![Value::Object(Object::BMRegistryInfo(info))];
         if let Some(d) = domain {
             params.push(Value::String(d));
@@ -1141,7 +1188,7 @@ impl Engine {
         )
     }
 
-    pub fn make_registry_list(&mut self, target: &str) -> Vec<Action> {
+    pub fn make_registry_list(&mut self, target: &str) -> Vec<Outgoing> {
         let msg = match self.build_invoke_payload("registry.list", Some("onList"), Vec::new()) {
             Ok(m) => m,
             Err(e) => {
@@ -1163,7 +1210,7 @@ impl Engine {
         target: &str,
         dest_info: BMRegistryInfo,
         inner: BMInvoke,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let inner_obj = Value::Object(Object::BMInvoke(inner));
         let params = vec![Value::Object(Object::BMRegistryInfo(dest_info)), inner_obj];
         let msg = match self.build_invoke_payload("registry.relay", Some(""), params) {
@@ -1187,7 +1234,7 @@ impl Engine {
         target: &str,
         game_info: BMRegistryInfo,
         controller_info: BMRegistryInfo,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let inner = BMInvoke {
             id: 0,
             method: "deviceConnectRequested".to_string(),
@@ -1203,7 +1250,7 @@ impl Engine {
         method: &str,
         return_method: Option<&str>,
         params: Vec<Value>,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         let msg = match self.build_invoke_payload(method, return_method, params) {
             Ok(m) => m,
             Err(e) => {
@@ -1225,7 +1272,7 @@ impl Engine {
         target: &str,
         method: &str,
         params: Vec<Value>,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         self.make_message_invoke(target, method, None, params)
     }
 
@@ -1236,7 +1283,7 @@ impl Engine {
         reliability: Option<i32>,
         packet_type: PacketType,
         message: Option<Vec<u8>>,
-    ) -> Vec<Action> {
+    ) -> Vec<Outgoing> {
         if target.is_empty() {
             log::warn!("target device id is empty");
             return Vec::new();
@@ -1268,7 +1315,7 @@ impl Engine {
             packet_type.code(),
             message,
         ) {
-            Ok(bytes) => vec![Action::Send {
+            Ok(bytes) => vec![Outgoing {
                 target_device_id: target.to_string(),
                 channel,
                 reliability: rel,
@@ -1318,7 +1365,7 @@ impl Engine {
         Some(DeviceRecord::new(core, None, None))
     }
 
-    pub fn push_registry_update(&mut self, mut record: DeviceRecord) -> Action {
+    pub fn push_registry_update(&mut self, mut record: DeviceRecord) -> Event {
         #[cfg(target_arch = "wasm32")]
         web_sys::console::log_1(&"WASM: push_registry_update start".into());
 
@@ -1342,10 +1389,10 @@ impl Engine {
 
         #[cfg(target_arch = "wasm32")]
         web_sys::console::log_1(&"WASM: upsert done.".into());
-        Action::UpdateRegistry { record }
+        Event::PeerSeen { record }
     }
 
-    pub fn drop_device(&mut self, device_id: &str) -> Vec<Action> {
+    pub fn drop_device(&mut self, device_id: &str) -> Vec<Outgoing> {
         let mut out = Vec::new();
         if let Some(rec) = self.state.registry.remove(device_id) {
             if let Some(info) = rec.info {
@@ -1406,7 +1453,7 @@ impl Engine {
         }
     }
 
-    fn parse_control_rpc(&self, inv: &ReceivedInvoke) -> Option<Action> {
+    fn parse_control_rpc(&self, inv: &ReceivedInvoke) -> Option<ControlConfig> {
         let mut touch_enabled = None;
         let mut accel_enabled = None;
         let mut gyro_enabled = None;
@@ -1471,7 +1518,7 @@ impl Engine {
             _ => return None,
         }
 
-        Some(Action::ControlConfig {
+        Some(ControlConfig {
             touch_enabled,
             accel_enabled,
             gyro_enabled,

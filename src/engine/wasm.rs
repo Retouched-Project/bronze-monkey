@@ -4,10 +4,8 @@
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
-use crate::engine::actions::Action;
 use crate::engine::registry::DeviceRecord;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
-use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::touch::Touch;
 use crate::types::device_type::DeviceType;
 use console_error_panic_hook;
@@ -106,372 +104,13 @@ impl BmEngineWasm {
     }
 
     pub fn approve_registration(&mut self, device_id: &str) -> Result<JsValue, JsError> {
-        let actions = self.inner.approve_registration(device_id);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.approve_registration(device_id);
+        to_js(&outgoings)
     }
 
     pub fn deny_registration(&mut self, device_id: &str) -> Result<JsValue, JsError> {
-        let actions = self.inner.deny_registration(device_id);
-        self.serialize_actions(actions)
-    }
-
-    fn serialize_value(v: &Value) -> Result<JsValue, JsError> {
-        match v {
-            Value::String(s) => Ok(JsValue::from(s)),
-            Value::Bool(b) => Ok(JsValue::from(*b)),
-            Value::I16(n) => Ok(JsValue::from(*n)),
-            Value::U16(n) => Ok(JsValue::from(*n)),
-            Value::I32(n) => Ok(JsValue::from(*n)),
-            Value::U32(n) => Ok(JsValue::from(*n)),
-            Value::F32(n) => Ok(JsValue::from(*n)),
-            Value::F64(n) => Ok(JsValue::from(*n)),
-            Value::Object(obj) => Self::serialize_object(obj),
-        }
-    }
-
-    fn serialize_object(obj: &crate::codec::object::Object) -> Result<JsValue, JsError> {
-        use crate::codec::object::Object;
-        let js_obj = js_sys::Object::new();
-
-        match obj {
-            Object::BMArray(arr) => {
-                let js_arr = js_sys::Array::new();
-                for item in &arr.items {
-                    js_arr.push(&Self::serialize_value(item)?);
-                }
-                return Ok(js_arr.into());
-            }
-            Object::BMAddress(addr) => {
-                js_sys::Reflect::set(&js_obj, &"address".into(), &addr.address.clone().into())
-                    .unwrap();
-                js_sys::Reflect::set(&js_obj, &"reliable_port".into(), &addr.reliable_port.into())
-                    .unwrap();
-                js_sys::Reflect::set(
-                    &js_obj,
-                    &"unreliable_port".into(),
-                    &addr.unreliable_port.into(),
-                )
-                .unwrap();
-            }
-            Object::BMRegistryInfo(info) => {
-                js_sys::Reflect::set(&js_obj, &"slotId".into(), &info.slot_id.into()).unwrap();
-                js_sys::Reflect::set(&js_obj, &"appId".into(), &info.app_id.clone().into())
-                    .unwrap();
-                if let Some(cp) = info.current_players {
-                    js_sys::Reflect::set(&js_obj, &"currentPlayers".into(), &cp.into()).unwrap();
-                }
-                if let Some(mp) = info.max_players {
-                    js_sys::Reflect::set(&js_obj, &"maxPlayers".into(), &mp.into()).unwrap();
-                }
-
-                let dev_obj = js_sys::Object::new();
-                js_sys::Reflect::set(
-                    &dev_obj,
-                    &"id".into(),
-                    &info.device.device_id.clone().into(),
-                )
-                .unwrap();
-                js_sys::Reflect::set(
-                    &dev_obj,
-                    &"name".into(),
-                    &info.device.device_name.clone().into(),
-                )
-                .unwrap();
-                js_sys::Reflect::set(
-                    &dev_obj,
-                    &"device_type".into(),
-                    &info.device.device_type.code().into(),
-                )
-                .unwrap();
-
-                let addr_obj = js_sys::Object::new();
-                if let Some(addr) = &info.device.address {
-                    js_sys::Reflect::set(
-                        &addr_obj,
-                        &"address".into(),
-                        &addr.address.clone().into(),
-                    )
-                    .unwrap();
-                    js_sys::Reflect::set(
-                        &addr_obj,
-                        &"reliable_port".into(),
-                        &addr.reliable_port.into(),
-                    )
-                    .unwrap();
-                    js_sys::Reflect::set(
-                        &addr_obj,
-                        &"unreliable_port".into(),
-                        &addr.unreliable_port.into(),
-                    )
-                    .unwrap();
-                }
-                js_sys::Reflect::set(&dev_obj, &"address".into(), &addr_obj).unwrap();
-                js_sys::Reflect::set(&js_obj, &"device".into(), &dev_obj).unwrap();
-
-                js_sys::Reflect::set(
-                    &js_obj,
-                    &"deviceId".into(),
-                    &info.device.device_id.clone().into(),
-                )
-                .unwrap();
-                js_sys::Reflect::set(
-                    &js_obj,
-                    &"deviceName".into(),
-                    &info.device.device_name.clone().into(),
-                )
-                .unwrap();
-                js_sys::Reflect::set(
-                    &js_obj,
-                    &"deviceType".into(),
-                    &info.device.device_type.code().into(),
-                )
-                .unwrap();
-
-                let wrapper = js_sys::Object::new();
-                js_sys::Reflect::set(&wrapper, &"BMRegistryInfo".into(), &js_obj).unwrap();
-                return Ok(wrapper.into());
-            }
-            Object::BMInvoke(invoke) => {
-                js_sys::Reflect::set(&js_obj, &"method".into(), &invoke.method.clone().into())
-                    .unwrap();
-                let js_params = js_sys::Array::new();
-                for p in &invoke.params {
-                    js_params.push(&Self::serialize_value(p)?);
-                }
-                js_sys::Reflect::set(&js_obj, &"params".into(), &js_params).unwrap();
-
-                let wrapper = js_sys::Object::new();
-                js_sys::Reflect::set(&wrapper, &"BMInvoke".into(), &js_obj).unwrap();
-                return Ok(wrapper.into());
-            }
-            Object::BMParameter(val) => {
-                return Self::serialize_value(val);
-            }
-            _ => {
-                if let Ok(val) = serde_wasm_bindgen::to_value(obj) {
-                    return Ok(val);
-                }
-            }
-        }
-        Ok(js_obj.into())
-    }
-
-    fn serialize_actions(&self, actions: Vec<Action>) -> Result<JsValue, JsError> {
-        web_sys::console::log_1(&"WASM: serialize_actions start".into());
-        let array = js_sys::Array::new();
-        for (_i, action) in actions.iter().enumerate() {
-            match action {
-                Action::Send {
-                    target_device_id,
-                    channel,
-                    reliability,
-                    payload,
-                } => {
-                    let obj = js_sys::Object::new();
-                    js_sys::Reflect::set(&obj, &"type".into(), &"Send".into()).unwrap();
-                    js_sys::Reflect::set(&obj, &"targetDeviceId".into(), &target_device_id.into())
-                        .unwrap();
-                    js_sys::Reflect::set(&obj, &"channel".into(), &(*channel).into()).unwrap();
-                    js_sys::Reflect::set(&obj, &"reliability".into(), &(*reliability).into())
-                        .unwrap();
-
-                    let uint8_array = js_sys::Uint8Array::new_with_length(payload.len() as u32);
-                    uint8_array.copy_from(&payload);
-                    js_sys::Reflect::set(&obj, &"payload".into(), &uint8_array).unwrap();
-                    array.push(&obj);
-                }
-                Action::RegistryEvent {
-                    kind,
-                    infos,
-                    success,
-                } => {
-                    let obj = js_sys::Object::new();
-                    js_sys::Reflect::set(&obj, &"type".into(), &"RegistryEvent".into()).unwrap();
-                    let kind_str = match kind {
-                        crate::engine::actions::RegistryEventKind::OnRegister => "OnRegister",
-                        crate::engine::actions::RegistryEventKind::OnList => "OnList",
-                        crate::engine::actions::RegistryEventKind::OnHostConnected => {
-                            "OnHostConnected"
-                        }
-                        crate::engine::actions::RegistryEventKind::OnHostUpdate => "OnHostUpdate",
-                        crate::engine::actions::RegistryEventKind::OnHostDisconnected => {
-                            "OnHostDisconnected"
-                        }
-                        crate::engine::actions::RegistryEventKind::DeviceConnectRequested => {
-                            "DeviceConnectRequested"
-                        }
-                    };
-                    js_sys::Reflect::set(&obj, &"kind".into(), &kind_str.into()).unwrap();
-
-                    if let Some(s) = success {
-                        js_sys::Reflect::set(&obj, &"success".into(), &(*s).into()).unwrap();
-                    }
-
-                    let infos_array = js_sys::Array::new();
-                    for info in infos {
-                        let info_obj = js_sys::Object::new();
-                        js_sys::Reflect::set(&info_obj, &"slotId".into(), &info.slot_id.into())
-                            .unwrap();
-                        js_sys::Reflect::set(
-                            &info_obj,
-                            &"appId".into(),
-                            &info.app_id.clone().into(),
-                        )
-                        .unwrap();
-                        if let Some(cp) = info.current_players {
-                            js_sys::Reflect::set(&info_obj, &"currentPlayers".into(), &cp.into())
-                                .unwrap();
-                        }
-                        if let Some(mp) = info.max_players {
-                            js_sys::Reflect::set(&info_obj, &"maxPlayers".into(), &mp.into())
-                                .unwrap();
-                        }
-
-                        let dev_obj = js_sys::Object::new();
-                        js_sys::Reflect::set(
-                            &dev_obj,
-                            &"id".into(),
-                            &info.device.device_id.clone().into(),
-                        )
-                        .unwrap();
-                        js_sys::Reflect::set(
-                            &dev_obj,
-                            &"name".into(),
-                            &info.device.device_name.clone().into(),
-                        )
-                        .unwrap();
-                        js_sys::Reflect::set(
-                            &dev_obj,
-                            &"device_type".into(),
-                            &info.device.device_type.code().into(),
-                        )
-                        .unwrap();
-
-                        let addr_obj = js_sys::Object::new();
-                        if let Some(addr) = &info.device.address {
-                            js_sys::Reflect::set(
-                                &addr_obj,
-                                &"address".into(),
-                                &addr.address.clone().into(),
-                            )
-                            .unwrap();
-                            js_sys::Reflect::set(
-                                &addr_obj,
-                                &"reliable_port".into(),
-                                &addr.reliable_port.into(),
-                            )
-                            .unwrap();
-                            js_sys::Reflect::set(
-                                &addr_obj,
-                                &"unreliable_port".into(),
-                                &addr.unreliable_port.into(),
-                            )
-                            .unwrap();
-                        }
-                        js_sys::Reflect::set(&dev_obj, &"address".into(), &addr_obj).unwrap();
-                        js_sys::Reflect::set(&info_obj, &"device".into(), &dev_obj).unwrap();
-
-                        js_sys::Reflect::set(
-                            &info_obj,
-                            &"deviceId".into(),
-                            &info.device.device_id.clone().into(),
-                        )
-                        .unwrap();
-                        js_sys::Reflect::set(
-                            &info_obj,
-                            &"deviceName".into(),
-                            &info.device.device_name.clone().into(),
-                        )
-                        .unwrap();
-                        js_sys::Reflect::set(
-                            &info_obj,
-                            &"deviceType".into(),
-                            &info.device.device_type.code().into(),
-                        )
-                        .unwrap();
-
-                        infos_array.push(&info_obj);
-                    }
-                    js_sys::Reflect::set(&obj, &"infos".into(), &infos_array).unwrap();
-                    array.push(&obj);
-                }
-                Action::ChunkSetComplete {
-                    device_id,
-                    set_id,
-                    blob,
-                } => {
-                    let obj = js_sys::Object::new();
-                    js_sys::Reflect::set(&obj, &"type".into(), &"ChunkComplete".into()).unwrap();
-                    js_sys::Reflect::set(&obj, &"deviceId".into(), &device_id.into()).unwrap();
-                    js_sys::Reflect::set(&obj, &"setId".into(), &set_id.into()).unwrap();
-
-                    let uint8_array = js_sys::Uint8Array::new_with_length(blob.len() as u32);
-                    uint8_array.copy_from(&blob);
-                    js_sys::Reflect::set(&obj, &"blob".into(), &uint8_array).unwrap();
-                    array.push(&obj);
-                }
-                Action::ChunkProgress {
-                    device_id,
-                    set_id,
-                    current,
-                    total,
-                } => {
-                    let obj = js_sys::Object::new();
-                    js_sys::Reflect::set(&obj, &"type".into(), &"ChunkProgress".into()).unwrap();
-                    js_sys::Reflect::set(&obj, &"deviceId".into(), &device_id.into()).unwrap();
-                    js_sys::Reflect::set(&obj, &"setId".into(), &set_id.into()).unwrap();
-                    js_sys::Reflect::set(&obj, &"current".into(), &(*current as f64).into())
-                        .unwrap();
-                    js_sys::Reflect::set(&obj, &"total".into(), &(*total as f64).into()).unwrap();
-                    array.push(&obj);
-                }
-                Action::Invoke {
-                    method,
-                    return_method,
-                    params,
-                    raw_bytes,
-                } => {
-                    let obj = js_sys::Object::new();
-                    js_sys::Reflect::set(&obj, &"type".into(), &"Invoke".into()).unwrap();
-                    js_sys::Reflect::set(&obj, &"method".into(), &method.into()).unwrap();
-                    if let Some(rm) = return_method {
-                        js_sys::Reflect::set(&obj, &"returnMethod".into(), &rm.into()).unwrap();
-                    }
-
-                    let uint8_array = js_sys::Uint8Array::new_with_length(raw_bytes.len() as u32);
-                    uint8_array.copy_from(&raw_bytes);
-                    js_sys::Reflect::set(&obj, &"payload".into(), &uint8_array).unwrap();
-
-                    let js_params = js_sys::Array::new();
-                    for p in params {
-                        if let Ok(js_p) = Self::serialize_value(p) {
-                            js_params.push(&js_p);
-                        }
-                    }
-                    js_sys::Reflect::set(&obj, &"params".into(), &js_params).unwrap();
-                    array.push(&obj);
-                }
-                Action::Handshake { current, minimum } => {
-                    let obj = js_sys::Object::new();
-                    js_sys::Reflect::set(&obj, &"type".into(), &"Handshake".into()).unwrap();
-                    js_sys::Reflect::set(&obj, &"current".into(), &(*current).into()).unwrap();
-                    js_sys::Reflect::set(&obj, &"minimum".into(), &(*minimum).into()).unwrap();
-                    array.push(&obj);
-                }
-                Action::UpdateRegistry { .. } => {}
-                _ => {
-                    if let Ok(val) = serde_wasm_bindgen::to_value(&action) {
-                        array.push(&val);
-                    }
-                }
-            }
-        }
-        Ok(array.into())
-    }
-
-    pub fn drop_device(&mut self, device_id: &str) -> Result<JsValue, JsError> {
-        let actions = self.inner.drop_device(device_id);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.deny_registration(device_id);
+        to_js(&outgoings)
     }
 
     pub fn get_registry(&self) -> Result<JsValue, JsError> {
@@ -552,10 +191,10 @@ impl BmEngineWasm {
                 }
                 out
             };
-        let actions =
+        let outgoings =
             self.inner
                 .make_message_invoke(target, method, return_method.as_deref(), rust_params);
-        self.serialize_actions(actions)
+        to_js(&outgoings)
     }
 
     pub fn make_registry_relay(
@@ -609,8 +248,8 @@ impl BmEngineWasm {
             params: rust_params,
         };
 
-        let actions = self.inner.make_registry_relay(target, dest_info, inner);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_registry_relay(target, dest_info, inner);
+        to_js(&outgoings)
     }
 
     pub fn make_packet(
@@ -628,15 +267,15 @@ impl BmEngineWasm {
         };
         let pt = crate::types::packet_type::PacketType::from_i32(packet_type_code)
             .ok_or_else(|| JsError::new("invalid packet_type_code"))?;
-        let actions = self.inner.make_packet(target, channel, rel, pt, message);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_packet(target, channel, rel, pt, message);
+        to_js(&outgoings)
     }
 
     pub fn process_incoming(&mut self, data: &[u8]) -> Result<JsValue, JsError> {
         let result = catch_unwind(AssertUnwindSafe(|| self.inner.process_incoming(data)));
 
         match result {
-            Ok(actions) => self.serialize_actions(actions),
+            Ok(out) => to_js(&out),
             Err(_) => {
                 web_sys::console::error_1(&"WASM: Panic in process_incoming logic!".into());
                 Err(JsError::new("Rust panic in process_incoming"))
@@ -648,7 +287,7 @@ impl BmEngineWasm {
         let result = catch_unwind(AssertUnwindSafe(|| self.inner.process_incoming_udp(data)));
 
         match result {
-            Ok(actions) => self.serialize_actions(actions),
+            Ok(out) => to_js(&out),
             Err(_) => {
                 web_sys::console::error_1(&"WASM: Panic in process_incoming_udp logic!".into());
                 Err(JsError::new("Rust panic in process_incoming_udp"))
@@ -657,10 +296,8 @@ impl BmEngineWasm {
     }
 
     pub fn make_registry_list(&mut self, target: &str) -> Result<JsValue, JsError> {
-        web_sys::console::log_1(&"WASM: make_registry_list start".into());
-        let actions = self.inner.make_registry_list(target);
-        web_sys::console::log_1(&format!("WASM: list actions count={}", actions.len()).into());
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_registry_list(target);
+        to_js(&outgoings)
     }
 
     pub fn make_registry_register(
@@ -678,7 +315,6 @@ impl BmEngineWasm {
         reliable_port: i32,
         domain: Option<String>,
     ) -> Result<JsValue, JsError> {
-        web_sys::console::log_1(&"WASM: make_registry_register start".into());
         let dt = DeviceType::for_value(device_type).map_err(|e| JsError::new(&e.to_string()))?;
         let mut core = DeviceCore::new(device_id.to_string(), device_name.to_string(), dt);
         let addr = BMAddress {
@@ -697,8 +333,8 @@ impl BmEngineWasm {
             device_address: addr,
         };
 
-        let actions = self.inner.make_registry_register(target, info, domain);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_registry_register(target, info, domain);
+        to_js(&outgoings)
     }
 
     pub fn make_device_connect_requested(
@@ -755,15 +391,15 @@ impl BmEngineWasm {
             c_slot, c_app, c_id, c_name, c_type, c_addr, c_u_port, c_r_port,
         )?;
 
-        let actions = self
+        let outgoings = self
             .inner
             .make_device_connect_requested(target, g_info, c_info);
-        self.serialize_actions(actions)
+        to_js(&outgoings)
     }
 
     pub fn make_set_capabilities(&mut self, target: &str, caps: i32) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_set_capabilities(target, caps as u64);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_set_capabilities(target, caps as u64);
+        to_js(&outgoings)
     }
 
     pub fn make_request_xml(
@@ -773,10 +409,10 @@ impl BmEngineWasm {
         height: i32,
         device_id: &str,
     ) -> Result<JsValue, JsError> {
-        let actions = self
+        let outgoings = self
             .inner
             .make_request_xml(target, width, height, device_id);
-        self.serialize_actions(actions)
+        to_js(&outgoings)
     }
 
     pub fn make_on_control_scheme_parsed(
@@ -784,8 +420,8 @@ impl BmEngineWasm {
         target: &str,
         device_id: &str,
     ) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_on_control_scheme_parsed(target, device_id);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_on_control_scheme_parsed(target, device_id);
+        to_js(&outgoings)
     }
 
     pub fn make_accel(
@@ -796,8 +432,8 @@ impl BmEngineWasm {
         z: f64,
         reliability: i32,
     ) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_accel(target, x, y, z, reliability);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_accel(target, x, y, z, reliability);
+        to_js(&outgoings)
     }
 
     pub fn make_gyro(
@@ -808,8 +444,8 @@ impl BmEngineWasm {
         z: f32,
         reliability: i32,
     ) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_gyro(target, x, y, z, reliability);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_gyro(target, x, y, z, reliability);
+        to_js(&outgoings)
     }
 
     pub fn make_orientation(
@@ -821,8 +457,8 @@ impl BmEngineWasm {
         w: f32,
         reliability: i32,
     ) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_orientation(target, x, y, z, w, reliability);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_orientation(target, x, y, z, w, reliability);
+        to_js(&outgoings)
     }
 
     pub fn make_button_invoke(
@@ -831,13 +467,13 @@ impl BmEngineWasm {
         handler: &str,
         pressed: bool,
     ) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_button_invoke(target, handler, pressed);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_button_invoke(target, handler, pressed);
+        to_js(&outgoings)
     }
 
     pub fn make_dpad_update(&mut self, target: &str, x: i16, y: i16) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_dpad_update(target, x, y);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_dpad_update(target, x, y);
+        to_js(&outgoings)
     }
 
     pub fn make_touch_set(
@@ -848,8 +484,8 @@ impl BmEngineWasm {
     ) -> Result<JsValue, JsError> {
         let touches: Vec<Touch> =
             serde_wasm_bindgen::from_value(points).map_err(|e| JsError::new(&e.to_string()))?;
-        let actions = self.inner.make_touch_set(target, touches, reliability);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_touch_set(target, touches, reliability);
+        to_js(&outgoings)
     }
 
     pub fn make_simple_invoke(
@@ -859,13 +495,13 @@ impl BmEngineWasm {
         return_val: Option<String>,
         param: Option<String>,
     ) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_simple_invoke_string(
+        let outgoings = self.inner.make_simple_invoke_string(
             target,
             method,
             return_val.as_deref(),
             param.as_deref(),
         );
-        self.serialize_actions(actions)
+        to_js(&outgoings)
     }
 
     pub fn make_enable_accelerometer(
@@ -874,15 +510,15 @@ impl BmEngineWasm {
         enabled: bool,
         interval: Option<f64>,
     ) -> Result<JsValue, JsError> {
-        let actions = self
+        let outgoings = self
             .inner
             .make_enable_accelerometer(target, enabled, interval);
-        self.serialize_actions(actions)
+        to_js(&outgoings)
     }
 
     pub fn make_enable_touch(&mut self, target: &str, enabled: bool) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_enable_touch(target, enabled);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_enable_touch(target, enabled);
+        to_js(&outgoings)
     }
 
     pub fn make_set_touch_interval(
@@ -890,13 +526,13 @@ impl BmEngineWasm {
         target: &str,
         interval: f64,
     ) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_set_touch_interval(target, interval);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_set_touch_interval(target, interval);
+        to_js(&outgoings)
     }
 
     pub fn make_enable_gyro(&mut self, target: &str, enabled: bool) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_enable_gyro(target, enabled);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_enable_gyro(target, enabled);
+        to_js(&outgoings)
     }
 
     pub fn make_set_gyro_interval(
@@ -904,8 +540,8 @@ impl BmEngineWasm {
         target: &str,
         interval: f64,
     ) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_set_gyro_interval(target, interval);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_set_gyro_interval(target, interval);
+        to_js(&outgoings)
     }
 
     pub fn make_enable_orientation(
@@ -913,8 +549,8 @@ impl BmEngineWasm {
         target: &str,
         enabled: bool,
     ) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_enable_orientation(target, enabled);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_enable_orientation(target, enabled);
+        to_js(&outgoings)
     }
 
     pub fn make_set_orientation_interval(
@@ -922,8 +558,8 @@ impl BmEngineWasm {
         target: &str,
         interval: f64,
     ) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_set_orientation_interval(target, interval);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_set_orientation_interval(target, interval);
+        to_js(&outgoings)
     }
 
     pub fn make_set_reliability_for_touch(
@@ -932,10 +568,10 @@ impl BmEngineWasm {
         touch_rel: i32,
         control_rel: i32,
     ) -> Result<JsValue, JsError> {
-        let actions = self
+        let outgoings = self
             .inner
             .make_set_reliability_for_touch(target, touch_rel, control_rel);
-        self.serialize_actions(actions)
+        to_js(&outgoings)
     }
 
     pub fn make_set_control_mode(
@@ -944,10 +580,10 @@ impl BmEngineWasm {
         mode: i32,
         text: Option<String>,
     ) -> Result<JsValue, JsError> {
-        let actions = self
+        let outgoings = self
             .inner
             .make_set_control_mode(target, mode, text.as_deref());
-        self.serialize_actions(actions)
+        to_js(&outgoings)
     }
 
     pub fn make_wait_for_new_host(
@@ -955,18 +591,18 @@ impl BmEngineWasm {
         target: &str,
         host_id: &str,
     ) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_wait_for_new_host(target, host_id);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_wait_for_new_host(target, host_id);
+        to_js(&outgoings)
     }
 
     pub fn make_prompt_trial_upsell(&mut self, target: &str) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_prompt_trial_upsell(target);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_prompt_trial_upsell(target);
+        to_js(&outgoings)
     }
 
     pub fn make_get_cookie(&mut self, target: &str, name: &str) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_get_cookie(target, name);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_get_cookie(target, name);
+        to_js(&outgoings)
     }
 
     pub fn make_set_cookie(
@@ -975,19 +611,23 @@ impl BmEngineWasm {
         name: &str,
         value: &str,
     ) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_set_cookie(target, name, value);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_set_cookie(target, name, value);
+        to_js(&outgoings)
     }
 
     pub fn make_update_wallet(&mut self, target: &str) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_update_wallet(target);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_update_wallet(target);
+        to_js(&outgoings)
     }
 
     pub fn make_vibrate(&mut self, target: &str) -> Result<JsValue, JsError> {
-        let actions = self.inner.make_vibrate(target);
-        self.serialize_actions(actions)
+        let outgoings = self.inner.make_vibrate(target);
+        to_js(&outgoings)
     }
+}
+
+fn to_js<T: serde::Serialize>(value: &T) -> Result<JsValue, JsError> {
+    serde_wasm_bindgen::to_value(value).map_err(|e| JsError::new(&e.to_string()))
 }
 
 fn js_to_value(v: JsValue) -> Result<crate::codec::messages::bm_encoding::Value, JsError> {

@@ -8,9 +8,16 @@ use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
+pub(crate) struct PendingRegistration {
+    pub info: BMRegistryInfo,
+    pub target_id: String,
+    pub return_method: Option<String>,
+}
+
+#[derive(Debug, Clone)]
 pub struct ServerPolicy {
     pub auto_approve_registration: bool,
-    pub(crate) pending_registrations: HashMap<String, (BMRegistryInfo, String)>,
+    pub(crate) pending_registrations: HashMap<String, PendingRegistration>,
 }
 
 impl Default for ServerPolicy {

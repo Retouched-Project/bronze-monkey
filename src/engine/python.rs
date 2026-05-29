@@ -3,6 +3,17 @@
 
 #![cfg(feature = "pyo3")]
 
+use crate::codec::externals::bm_array::BMArray;
+use crate::codec::externals::bm_packet::BMPacket;
+use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+use crate::codec::externals::bm_version::BMVersion;
+use crate::codec::externals::handshake::handshake_bytes;
+use crate::codec::externals::registry;
+use crate::codec::io::DataOutput;
+use crate::codec::messages::bm_encoding::Value;
+use crate::codec::messages::bm_invoke::BMInvoke;
+use crate::codec::messages::bm_parameter::VecOutput;
+use crate::codec::object::Object;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
@@ -12,17 +23,6 @@ use crate::engine::protocol::{
     deserialize_packet as protocol_deserialize_packet, serialize_packet,
 };
 use crate::engine::registry::DeviceRecord;
-use crate::codec::externals::bm_array::BMArray;
-use crate::codec::externals::bm_packet::BMPacket;
-use crate::codec::externals::bm_registry_info::BMRegistryInfo;
-use crate::codec::externals::bm_version::BMVersion;
-use crate::codec::externals::handshake::handshake_bytes;
-use crate::codec::externals::registry;
-use crate::codec::io::DataOutput;
-use crate::codec::object::Object;
-use crate::codec::messages::bm_encoding::Value;
-use crate::codec::messages::bm_invoke::BMInvoke;
-use crate::codec::messages::bm_parameter::VecOutput;
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
 use prost::Message;
@@ -113,7 +113,7 @@ impl BMEnginePy {
     }
 
     fn process_incoming<'py>(&self, py: Python<'py>, data: &[u8]) -> PyResult<Bound<'py, PyList>> {
-        let actions = self.inner.write().unwrap().process_incoming(data);
+        let actions: Vec<Action> = self.inner.write().unwrap().process_incoming(data).into();
         let py_actions: Vec<Py<PyAny>> = actions
             .into_iter()
             .filter_map(|a| action_to_py(py, a).transpose())
@@ -126,7 +126,12 @@ impl BMEnginePy {
         py: Python<'py>,
         data: &[u8],
     ) -> PyResult<Bound<'py, PyList>> {
-        let actions = self.inner.write().unwrap().process_incoming_udp(data);
+        let actions: Vec<Action> = self
+            .inner
+            .write()
+            .unwrap()
+            .process_incoming_udp(data)
+            .into();
         let py_actions: Vec<Py<PyAny>> = actions
             .into_iter()
             .filter_map(|a| action_to_py(py, a).transpose())
@@ -1085,7 +1090,8 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
-fn action_to_py(py: Python<'_>, action: Action) -> PyResult<Option<Py<PyAny>>> {
+fn action_to_py<A: Into<Action>>(py: Python<'_>, action: A) -> PyResult<Option<Py<PyAny>>> {
+    let action = action.into();
     let dict = PyDict::new(py);
     match action {
         Action::Send {

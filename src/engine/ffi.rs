@@ -6,6 +6,13 @@ use std::os::raw::{c_char, c_uchar};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::ptr;
 
+use crate::codec::externals::bm_registry_info::{
+    BMRegistryInfoC, bm_registry_info_free, bm_registry_info_set_addr_inner,
+    bm_registry_info_set_app_id_inner, bm_registry_info_set_device_id_inner,
+    bm_registry_info_set_device_name_inner,
+};
+use crate::codec::messages::bm_invoke::BMInvokeC;
+use crate::codec::messages::touch::Touch;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::device_core::DeviceCoreC;
 use crate::engine::actions::{
@@ -17,13 +24,6 @@ use crate::engine::actions::{
 };
 use crate::engine::processing::Engine;
 use crate::engine::registry::DeviceRecord;
-use crate::codec::externals::bm_registry_info::{
-    BMRegistryInfoC, bm_registry_info_free, bm_registry_info_set_addr_inner,
-    bm_registry_info_set_app_id_inner, bm_registry_info_set_device_id_inner,
-    bm_registry_info_set_device_name_inner,
-};
-use crate::codec::messages::bm_invoke::BMInvokeC;
-use crate::codec::messages::touch::Touch;
 use crate::types::touch_state::TouchState;
 
 #[repr(i32)]
@@ -229,7 +229,7 @@ pub extern "C" fn bm_engine_process_incoming(
 
         let engine = unsafe { &mut *ptr_engine };
         let bytes = unsafe { std::slice::from_raw_parts(payload, payload_len) };
-        let actions = engine.process_incoming(bytes);
+        let actions: Vec<Action> = engine.process_incoming(bytes).into();
         let list = actions_to_c(actions);
         unsafe {
             *out_actions = list;
@@ -255,7 +255,7 @@ pub extern "C" fn bm_engine_process_incoming_udp(
 
         let engine = unsafe { &mut *ptr_engine };
         let bytes = unsafe { std::slice::from_raw_parts(payload, payload_len) };
-        let actions = engine.process_incoming_udp(bytes);
+        let actions: Vec<Action> = engine.process_incoming_udp(bytes).into();
         let list = actions_to_c(actions);
         unsafe {
             *out_actions = list;
@@ -474,11 +474,15 @@ fn fill_registry_fields(out: &mut ActionC, record: &DeviceRecord) {
     }
 }
 
-fn actions_to_c(mut actions: Vec<Action>) -> ActionListC {
-    let mut converted: Vec<ActionC> = Vec::with_capacity(actions.len());
-    for a in actions.drain(..) {
-        converted.push(action_to_c(a));
-    }
+fn actions_to_c<I>(items: I) -> ActionListC
+where
+    I: IntoIterator,
+    I::Item: Into<Action>,
+{
+    let converted: Vec<ActionC> = items
+        .into_iter()
+        .map(|item| action_to_c(item.into()))
+        .collect();
     let len = converted.len();
     let mut boxed = converted.into_boxed_slice();
     let ptr = boxed.as_mut_ptr();
@@ -786,7 +790,9 @@ pub struct TouchPointC {
     pub state: i32,
 }
 
-fn registry_info_to_c(src: crate::codec::externals::bm_registry_info::BMRegistryInfo) -> BMRegistryInfoC {
+fn registry_info_to_c(
+    src: crate::codec::externals::bm_registry_info::BMRegistryInfo,
+) -> BMRegistryInfoC {
     let mut out = BMRegistryInfoC::default();
     out.slot_id = src.slot_id as i32;
     out.current_players = src.current_players.unwrap_or(0) as i32;
