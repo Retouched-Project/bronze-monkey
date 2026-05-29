@@ -468,19 +468,25 @@ impl Engine {
         channel: i32,
         out: &mut ProcessOutput,
     ) {
-        out.events.push(Event::Invoke {
-            sender: sender_id.clone(),
-            method: inv.method.clone(),
-            return_method: inv.return_method.clone(),
-            params: inv.params.clone(),
-        });
+        let mut claimed = false;
 
         if let Some(cfg) = self.parse_control_rpc(&inv) {
             out.events.push(Event::ControlConfig(cfg));
+            claimed = true;
         }
 
         if let Some(handler) = self.rpc_handlers.get(&inv.method).cloned() {
             handler(self, &inv, sender_id.as_deref(), channel, out);
+            claimed = true;
+        }
+
+        if !claimed {
+            out.events.push(Event::Invoke {
+                sender: sender_id,
+                method: inv.method,
+                return_method: inv.return_method,
+                params: inv.params,
+            });
         }
     }
 
