@@ -17,7 +17,7 @@ use crate::codec::object::Object;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
-use crate::engine::actions::{Action, RegistryEventKind};
+use crate::engine::events::Outgoing;
 use crate::engine::processing::Engine;
 use crate::engine::protocol::{
     deserialize_packet as protocol_deserialize_packet, serialize_packet,
@@ -28,6 +28,7 @@ use crate::types::packet_type::PacketType;
 use prost::Message;
 use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyBytes, PyDict, PyFloat, PyInt, PyList, PyModule, PyString};
+use pythonize::pythonize;
 use std::sync::Mutex;
 use std::sync::RwLock;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -95,11 +96,7 @@ impl BMEnginePy {
 
     fn drop_device<'py>(&self, py: Python<'py>, device_id: String) -> PyResult<Bound<'py, PyList>> {
         let actions = self.inner.write().unwrap().drop_device(&device_id);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn get_registry<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
@@ -112,31 +109,18 @@ impl BMEnginePy {
         Ok(PyList::new(py, py_records)?)
     }
 
-    fn process_incoming<'py>(&self, py: Python<'py>, data: &[u8]) -> PyResult<Bound<'py, PyList>> {
-        let actions: Vec<Action> = self.inner.write().unwrap().process_incoming(data).into();
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+    fn process_incoming<'py>(&self, py: Python<'py>, data: &[u8]) -> PyResult<Bound<'py, PyAny>> {
+        let out = self.inner.write().unwrap().process_incoming(data);
+        Ok(pythonize(py, &out)?)
     }
 
     fn process_incoming_udp<'py>(
         &self,
         py: Python<'py>,
         data: &[u8],
-    ) -> PyResult<Bound<'py, PyList>> {
-        let actions: Vec<Action> = self
-            .inner
-            .write()
-            .unwrap()
-            .process_incoming_udp(data)
-            .into();
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let out = self.inner.write().unwrap().process_incoming_udp(data);
+        Ok(pythonize(py, &out)?)
     }
 
     fn make_on_host_connected<'py>(
@@ -152,11 +136,7 @@ impl BMEnginePy {
             None,
             vec![Value::Object(Object::BMRegistryInfo(info))],
         );
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_message_invoke<'py>(
@@ -178,11 +158,7 @@ impl BMEnginePy {
             return_method.as_deref(),
             rust_params,
         );
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn register_device(
@@ -217,11 +193,7 @@ impl BMEnginePy {
         device_id: String,
     ) -> PyResult<Bound<'py, PyList>> {
         let actions = self.inner.write().unwrap().approve_registration(&device_id);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn deny_registration<'py>(
@@ -230,11 +202,7 @@ impl BMEnginePy {
         device_id: String,
     ) -> PyResult<Bound<'py, PyList>> {
         let actions = self.inner.write().unwrap().deny_registration(&device_id);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_vibrate<'py>(
@@ -243,11 +211,7 @@ impl BMEnginePy {
         target_device_id: String,
     ) -> PyResult<Bound<'py, PyList>> {
         let actions = self.inner.write().unwrap().make_vibrate(&target_device_id);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_update_wallet<'py>(
@@ -260,11 +224,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_update_wallet(&target_device_id);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_get_cookie<'py>(
@@ -278,11 +238,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_get_cookie(&target_device_id, &name);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_set_cookie<'py>(
@@ -297,11 +253,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_set_cookie(&target_device_id, &name, &value);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_prompt_trial_upsell<'py>(
@@ -314,11 +266,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_prompt_trial_upsell(&target_device_id);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_wait_for_new_host<'py>(
@@ -332,11 +280,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_wait_for_new_host(&target_device_id, &host_device_id);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_set_control_mode<'py>(
@@ -351,11 +295,7 @@ impl BMEnginePy {
             mode,
             text_content.as_deref(),
         );
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_enable_accelerometer<'py>(
@@ -370,11 +310,7 @@ impl BMEnginePy {
             enabled,
             interval_seconds,
         );
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_enable_touch<'py>(
@@ -388,11 +324,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_enable_touch(&target_device_id, enabled);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_set_touch_interval<'py>(
@@ -406,11 +338,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_set_touch_interval(&target_device_id, interval_seconds);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_enable_gyro<'py>(
@@ -424,11 +352,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_enable_gyro(&target_device_id, enabled);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_set_gyro_interval<'py>(
@@ -442,11 +366,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_set_gyro_interval(&target_device_id, interval_seconds);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_enable_orientation<'py>(
@@ -460,11 +380,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_enable_orientation(&target_device_id, enabled);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_set_orientation_interval<'py>(
@@ -478,11 +394,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_set_orientation_interval(&target_device_id, interval_seconds);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_set_reliability_for_touch<'py>(
@@ -497,11 +409,7 @@ impl BMEnginePy {
             touch_reliability,
             control_reliability,
         );
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_registry_register<'py>(
@@ -517,11 +425,7 @@ impl BMEnginePy {
                 .write()
                 .unwrap()
                 .make_registry_register(&target_device_id, reg_info, domain);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_registry_list<'py>(
@@ -534,11 +438,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_registry_list(&target_device_id);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_registry_relay<'py>(
@@ -566,11 +466,7 @@ impl BMEnginePy {
                 .write()
                 .unwrap()
                 .make_registry_relay(&target_device_id, dest, inner);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_device_connect_requested<'py>(
@@ -587,11 +483,7 @@ impl BMEnginePy {
             game,
             controller,
         );
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_button_invoke<'py>(
@@ -606,11 +498,7 @@ impl BMEnginePy {
                 .write()
                 .unwrap()
                 .make_button_invoke(&target_device_id, &handler, pressed);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_dpad_update<'py>(
@@ -625,11 +513,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_dpad_update(&target_device_id, x, y);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_touch_set<'py>(
@@ -688,11 +572,7 @@ impl BMEnginePy {
             rust_touches,
             reliability,
         );
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_accel<'py>(
@@ -709,11 +589,7 @@ impl BMEnginePy {
                 .write()
                 .unwrap()
                 .make_accel(&target_device_id, x, y, z, reliability);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_gyro<'py>(
@@ -730,11 +606,7 @@ impl BMEnginePy {
                 .write()
                 .unwrap()
                 .make_gyro(&target_device_id, x, y, z, reliability);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_orientation<'py>(
@@ -755,11 +627,7 @@ impl BMEnginePy {
             w,
             reliability,
         );
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_request_xml<'py>(
@@ -776,11 +644,7 @@ impl BMEnginePy {
             height,
             &device_id,
         );
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_on_control_scheme_parsed<'py>(
@@ -794,11 +658,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_on_control_scheme_parsed(&target_device_id, &device_id);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_set_capabilities<'py>(
@@ -812,11 +672,7 @@ impl BMEnginePy {
             .write()
             .unwrap()
             .make_set_capabilities(&target_device_id, capabilities);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_simple_invoke<'py>(
@@ -833,11 +689,7 @@ impl BMEnginePy {
             return_method.as_deref(),
             param.as_deref(),
         );
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 
     fn make_packet<'py>(
@@ -862,11 +714,7 @@ impl BMEnginePy {
                 .write()
                 .unwrap()
                 .make_packet(&target_device_id, channel, rel, pt, message);
-        let py_actions: Vec<Py<PyAny>> = actions
-            .into_iter()
-            .filter_map(|a| action_to_py(py, a).transpose())
-            .collect::<PyResult<_>>()?;
-        Ok(PyList::new(py, py_actions)?)
+        outgoings_to_py(py, actions)
     }
 }
 
@@ -1090,115 +938,12 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
-fn action_to_py<A: Into<Action>>(py: Python<'_>, action: A) -> PyResult<Option<Py<PyAny>>> {
-    let action = action.into();
-    let dict = PyDict::new(py);
-    match action {
-        Action::Send {
-            target_device_id,
-            channel,
-            reliability,
-            payload,
-        } => {
-            dict.set_item("type", "send")?;
-            dict.set_item("target_device_id", target_device_id)?;
-            dict.set_item("channel", channel)?;
-            dict.set_item("reliability", reliability)?;
-            dict.set_item("payload", PyBytes::new(py, &payload))?;
-        }
-        Action::UpdateRegistry { record } => {
-            dict.set_item("type", "update_registry")?;
-            dict.set_item("record", device_record_to_py(py, &record)?)?;
-        }
-        Action::ChunkSetComplete {
-            device_id,
-            set_id,
-            blob,
-        } => {
-            dict.set_item("type", "chunk_complete")?;
-            dict.set_item("device_id", device_id)?;
-            dict.set_item("set_id", set_id)?;
-            dict.set_item("blob", PyBytes::new(py, &blob))?;
-        }
-        Action::ChunkProgress {
-            device_id,
-            set_id,
-            current,
-            total,
-        } => {
-            dict.set_item("type", "chunk_progress")?;
-            dict.set_item("device_id", device_id)?;
-            dict.set_item("set_id", set_id)?;
-            dict.set_item("current", current)?;
-            dict.set_item("total", total)?;
-        }
-        Action::RegistryEvent {
-            kind,
-            infos,
-            success,
-        } => {
-            dict.set_item("type", "registry_event")?;
-            dict.set_item("kind", registry_kind_to_str(kind))?;
-            dict.set_item("success", success)?;
-            let py_infos: Vec<Py<PyAny>> = infos
-                .iter()
-                .map(|i| registry_info_to_py(py, i))
-                .collect::<PyResult<_>>()?;
-            dict.set_item("infos", PyList::new(py, py_infos)?)?;
-        }
-        Action::Invoke {
-            method,
-            return_method,
-            params,
-            raw_bytes,
-        } => {
-            dict.set_item("type", "invoke")?;
-            dict.set_item("method", method)?;
-            dict.set_item("return_method", return_method)?;
-            let py_params: Vec<Py<PyAny>> = params
-                .iter()
-                .map(|v| value_to_py(py, v))
-                .collect::<PyResult<_>>()?;
-            dict.set_item("params", PyList::new(py, py_params)?)?;
-            dict.set_item("raw_bytes", PyBytes::new(py, &raw_bytes))?;
-        }
-        Action::ControlConfig {
-            touch_enabled,
-            accel_enabled,
-            gyro_enabled,
-            orientation_enabled,
-            touch_interval_ms,
-            accel_interval_ms,
-            gyro_interval_ms,
-            orientation_interval_ms,
-            touch_reliability,
-            control_reliability,
-            control_mode,
-            portal_id,
-            return_app_id,
-        } => {
-            dict.set_item("type", "control_config")?;
-            dict.set_item("touch_enabled", touch_enabled)?;
-            dict.set_item("accel_enabled", accel_enabled)?;
-            dict.set_item("gyro_enabled", gyro_enabled)?;
-            dict.set_item("orientation_enabled", orientation_enabled)?;
-            dict.set_item("touch_interval_ms", touch_interval_ms)?;
-            dict.set_item("accel_interval_ms", accel_interval_ms)?;
-            dict.set_item("gyro_interval_ms", gyro_interval_ms)?;
-            dict.set_item("orientation_interval_ms", orientation_interval_ms)?;
-            dict.set_item("touch_reliability", touch_reliability)?;
-            dict.set_item("control_reliability", control_reliability)?;
-            dict.set_item("control_mode", control_mode)?;
-            dict.set_item("portal_id", portal_id)?;
-            dict.set_item("return_app_id", return_app_id)?;
-        }
-        Action::Handshake { current, minimum } => {
-            dict.set_item("type", "handshake")?;
-            dict.set_item("current", current)?;
-            dict.set_item("minimum", minimum)?;
-        }
-    }
-    Ok(Some(dict.into()))
+fn outgoings_to_py<'py>(py: Python<'py>, outgoings: Vec<Outgoing>) -> PyResult<Bound<'py, PyList>> {
+    let items = outgoings
+        .iter()
+        .map(|o| pythonize(py, o).map_err(PyErr::from))
+        .collect::<PyResult<Vec<_>>>()?;
+    Ok(PyList::new(py, items)?)
 }
 
 fn value_to_py(py: Python<'_>, v: &Value) -> PyResult<Py<PyAny>> {
@@ -1307,17 +1052,6 @@ fn address_to_py(py: Python<'_>, addr: &BMAddress) -> PyResult<Py<PyAny>> {
     d.set_item("unreliable_port", addr.unreliable_port)?;
     d.set_item("reliable_port", addr.reliable_port)?;
     Ok(d.into())
-}
-
-fn registry_kind_to_str(kind: RegistryEventKind) -> &'static str {
-    match kind {
-        RegistryEventKind::OnRegister => "on_register",
-        RegistryEventKind::OnList => "on_list",
-        RegistryEventKind::OnHostConnected => "on_host_connected",
-        RegistryEventKind::OnHostUpdate => "on_host_update",
-        RegistryEventKind::OnHostDisconnected => "on_host_disconnected",
-        RegistryEventKind::DeviceConnectRequested => "device_connect_requested",
-    }
 }
 
 fn py_to_value(obj: &Bound<'_, PyAny>) -> PyResult<Value> {

@@ -13,12 +13,13 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 
 [features]
 default = []
-pyo3 = ["dep:pyo3"]
+pyo3 = ["dep:pyo3", "dep:pythonize"]
 
 [dependencies]
 log = "0.4.28"
 byteorder = "1.5.0"
 pyo3 = { version = "0.28.0", optional = true, features = ["extension-module", "abi3-py38"] }
+pythonize = { version = "0.28.0", optional = true }
 quick-xml = { version = "0.37.2", features = ["serialize"] }
 base64 = "0.22.1"
 prost = "0.14.3"
