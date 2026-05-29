@@ -20,6 +20,9 @@ target
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
+# Generated C header (cargo build --features cbindgen)
+/bronze_monkey.h
+
 # Other
 ignore/
 *.DS_Store
