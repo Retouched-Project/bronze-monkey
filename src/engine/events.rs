@@ -3,6 +3,7 @@
 
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::messages::bm_encoding::Value;
+use crate::codec::messages::touch::Touch;
 use crate::engine::registry::DeviceRecord;
 use crate::types::packet_type::PacketType;
 use serde::Serialize;
@@ -29,6 +30,7 @@ impl ProcessOutput {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all_fields = "camelCase")]
 pub enum Event {
@@ -38,6 +40,12 @@ pub enum Event {
     },
     PeerSeen {
         record: DeviceRecord,
+    },
+    PeerConnected {
+        record: DeviceRecord,
+    },
+    ConnectionFailed {
+        device_id: String,
     },
     PeerRegistered {
         info: BMRegistryInfo,
@@ -58,6 +66,87 @@ pub enum Event {
     DeviceConnectRequested {
         info: BMRegistryInfo,
     },
+    Touch {
+        sender: String,
+        touches: Vec<Touch>,
+    },
+    Accel {
+        sender: String,
+        x: f64,
+        y: f64,
+        z: f64,
+    },
+    Gyro {
+        sender: String,
+        x: f32,
+        y: f32,
+        z: f32,
+    },
+    Orientation {
+        sender: String,
+        x: f32,
+        y: f32,
+        z: f32,
+        w: f32,
+    },
+    DPad {
+        sender: String,
+        x: i16,
+        y: i16,
+    },
+    Button {
+        sender: String,
+        handler: String,
+        pressed: bool,
+    },
+    MenuEvent {
+        sender: String,
+        event: String,
+    },
+    KeyString {
+        sender: String,
+        key: String,
+    },
+    Navigation {
+        sender: String,
+        nav: String,
+    },
+    Capabilities {
+        sender: String,
+        gyroscope: bool,
+        orientation: bool,
+    },
+    ControlConfig(ControlConfig),
+    Vibrate {
+        sender: String,
+    },
+    Pause {
+        sender: String,
+    },
+    ControlSchemeRequested {
+        sender: String,
+        width: i32,
+        height: i32,
+        requester: String,
+    },
+    ControlSchemeParsed {
+        sender: String,
+        device_id: String,
+    },
+    CookieRequested {
+        sender: String,
+        name: String,
+    },
+    CookieStored {
+        sender: String,
+        name: String,
+        value: String,
+    },
+    Cookie {
+        sender: String,
+        name: String,
+        value: String,
+    },
     Invoke {
         sender: Option<String>,
         method: String,
@@ -75,7 +164,6 @@ pub enum Event {
         set_id: String,
         blob: Vec<u8>,
     },
-    ControlConfig(ControlConfig),
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
@@ -96,6 +184,7 @@ pub struct ControlConfig {
     pub return_app_id: Option<String>,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum Command {
     Raw {

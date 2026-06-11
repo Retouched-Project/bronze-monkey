@@ -71,6 +71,25 @@ pub enum EventTagC {
     ChunkProgress = 9,
     ChunkComplete = 10,
     ControlConfig = 11,
+    PeerConnected = 12,
+    ConnectionFailed = 13,
+    Touch = 14,
+    Accel = 15,
+    Gyro = 16,
+    Orientation = 17,
+    DPad = 18,
+    Button = 19,
+    MenuEvent = 20,
+    KeyString = 21,
+    Navigation = 22,
+    Capabilities = 23,
+    Vibrate = 24,
+    Pause = 25,
+    ControlSchemeRequested = 26,
+    ControlSchemeParsed = 27,
+    CookieRequested = 28,
+    CookieStored = 29,
+    Cookie = 30,
 }
 
 #[repr(C)]
@@ -94,8 +113,8 @@ pub struct EventC {
     pub registry_ptr: *mut BMRegistryInfoC,
     pub registry_len: usize,
 
-    pub invoke_sender_ptr: *mut c_char,
-    pub invoke_sender_len: usize,
+    pub sender_ptr: *mut c_char,
+    pub sender_len: usize,
     pub invoke_method_ptr: *mut c_char,
     pub invoke_method_len: usize,
     pub invoke_return_method_ptr: *mut c_char,
@@ -128,6 +147,26 @@ pub struct EventC {
 
     pub handshake_current: u32,
     pub handshake_minimum: u32,
+
+    pub name_ptr: *mut c_char,
+    pub name_len: usize,
+    pub value_ptr: *mut c_char,
+    pub value_len: usize,
+
+    pub touches_ptr: *mut TouchPointC,
+    pub touches_len: usize,
+
+    pub sensor_x: f64,
+    pub sensor_y: f64,
+    pub sensor_z: f64,
+    pub sensor_w: f64,
+    pub dpad_x: i16,
+    pub dpad_y: i16,
+    pub pressed: bool,
+    pub cap_gyroscope: bool,
+    pub cap_orientation: bool,
+    pub scheme_width: i32,
+    pub scheme_height: i32,
 }
 
 impl Default for EventC {
@@ -148,8 +187,8 @@ impl Default for EventC {
             registry_success: -1,
             registry_ptr: ptr::null_mut(),
             registry_len: 0,
-            invoke_sender_ptr: ptr::null_mut(),
-            invoke_sender_len: 0,
+            sender_ptr: ptr::null_mut(),
+            sender_len: 0,
             invoke_method_ptr: ptr::null_mut(),
             invoke_method_len: 0,
             invoke_return_method_ptr: ptr::null_mut(),
@@ -178,6 +217,23 @@ impl Default for EventC {
             control_return_app_id_len: 0,
             handshake_current: 0,
             handshake_minimum: 0,
+            name_ptr: ptr::null_mut(),
+            name_len: 0,
+            value_ptr: ptr::null_mut(),
+            value_len: 0,
+            touches_ptr: ptr::null_mut(),
+            touches_len: 0,
+            sensor_x: 0.0,
+            sensor_y: 0.0,
+            sensor_z: 0.0,
+            sensor_w: 0.0,
+            dpad_x: 0,
+            dpad_y: 0,
+            pressed: false,
+            cap_gyroscope: false,
+            cap_orientation: false,
+            scheme_width: 0,
+            scheme_height: 0,
         }
     }
 }
@@ -261,13 +317,13 @@ crate::ffi_cstring_accessors!(
 
 crate::ffi_cstring_accessors!(
     EventC,
-    invoke_sender_ptr,
-    invoke_sender_len,
-    set_inner = event_set_invoke_sender_inner,
-    set = event_set_invoke_sender,
-    get_len = event_get_invoke_sender_len,
-    get = event_get_invoke_sender,
-    free_field = event_free_invoke_sender
+    sender_ptr,
+    sender_len,
+    set_inner = event_set_sender_inner,
+    set = event_set_sender,
+    get_len = event_get_sender_len,
+    get = event_get_sender,
+    free_field = event_free_sender
 );
 
 crate::ffi_cstring_accessors!(
@@ -325,6 +381,28 @@ crate::ffi_cstring_accessors!(
     free_field = event_free_control_return_app_id
 );
 
+crate::ffi_cstring_accessors!(
+    EventC,
+    name_ptr,
+    name_len,
+    set_inner = event_set_name_inner,
+    set = event_set_name,
+    get_len = event_get_name_len,
+    get = event_get_name,
+    free_field = event_free_name
+);
+
+crate::ffi_cstring_accessors!(
+    EventC,
+    value_ptr,
+    value_len,
+    set_inner = event_set_value_inner,
+    set = event_set_value,
+    get_len = event_get_value_len,
+    get = event_get_value,
+    free_field = event_free_value
+);
+
 crate::ffi_vec_u8_accessors!(
     EventC,
     payload_ptr,
@@ -343,12 +421,14 @@ crate::ffi_free_struct!(
     event_free_device_id,
     event_free_device_name,
     event_free_addr,
-    event_free_invoke_sender,
+    event_free_sender,
     event_free_invoke_method,
     event_free_invoke_return_method,
     event_free_chunk_set_id,
     event_free_control_portal_id,
     event_free_control_return_app_id,
+    event_free_name,
+    event_free_value,
     event_free_payload
 );
 
@@ -435,6 +515,14 @@ fn free_event_list(list: &mut EventListC) {
             }
             e.registry_ptr = ptr::null_mut();
             e.registry_len = 0;
+        }
+        if !e.touches_ptr.is_null() && e.touches_len > 0 {
+            unsafe {
+                let t_slice = std::slice::from_raw_parts_mut(e.touches_ptr, e.touches_len);
+                let _ = Box::from_raw(t_slice);
+            }
+            e.touches_ptr = ptr::null_mut();
+            e.touches_len = 0;
         }
     }
     unsafe {
@@ -729,6 +817,23 @@ fn outgoings_to_c(outgoings: Vec<Outgoing>) -> OutgoingListC {
     OutgoingListC { ptr, len }
 }
 
+fn fill_record_fields(out: &mut EventC, record: &DeviceRecord) {
+    set_string_field(record.core.device_id.clone(), |p| {
+        event_set_device_id_inner(out, p)
+    });
+    set_string_field(record.core.device_name.clone(), |p| {
+        event_set_device_name_inner(out, p)
+    });
+    out.device_type_code = record.core.device_type.code();
+    out.class_id = record.class_id.map(|v| v as i32).unwrap_or(-1);
+    if let Some(addr) = &record.core.address {
+        set_string_field(addr.address.clone(), |p| event_set_addr_inner(out, p));
+        out.has_address = true;
+        out.addr_unreliable_port = addr.unreliable_port;
+        out.addr_reliable_port = addr.reliable_port;
+    }
+}
+
 fn event_to_c(event: Event) -> EventC {
     let mut out = EventC::default();
     match event {
@@ -739,20 +844,148 @@ fn event_to_c(event: Event) -> EventC {
         }
         Event::PeerSeen { record } => {
             out.tag = EventTagC::PeerSeen;
-            set_string_field(record.core.device_id.clone(), |p| {
-                event_set_device_id_inner(&mut out, p)
-            });
-            set_string_field(record.core.device_name.clone(), |p| {
-                event_set_device_name_inner(&mut out, p)
-            });
-            out.device_type_code = record.core.device_type.code();
-            out.class_id = record.class_id.map(|v| v as i32).unwrap_or(-1);
-            if let Some(addr) = &record.core.address {
-                set_string_field(addr.address.clone(), |p| event_set_addr_inner(&mut out, p));
-                out.has_address = true;
-                out.addr_unreliable_port = addr.unreliable_port;
-                out.addr_reliable_port = addr.reliable_port;
-            }
+            fill_record_fields(&mut out, &record);
+        }
+        Event::PeerConnected { record } => {
+            out.tag = EventTagC::PeerConnected;
+            fill_record_fields(&mut out, &record);
+        }
+        Event::ConnectionFailed { device_id } => {
+            out.tag = EventTagC::ConnectionFailed;
+            set_string_field(device_id, |p| event_set_device_id_inner(&mut out, p));
+        }
+        Event::Touch { sender, touches } => {
+            out.tag = EventTagC::Touch;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            let points: Vec<TouchPointC> = touches
+                .iter()
+                .map(|t| TouchPointC {
+                    id: t.id,
+                    x: t.x,
+                    y: t.y,
+                    screen_width: t.screen_width,
+                    screen_height: t.screen_height,
+                    state: t.state.value(),
+                })
+                .collect();
+            let len = points.len();
+            let mut boxed = points.into_boxed_slice();
+            out.touches_ptr = boxed.as_mut_ptr();
+            out.touches_len = len;
+            std::mem::forget(boxed);
+        }
+        Event::Accel { sender, x, y, z } => {
+            out.tag = EventTagC::Accel;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            out.sensor_x = x;
+            out.sensor_y = y;
+            out.sensor_z = z;
+        }
+        Event::Gyro { sender, x, y, z } => {
+            out.tag = EventTagC::Gyro;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            out.sensor_x = x as f64;
+            out.sensor_y = y as f64;
+            out.sensor_z = z as f64;
+        }
+        Event::Orientation { sender, x, y, z, w } => {
+            out.tag = EventTagC::Orientation;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            out.sensor_x = x as f64;
+            out.sensor_y = y as f64;
+            out.sensor_z = z as f64;
+            out.sensor_w = w as f64;
+        }
+        Event::DPad { sender, x, y } => {
+            out.tag = EventTagC::DPad;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            out.dpad_x = x;
+            out.dpad_y = y;
+        }
+        Event::Button {
+            sender,
+            handler,
+            pressed,
+        } => {
+            out.tag = EventTagC::Button;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            set_string_field(handler, |p| event_set_name_inner(&mut out, p));
+            out.pressed = pressed;
+        }
+        Event::MenuEvent { sender, event } => {
+            out.tag = EventTagC::MenuEvent;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            set_string_field(event, |p| event_set_name_inner(&mut out, p));
+        }
+        Event::KeyString { sender, key } => {
+            out.tag = EventTagC::KeyString;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            set_string_field(key, |p| event_set_name_inner(&mut out, p));
+        }
+        Event::Navigation { sender, nav } => {
+            out.tag = EventTagC::Navigation;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            set_string_field(nav, |p| event_set_name_inner(&mut out, p));
+        }
+        Event::Capabilities {
+            sender,
+            gyroscope,
+            orientation,
+        } => {
+            out.tag = EventTagC::Capabilities;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            out.cap_gyroscope = gyroscope;
+            out.cap_orientation = orientation;
+        }
+        Event::Vibrate { sender } => {
+            out.tag = EventTagC::Vibrate;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+        }
+        Event::Pause { sender } => {
+            out.tag = EventTagC::Pause;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+        }
+        Event::ControlSchemeRequested {
+            sender,
+            width,
+            height,
+            requester,
+        } => {
+            out.tag = EventTagC::ControlSchemeRequested;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            set_string_field(requester, |p| event_set_device_id_inner(&mut out, p));
+            out.scheme_width = width;
+            out.scheme_height = height;
+        }
+        Event::ControlSchemeParsed { sender, device_id } => {
+            out.tag = EventTagC::ControlSchemeParsed;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            set_string_field(device_id, |p| event_set_device_id_inner(&mut out, p));
+        }
+        Event::CookieRequested { sender, name } => {
+            out.tag = EventTagC::CookieRequested;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            set_string_field(name, |p| event_set_name_inner(&mut out, p));
+        }
+        Event::CookieStored {
+            sender,
+            name,
+            value,
+        } => {
+            out.tag = EventTagC::CookieStored;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            set_string_field(name, |p| event_set_name_inner(&mut out, p));
+            set_string_field(value, |p| event_set_value_inner(&mut out, p));
+        }
+        Event::Cookie {
+            sender,
+            name,
+            value,
+        } => {
+            out.tag = EventTagC::Cookie;
+            set_string_field(sender, |p| event_set_sender_inner(&mut out, p));
+            set_string_field(name, |p| event_set_name_inner(&mut out, p));
+            set_string_field(value, |p| event_set_value_inner(&mut out, p));
         }
         Event::PeerRegistered { info, success } => {
             out.tag = EventTagC::PeerRegistered;
@@ -787,7 +1020,7 @@ fn event_to_c(event: Event) -> EventC {
         } => {
             out.tag = EventTagC::Invoke;
             if let Some(s) = sender {
-                set_string_field(s, |p| event_set_invoke_sender_inner(&mut out, p));
+                set_string_field(s, |p| event_set_sender_inner(&mut out, p));
             }
             let msg = encode_invoke_message(&method, return_method.as_deref(), params);
             set_string_field(method, |p| event_set_invoke_method_inner(&mut out, p));

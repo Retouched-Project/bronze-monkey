@@ -49,7 +49,7 @@ pub struct Engine {
 
 impl Engine {
     pub fn new() -> Self {
-        let mut handlers: HashMap<String, RpcHandler> = HashMap::with_capacity(16);
+        let mut handlers: HashMap<String, RpcHandler> = HashMap::with_capacity(32);
         handlers.insert("registry.register".to_string(), Self::rpc_registry_register);
         handlers.insert("onRegister".to_string(), Self::rpc_registry_register);
         handlers.insert("registry.list".to_string(), Self::rpc_registry_list);
@@ -66,6 +66,24 @@ impl Engine {
             "deviceConnectRequested".to_string(),
             Self::rpc_device_connect_requested,
         );
+        handlers.insert("connectionFailed".to_string(), Self::rpc_connection_failed);
+        handlers.insert("vibrate".to_string(), Self::rpc_vibrate);
+        handlers.insert("bmPause".to_string(), Self::rpc_bm_pause);
+        handlers.insert("menuEvent".to_string(), Self::rpc_menu_event);
+        handlers.insert("onKeyString".to_string(), Self::rpc_on_key_string);
+        handlers.insert(
+            "onNavigationString".to_string(),
+            Self::rpc_on_navigation_string,
+        );
+        handlers.insert("setCapabilities".to_string(), Self::rpc_set_capabilities);
+        handlers.insert("RequestXML".to_string(), Self::rpc_request_xml);
+        handlers.insert(
+            "onControlSchemeParsed".to_string(),
+            Self::rpc_on_control_scheme_parsed,
+        );
+        handlers.insert("getCookie".to_string(), Self::rpc_get_cookie);
+        handlers.insert("setCookie".to_string(), Self::rpc_set_cookie);
+        handlers.insert("gotCookie".to_string(), Self::rpc_got_cookie);
 
         Self {
             state: EngineState::new(),
@@ -229,6 +247,20 @@ impl Engine {
         &mut self.state.registry
     }
 
+    pub fn register_button_handlers<I>(&mut self, handlers: I)
+    where
+        I: IntoIterator,
+        I::Item: Into<String>,
+    {
+        self.state
+            .button_handlers
+            .extend(handlers.into_iter().map(Into::into));
+    }
+
+    pub fn clear_button_handlers(&mut self) {
+        self.state.button_handlers.clear();
+    }
+
     pub fn process_incoming(&mut self, payload: &[u8]) -> ProcessOutput {
         #[cfg(target_arch = "wasm32")]
         web_sys::console::log_1(
@@ -342,7 +374,7 @@ impl Engine {
 
     fn handle_ack(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
         if let Some(rec) = self.device_record_from_packet(pkt) {
-            out.events.push(self.push_registry_update(rec));
+            out.events.push(Event::PeerConnected { record: rec });
         }
         log::info!("rx ack");
     }
@@ -377,6 +409,34 @@ impl Engine {
                                 let device_id = pkt.device_id.clone();
                                 self.handle_chunk(device_id, chunk, out);
                             }
+                            Object::TouchSet(ts) => out.events.push(Event::Touch {
+                                sender: pkt.device_id.clone(),
+                                touches: ts.touches.into_values().collect(),
+                            }),
+                            Object::Acceleration(a) => out.events.push(Event::Accel {
+                                sender: pkt.device_id.clone(),
+                                x: a.x,
+                                y: a.y,
+                                z: a.z,
+                            }),
+                            Object::BMGyro(g) => out.events.push(Event::Gyro {
+                                sender: pkt.device_id.clone(),
+                                x: g.x,
+                                y: g.y,
+                                z: g.z,
+                            }),
+                            Object::Orientation(o) => out.events.push(Event::Orientation {
+                                sender: pkt.device_id.clone(),
+                                x: o.x,
+                                y: o.y,
+                                z: o.z,
+                                w: o.w,
+                            }),
+                            Object::DPadUpdate(d) => out.events.push(Event::DPad {
+                                sender: pkt.device_id.clone(),
+                                x: d.x,
+                                y: d.y,
+                            }),
                             _ => {
                                 log::debug!(
                                     "rx data object {:?} channel={}",
@@ -478,6 +538,19 @@ impl Engine {
         if let Some(handler) = self.rpc_handlers.get(&inv.method).cloned() {
             handler(self, &inv, sender_id.as_deref(), channel, out);
             claimed = true;
+        }
+
+        if !claimed && self.state.button_handlers.contains(&inv.method) {
+            if let Some(state) = self.param_string(&inv.params, 0) {
+                if state == "down" || state == "up" {
+                    out.events.push(Event::Button {
+                        sender: sender_id.clone().unwrap_or_default(),
+                        handler: inv.method.clone(),
+                        pressed: state == "down",
+                    });
+                    claimed = true;
+                }
+            }
         }
 
         if !claimed {
@@ -801,6 +874,180 @@ impl Engine {
         for info in engine.collect_registry_infos(&inv.params) {
             out.events.push(Event::DeviceConnectRequested { info });
         }
+    }
+
+    fn sender_string(sender_id: Option<&str>) -> String {
+        sender_id.unwrap_or_default().to_string()
+    }
+
+    fn rpc_connection_failed(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        _sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let device_id = engine.param_string(&inv.params, 0).unwrap_or_default();
+        out.events.push(Event::ConnectionFailed { device_id });
+    }
+
+    fn rpc_vibrate(
+        _engine: &mut Engine,
+        _inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        out.events.push(Event::Vibrate {
+            sender: Self::sender_string(sender_id),
+        });
+    }
+
+    fn rpc_bm_pause(
+        _engine: &mut Engine,
+        _inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        out.events.push(Event::Pause {
+            sender: Self::sender_string(sender_id),
+        });
+    }
+
+    fn rpc_menu_event(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let event = engine.param_string(&inv.params, 0).unwrap_or_default();
+        out.events.push(Event::MenuEvent {
+            sender: Self::sender_string(sender_id),
+            event,
+        });
+    }
+
+    fn rpc_on_key_string(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let key = engine.param_string(&inv.params, 0).unwrap_or_default();
+        out.events.push(Event::KeyString {
+            sender: Self::sender_string(sender_id),
+            key,
+        });
+    }
+
+    fn rpc_on_navigation_string(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let nav = engine.param_string(&inv.params, 0).unwrap_or_default();
+        out.events.push(Event::Navigation {
+            sender: Self::sender_string(sender_id),
+            nav,
+        });
+    }
+
+    fn rpc_set_capabilities(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let mask = engine.param_i32(&inv.params, 0).unwrap_or(0);
+        out.events.push(Event::Capabilities {
+            sender: Self::sender_string(sender_id),
+            gyroscope: mask & 1 != 0,
+            orientation: mask & 2 != 0,
+        });
+    }
+
+    fn rpc_request_xml(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let height = engine.param_i32(&inv.params, 0).unwrap_or(0);
+        let width = engine.param_i32(&inv.params, 1).unwrap_or(0);
+        let requester = engine.param_string(&inv.params, 2).unwrap_or_default();
+        out.events.push(Event::ControlSchemeRequested {
+            sender: Self::sender_string(sender_id),
+            width,
+            height,
+            requester,
+        });
+    }
+
+    fn rpc_on_control_scheme_parsed(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let device_id = engine.param_string(&inv.params, 0).unwrap_or_default();
+        out.events.push(Event::ControlSchemeParsed {
+            sender: Self::sender_string(sender_id),
+            device_id,
+        });
+    }
+
+    fn rpc_get_cookie(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let name = engine.param_string(&inv.params, 0).unwrap_or_default();
+        out.events.push(Event::CookieRequested {
+            sender: Self::sender_string(sender_id),
+            name,
+        });
+    }
+
+    fn rpc_set_cookie(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let name = engine.param_string(&inv.params, 0).unwrap_or_default();
+        let value = engine.param_string(&inv.params, 1).unwrap_or_default();
+        out.events.push(Event::CookieStored {
+            sender: Self::sender_string(sender_id),
+            name,
+            value,
+        });
+    }
+
+    fn rpc_got_cookie(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let name = engine.param_string(&inv.params, 0).unwrap_or_default();
+        let value = engine.param_string(&inv.params, 1).unwrap_or_default();
+        out.events.push(Event::Cookie {
+            sender: Self::sender_string(sender_id),
+            name,
+            value,
+        });
     }
 
     fn unwrap_value<'a>(&self, v: &'a Value) -> &'a Value {

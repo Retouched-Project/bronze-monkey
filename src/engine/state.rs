@@ -15,6 +15,7 @@ pub struct EngineState {
     pub(crate) chunk_buffers: HashMap<String, Vec<u8>>,
     pub(crate) invoke_counter: i32,
     pub(crate) used_slots: HashSet<i16>,
+    pub(crate) button_handlers: HashSet<String>,
 }
 
 impl EngineState {
@@ -26,6 +27,7 @@ impl EngineState {
             chunk_buffers: HashMap::new(),
             invoke_counter: 1,
             used_slots: HashSet::new(),
+            button_handlers: HashSet::new(),
         }
     }
 
