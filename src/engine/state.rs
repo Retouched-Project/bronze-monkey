@@ -23,6 +23,7 @@ pub struct EngineState {
     pub(crate) used_slots: HashSet<i16>,
     pub(crate) button_handlers: HashSet<String>,
     pub(crate) input_reliability: HashMap<String, InputReliability>,
+    pub(crate) hidden_hosts: HashSet<String>,
 }
 
 impl EngineState {
@@ -36,6 +37,7 @@ impl EngineState {
             used_slots: HashSet::new(),
             button_handlers: HashSet::new(),
             input_reliability: HashMap::new(),
+            hidden_hosts: HashSet::new(),
         }
     }
 
@@ -128,7 +130,7 @@ impl EngineState {
                 if !is_game && info.device.device_type != DeviceType::Server {
                     out.push(info);
                 }
-            } else if is_game {
+            } else if is_game && !self.hidden_hosts.contains(&info.device.device_id) {
                 out.push(info);
             }
         }

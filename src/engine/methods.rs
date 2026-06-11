@@ -45,6 +45,8 @@ pub const PROMPT_TRIAL_UPSELL: &str = "promptTrialUpsell";
 pub const BUTTON_DOWN: &str = "down";
 pub const BUTTON_UP: &str = "up";
 
+pub const CONTROL_SCHEME_SET_ID: &str = "testXML";
+
 pub const DEFAULT_RETURN_REGISTER: &str = "onRegister";
 pub const DEFAULT_RETURN_LIST: &str = "onList";
 pub const DEFAULT_RETURN_UPDATE: &str = "onUpdateSuccess";

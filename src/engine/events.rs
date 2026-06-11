@@ -344,6 +344,10 @@ pub enum Command {
         width: i32,
         height: i32,
     },
+    SendControlScheme {
+        target: String,
+        xml: Vec<u8>,
+    },
     ControlSchemeParsed {
         target: String,
     },

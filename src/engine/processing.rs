@@ -17,6 +17,7 @@ use crate::codec::messages::orientation::Orientation;
 use crate::codec::messages::touch::Touch;
 use crate::codec::messages::touch_set::TouchSet;
 use crate::codec::object::Object;
+use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::events::{Command, ControlConfig, Event, Outgoing, ProcessOutput, Sensor};
 use crate::engine::methods;
@@ -51,14 +52,35 @@ pub struct Engine {
 impl Engine {
     pub fn new() -> Self {
         let mut handlers: HashMap<String, RpcHandler> = HashMap::with_capacity(32);
-        handlers.insert(methods::REGISTRY_REGISTER.to_string(), Self::rpc_registry_register);
-        handlers.insert(methods::DEFAULT_RETURN_REGISTER.to_string(), Self::rpc_registry_register);
+        handlers.insert(
+            methods::REGISTRY_REGISTER.to_string(),
+            Self::rpc_registry_register,
+        );
+        handlers.insert(
+            methods::DEFAULT_RETURN_REGISTER.to_string(),
+            Self::rpc_registry_register,
+        );
         handlers.insert(methods::REGISTRY_LIST.to_string(), Self::rpc_registry_list);
-        handlers.insert(methods::DEFAULT_RETURN_LIST.to_string(), Self::rpc_registry_list);
-        handlers.insert(methods::REGISTRY_RELAY.to_string(), Self::rpc_registry_relay);
-        handlers.insert(methods::ON_HOST_CONNECTED.to_string(), Self::rpc_on_host_connected);
-        handlers.insert(methods::REGISTRY_UPDATE.to_string(), Self::rpc_registry_update);
-        handlers.insert(methods::ON_HOST_UPDATE.to_string(), Self::rpc_registry_update);
+        handlers.insert(
+            methods::DEFAULT_RETURN_LIST.to_string(),
+            Self::rpc_registry_list,
+        );
+        handlers.insert(
+            methods::REGISTRY_RELAY.to_string(),
+            Self::rpc_registry_relay,
+        );
+        handlers.insert(
+            methods::ON_HOST_CONNECTED.to_string(),
+            Self::rpc_on_host_connected,
+        );
+        handlers.insert(
+            methods::REGISTRY_UPDATE.to_string(),
+            Self::rpc_registry_update,
+        );
+        handlers.insert(
+            methods::ON_HOST_UPDATE.to_string(),
+            Self::rpc_registry_update,
+        );
         handlers.insert(
             methods::ON_HOST_DISCONNECTED.to_string(),
             Self::rpc_on_host_disconnected,
@@ -67,7 +89,10 @@ impl Engine {
             methods::DEVICE_CONNECT_REQUESTED.to_string(),
             Self::rpc_device_connect_requested,
         );
-        handlers.insert(methods::CONNECTION_FAILED.to_string(), Self::rpc_connection_failed);
+        handlers.insert(
+            methods::CONNECTION_FAILED.to_string(),
+            Self::rpc_connection_failed,
+        );
         handlers.insert(methods::VIBRATE.to_string(), Self::rpc_vibrate);
         handlers.insert(methods::BM_PAUSE.to_string(), Self::rpc_bm_pause);
         handlers.insert(methods::MENU_EVENT.to_string(), Self::rpc_menu_event);
@@ -76,7 +101,10 @@ impl Engine {
             methods::ON_NAVIGATION_STRING.to_string(),
             Self::rpc_on_navigation_string,
         );
-        handlers.insert(methods::SET_CAPABILITIES.to_string(), Self::rpc_set_capabilities);
+        handlers.insert(
+            methods::SET_CAPABILITIES.to_string(),
+            Self::rpc_set_capabilities,
+        );
         handlers.insert(methods::REQUEST_XML.to_string(), Self::rpc_request_xml);
         handlers.insert(
             methods::ON_CONTROL_SCHEME_PARSED.to_string(),
@@ -85,6 +113,14 @@ impl Engine {
         handlers.insert(methods::GET_COOKIE.to_string(), Self::rpc_get_cookie);
         handlers.insert(methods::SET_COOKIE.to_string(), Self::rpc_set_cookie);
         handlers.insert(methods::GOT_COOKIE.to_string(), Self::rpc_got_cookie);
+        handlers.insert(
+            methods::REGISTRY_REMOVE.to_string(),
+            Self::rpc_registry_remove,
+        );
+        handlers.insert(
+            methods::REGISTRY_SET_VISIBLE.to_string(),
+            Self::rpc_registry_set_visible,
+        );
 
         Self {
             state: EngineState::new(),
@@ -293,7 +329,10 @@ impl Engine {
             } => self.make_message_invoke(
                 &target,
                 methods::REGISTRY_UPDATE,
-                Some(Self::return_method_or(return_method.as_deref(), methods::DEFAULT_RETURN_UPDATE)),
+                Some(Self::return_method_or(
+                    return_method.as_deref(),
+                    methods::DEFAULT_RETURN_UPDATE,
+                )),
                 vec![Value::Object(Object::BMRegistryInfo(info))],
             ),
             Command::Unregister {
@@ -304,7 +343,10 @@ impl Engine {
                 self.make_message_invoke(
                     &target,
                     methods::REGISTRY_REMOVE,
-                    Some(Self::return_method_or(return_method.as_deref(), methods::DEFAULT_RETURN_REMOVE)),
+                    Some(Self::return_method_or(
+                        return_method.as_deref(),
+                        methods::DEFAULT_RETURN_REMOVE,
+                    )),
                     vec![Value::String(device_id)],
                 )
             }
@@ -345,12 +387,18 @@ impl Engine {
                 handler,
                 pressed,
             } => self.make_button_invoke(&target, &handler, pressed),
-            Command::SendMenuEvent { target, event } => {
-                self.make_message_invoke(&target, methods::MENU_EVENT, None, vec![Value::String(event)])
-            }
-            Command::SendKeyString { target, key } => {
-                self.make_message_invoke(&target, methods::ON_KEY_STRING, None, vec![Value::String(key)])
-            }
+            Command::SendMenuEvent { target, event } => self.make_message_invoke(
+                &target,
+                methods::MENU_EVENT,
+                None,
+                vec![Value::String(event)],
+            ),
+            Command::SendKeyString { target, key } => self.make_message_invoke(
+                &target,
+                methods::ON_KEY_STRING,
+                None,
+                vec![Value::String(key)],
+            ),
             Command::SendNavigation { target, nav } => self.make_message_invoke(
                 &target,
                 methods::ON_NAVIGATION_STRING,
@@ -380,7 +428,9 @@ impl Engine {
                 self.make_set_control_mode(&target, mode, text.as_deref())
             }
             Command::Vibrate { target } => self.make_vibrate(&target),
-            Command::Pause { target } => self.make_message_invoke(&target, methods::BM_PAUSE, None, vec![]),
+            Command::Pause { target } => {
+                self.make_message_invoke(&target, methods::BM_PAUSE, None, vec![])
+            }
             Command::RequestControlScheme {
                 target,
                 width,
@@ -389,6 +439,7 @@ impl Engine {
                 let requester = self.local_device_id();
                 self.make_request_xml(&target, width, height, &requester)
             }
+            Command::SendControlScheme { target, xml } => self.send_control_scheme(&target, &xml),
             Command::ControlSchemeParsed { target } => {
                 let device_id = self.local_device_id();
                 self.make_on_control_scheme_parsed(&target, &device_id)
@@ -462,6 +513,59 @@ impl Engine {
                 if let Some(s) = interval_s {
                     out.extend(self.make_set_orientation_interval(target, s));
                 }
+            }
+        }
+        out
+    }
+
+    fn send_control_scheme(&mut self, target: &str, xml: &[u8]) -> Vec<Outgoing> {
+        let mut parser = BMApplicationSchemeParser::new();
+        match parser.parse(xml) {
+            Ok(scheme) => {
+                let handlers: Vec<String> = scheme
+                    .display_objects
+                    .iter()
+                    .map(|o| o.function_handler.clone())
+                    .filter(|h| !h.is_empty())
+                    .collect();
+                self.register_button_handlers(handlers);
+            }
+            Err(e) => log::warn!("control scheme parse failed, sending anyway: {e}"),
+        }
+        self.make_byte_chunks(target, methods::CONTROL_SCHEME_SET_ID, xml)
+    }
+
+    pub fn make_byte_chunks(&mut self, target: &str, set_id: &str, blob: &[u8]) -> Vec<Outgoing> {
+        const CHUNK_SIZE: usize = 10240;
+        let total_size = blob.len() as i32;
+        let mut out = Vec::new();
+        let mut start = 0usize;
+        loop {
+            let len = (blob.len() - start).min(CHUNK_SIZE);
+            let chunk = BMByteChunk {
+                set_id: set_id.to_string(),
+                start_byte: start as i32,
+                chunk_size: len as i32,
+                total_size,
+                data: blob[start..start + len].to_vec(),
+            };
+            let msg = match self.build_object_bytes(Object::BMByteChunk(chunk)) {
+                Ok(m) => m,
+                Err(e) => {
+                    log::error!("build chunk failed: {e}");
+                    return Vec::new();
+                }
+            };
+            out.extend(self.make_packet(
+                target,
+                ChannelType::Bytes.value(),
+                Some(BMReliability::Reliable.code()),
+                PacketType::Data,
+                Some(msg),
+            ));
+            start += len;
+            if start >= blob.len() {
+                break;
             }
         }
         out
@@ -1038,7 +1142,7 @@ impl Engine {
     fn rpc_registry_update(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
-        _sender_id: Option<&str>,
+        sender_id: Option<&str>,
         _channel: i32,
         out: &mut ProcessOutput,
     ) {
@@ -1048,6 +1152,10 @@ impl Engine {
         }
 
         if !engine.state.is_server() {
+            return;
+        }
+
+        if infos.is_empty() {
             return;
         }
 
@@ -1074,6 +1182,9 @@ impl Engine {
             ) {
                 continue;
             }
+            if engine.state.hidden_hosts.contains(&info.device.device_id) {
+                continue;
+            }
             let Some(stored) = engine
                 .state
                 .registry
@@ -1090,6 +1201,17 @@ impl Engine {
                     vec![Value::Object(Object::BMRegistryInfo(stored.clone()))],
                 ));
             }
+        }
+
+        if let (Some(target_id), Some(reply)) =
+            (sender_id, Self::reply_method(inv.return_method.as_deref()))
+        {
+            out.outgoings.extend(engine.make_message_invoke(
+                target_id,
+                reply,
+                None,
+                vec![Value::Bool(true)],
+            ));
         }
     }
 
@@ -1291,6 +1413,120 @@ impl Engine {
         });
     }
 
+    fn rpc_registry_remove(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        if !engine.state.is_server() {
+            return;
+        }
+        let device_id = engine
+            .param_string(&inv.params, 0)
+            .or_else(|| sender_id.map(|s| s.to_string()));
+        let Some(device_id) = device_id else {
+            return;
+        };
+        if engine.state.registry.get(&device_id).is_none() {
+            return;
+        }
+        if let (Some(target_id), Some(reply)) =
+            (sender_id, Self::reply_method(inv.return_method.as_deref()))
+        {
+            out.outgoings.extend(engine.make_message_invoke(
+                target_id,
+                reply,
+                None,
+                vec![Value::Bool(true)],
+            ));
+        }
+        out.outgoings.extend(engine.drop_device(&device_id));
+    }
+
+    fn rpc_registry_set_visible(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        if !engine.state.is_server() {
+            return;
+        }
+        let Some(target_id) = sender_id else {
+            return;
+        };
+        let Some(visible) = engine.param_bool(&inv.params, 0) else {
+            return;
+        };
+        let notify_everyone = engine.param_bool(&inv.params, 1).unwrap_or(false);
+
+        let device_id = target_id.to_string();
+        let changed = if visible {
+            engine.state.hidden_hosts.remove(&device_id)
+        } else {
+            engine.state.hidden_hosts.insert(device_id.clone())
+        };
+
+        if changed && notify_everyone {
+            if let Some(info) = engine
+                .state
+                .registry
+                .get(&device_id)
+                .and_then(|r| r.info.clone())
+            {
+                let is_game = matches!(
+                    info.device.device_type,
+                    DeviceType::Flash | DeviceType::Unity | DeviceType::Native
+                );
+                if is_game {
+                    let method = if visible {
+                        methods::ON_HOST_CONNECTED
+                    } else {
+                        methods::ON_HOST_DISCONNECTED
+                    };
+                    let info_val = Value::Object(Object::BMRegistryInfo(info));
+                    let viewer_ids: Vec<String> = engine
+                        .state
+                        .registry
+                        .snapshot()
+                        .into_iter()
+                        .filter_map(|r| r.info)
+                        .filter(|r| {
+                            !matches!(
+                                r.device.device_type,
+                                DeviceType::Flash
+                                    | DeviceType::Unity
+                                    | DeviceType::Native
+                                    | DeviceType::Server
+                            )
+                        })
+                        .map(|r| r.device.device_id)
+                        .collect();
+                    for vid in viewer_ids {
+                        out.outgoings.extend(engine.make_message_invoke(
+                            &vid,
+                            method,
+                            None,
+                            vec![info_val.clone()],
+                        ));
+                    }
+                }
+            }
+        }
+
+        if let Some(reply) = Self::reply_method(inv.return_method.as_deref()) {
+            out.outgoings.extend(engine.make_message_invoke(
+                target_id,
+                reply,
+                None,
+                vec![Value::Bool(true)],
+            ));
+        }
+    }
+
     fn unwrap_value<'a>(&self, v: &'a Value) -> &'a Value {
         if let Value::Object(Object::BMParameter(inner)) = v {
             inner.as_ref()
@@ -1346,7 +1582,11 @@ impl Engine {
         handler: &str,
         pressed: bool,
     ) -> Vec<Outgoing> {
-        let state = if pressed { methods::BUTTON_DOWN } else { methods::BUTTON_UP };
+        let state = if pressed {
+            methods::BUTTON_DOWN
+        } else {
+            methods::BUTTON_UP
+        };
         self.make_message_invoke(
             target,
             handler,
@@ -1579,7 +1819,12 @@ impl Engine {
     }
 
     pub fn make_enable_touch(&mut self, target: &str, enabled: bool) -> Vec<Outgoing> {
-        self.make_message_invoke(target, methods::ENABLE_TOUCH, None, vec![Value::Bool(enabled)])
+        self.make_message_invoke(
+            target,
+            methods::ENABLE_TOUCH,
+            None,
+            vec![Value::Bool(enabled)],
+        )
     }
 
     pub fn make_set_touch_interval(
@@ -1596,7 +1841,12 @@ impl Engine {
     }
 
     pub fn make_enable_gyro(&mut self, target: &str, enabled: bool) -> Vec<Outgoing> {
-        self.make_message_invoke(target, methods::ENABLE_GYRO, None, vec![Value::Bool(enabled)])
+        self.make_message_invoke(
+            target,
+            methods::ENABLE_GYRO,
+            None,
+            vec![Value::Bool(enabled)],
+        )
     }
 
     pub fn make_set_gyro_interval(&mut self, target: &str, interval_seconds: f64) -> Vec<Outgoing> {
@@ -1669,14 +1919,17 @@ impl Engine {
         }
         let return_method = Self::return_method_or(return_method, methods::DEFAULT_RETURN_REGISTER);
         self.bind_continuation(return_method, Self::rpc_registry_register);
-        let msg =
-            match self.build_invoke_payload(methods::REGISTRY_REGISTER, Some(return_method), params) {
-                Ok(m) => m,
-                Err(e) => {
-                    log::error!("build register invoke failed: {e}");
-                    return Vec::new();
-                }
-            };
+        let msg = match self.build_invoke_payload(
+            methods::REGISTRY_REGISTER,
+            Some(return_method),
+            params,
+        ) {
+            Ok(m) => m,
+            Err(e) => {
+                log::error!("build register invoke failed: {e}");
+                return Vec::new();
+            }
+        };
         self.make_packet(
             target,
             ChannelType::Message.value(),
@@ -1693,14 +1946,17 @@ impl Engine {
     ) -> Vec<Outgoing> {
         let return_method = Self::return_method_or(return_method, methods::DEFAULT_RETURN_LIST);
         self.bind_continuation(return_method, Self::rpc_registry_list);
-        let msg =
-            match self.build_invoke_payload(methods::REGISTRY_LIST, Some(return_method), Vec::new()) {
-                Ok(m) => m,
-                Err(e) => {
-                    log::error!("build list invoke failed: {e}");
-                    return Vec::new();
-                }
-            };
+        let msg = match self.build_invoke_payload(
+            methods::REGISTRY_LIST,
+            Some(return_method),
+            Vec::new(),
+        ) {
+            Ok(m) => m,
+            Err(e) => {
+                log::error!("build list invoke failed: {e}");
+                return Vec::new();
+            }
+        };
         self.make_packet(
             target,
             ChannelType::Message.value(),
@@ -1907,6 +2163,7 @@ impl Engine {
     pub fn drop_device(&mut self, device_id: &str) -> Vec<Outgoing> {
         let mut out = Vec::new();
         self.state.input_reliability.remove(device_id);
+        self.state.hidden_hosts.remove(device_id);
         if let Some(rec) = self.state.registry.remove(device_id) {
             if let Some(info) = rec.info {
                 if info.slot_id > 0 {
