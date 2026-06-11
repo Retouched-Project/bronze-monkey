@@ -1236,7 +1236,7 @@ pub extern "C" fn bm_engine_make_registry_register(
                 Err(_) => return false,
             }
         };
-        let actions = engine.make_registry_register(&dev_id, reg, domain);
+        let actions = engine.make_registry_register(&dev_id, reg, domain, None);
         let list = outgoings_to_c(actions);
         unsafe {
             *out_actions = list;
@@ -1265,7 +1265,7 @@ pub extern "C" fn bm_engine_make_registry_list(
                 Err(_) => return false,
             }
         };
-        let actions = engine.make_registry_list(&dev_id);
+        let actions = engine.make_registry_list(&dev_id, None);
         let list = outgoings_to_c(actions);
         unsafe {
             *out_actions = list;

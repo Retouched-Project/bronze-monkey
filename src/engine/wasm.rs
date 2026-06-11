@@ -296,7 +296,7 @@ impl BmEngineWasm {
     }
 
     pub fn make_registry_list(&mut self, target: &str) -> Result<JsValue, JsError> {
-        let outgoings = self.inner.make_registry_list(target);
+        let outgoings = self.inner.make_registry_list(target, None);
         to_js(&outgoings)
     }
 
@@ -333,7 +333,7 @@ impl BmEngineWasm {
             device_address: addr,
         };
 
-        let outgoings = self.inner.make_registry_register(target, info, domain);
+        let outgoings = self.inner.make_registry_register(target, info, domain, None);
         to_js(&outgoings)
     }
 

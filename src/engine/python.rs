@@ -132,7 +132,7 @@ impl BMEnginePy {
         let info = dict_to_registry_info(&client_info)?;
         let actions = self.inner.write().unwrap().make_message_invoke(
             &target_device_id,
-            "onHostConnected",
+            crate::engine::methods::ON_HOST_CONNECTED,
             None,
             vec![Value::Object(Object::BMRegistryInfo(info))],
         );
@@ -424,7 +424,7 @@ impl BMEnginePy {
             self.inner
                 .write()
                 .unwrap()
-                .make_registry_register(&target_device_id, reg_info, domain);
+                .make_registry_register(&target_device_id, reg_info, domain, None);
         outgoings_to_py(py, actions)
     }
 
@@ -437,7 +437,7 @@ impl BMEnginePy {
             .inner
             .write()
             .unwrap()
-            .make_registry_list(&target_device_id);
+            .make_registry_list(&target_device_id, None);
         outgoings_to_py(py, actions)
     }
 

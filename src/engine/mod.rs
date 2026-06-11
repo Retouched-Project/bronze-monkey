@@ -3,6 +3,7 @@
 
 pub mod events;
 pub mod ffi;
+pub mod methods;
 pub mod processing;
 pub mod protocol;
 #[cfg(feature = "pyo3")]

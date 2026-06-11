@@ -242,16 +242,20 @@ pub enum Command {
         target: String,
         info: BMRegistryInfo,
         domain: Option<String>,
+        return_method: Option<String>,
     },
     RequestHostList {
         target: String,
+        return_method: Option<String>,
     },
     UpdateHostInfo {
         target: String,
         info: BMRegistryInfo,
+        return_method: Option<String>,
     },
     Unregister {
         target: String,
+        return_method: Option<String>,
     },
     SetHostVisible {
         target: String,
