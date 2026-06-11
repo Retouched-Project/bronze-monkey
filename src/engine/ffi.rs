@@ -90,6 +90,7 @@ pub enum EventTagC {
     CookieRequested = 28,
     CookieStored = 29,
     Cookie = 30,
+    RegistrationResult = 31,
 }
 
 #[repr(C)]
@@ -991,6 +992,10 @@ fn event_to_c(event: Event) -> EventC {
             out.tag = EventTagC::PeerRegistered;
             out.registry_success = if success { 1 } else { 0 };
             set_event_registry(&mut out, vec![info]);
+        }
+        Event::RegistrationResult { success } => {
+            out.tag = EventTagC::RegistrationResult;
+            out.registry_success = if success { 1 } else { 0 };
         }
         Event::HostConnected { info } => {
             out.tag = EventTagC::HostConnected;

@@ -4,8 +4,8 @@
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::touch::Touch;
+use crate::codec::object::Object;
 use crate::engine::registry::DeviceRecord;
-use crate::types::packet_type::PacketType;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -15,6 +15,12 @@ pub struct Outgoing {
     pub channel: i32,
     pub reliability: i32,
     pub payload: Vec<u8>,
+}
+
+impl Outgoing {
+    pub fn datagram_payload(&self) -> &[u8] {
+        self.payload.get(4..).unwrap_or(&[])
+    }
 }
 
 #[derive(Debug, Default, Clone, Serialize)]
@@ -49,6 +55,9 @@ pub enum Event {
     },
     PeerRegistered {
         info: BMRegistryInfo,
+        success: bool,
+    },
+    RegistrationResult {
         success: bool,
     },
     HostConnected {
@@ -184,6 +193,14 @@ pub struct ControlConfig {
     pub return_app_id: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub enum Sensor {
+    Touch,
+    Accel,
+    Gyro,
+    Orientation,
+}
+
 #[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum Command {
@@ -193,12 +210,11 @@ pub enum Command {
         reliability: i32,
         payload: Vec<u8>,
     },
-    Packet {
+    SendObject {
         target: String,
-        channel: i32,
+        object: Object,
+        channel: Option<i32>,
         reliability: Option<i32>,
-        packet_type: PacketType,
-        message: Option<Vec<u8>>,
     },
     Invoke {
         target: String,
@@ -206,13 +222,139 @@ pub enum Command {
         return_method: Option<String>,
         params: Vec<Value>,
     },
-    DropDevice {
-        device_id: String,
+    Relay {
+        target: String,
+        destination: BMRegistryInfo,
+        method: String,
+        return_method: Option<String>,
+        params: Vec<Value>,
     },
     ApproveRegistration {
         device_id: String,
     },
     DenyRegistration {
         device_id: String,
+    },
+    DropDevice {
+        device_id: String,
+    },
+    Register {
+        target: String,
+        info: BMRegistryInfo,
+        domain: Option<String>,
+    },
+    RequestHostList {
+        target: String,
+    },
+    UpdateHostInfo {
+        target: String,
+        info: BMRegistryInfo,
+    },
+    Unregister {
+        target: String,
+    },
+    SetHostVisible {
+        target: String,
+        visible: bool,
+        notify_everyone: bool,
+    },
+    ConnectToHost {
+        target: String,
+        host: BMRegistryInfo,
+        self_info: BMRegistryInfo,
+    },
+    SendTouch {
+        target: String,
+        touches: Vec<Touch>,
+    },
+    SendAccel {
+        target: String,
+        x: f64,
+        y: f64,
+        z: f64,
+    },
+    SendGyro {
+        target: String,
+        x: f32,
+        y: f32,
+        z: f32,
+    },
+    SendOrientation {
+        target: String,
+        x: f32,
+        y: f32,
+        z: f32,
+        w: f32,
+    },
+    SendDPad {
+        target: String,
+        x: i16,
+        y: i16,
+    },
+    SendButton {
+        target: String,
+        handler: String,
+        pressed: bool,
+    },
+    SendMenuEvent {
+        target: String,
+        event: String,
+    },
+    SendKeyString {
+        target: String,
+        key: String,
+    },
+    SendNavigation {
+        target: String,
+        nav: String,
+    },
+    SetCapabilities {
+        target: String,
+        gyroscope: bool,
+        orientation: bool,
+    },
+    ConfigureSensor {
+        target: String,
+        sensor: Sensor,
+        enabled: Option<bool>,
+        interval_ms: Option<i32>,
+    },
+    SetReliability {
+        target: String,
+        touch: i32,
+        sensors: i32,
+    },
+    SetControlMode {
+        target: String,
+        mode: i32,
+        text: Option<String>,
+    },
+    Vibrate {
+        target: String,
+    },
+    Pause {
+        target: String,
+    },
+    RequestControlScheme {
+        target: String,
+        width: i32,
+        height: i32,
+    },
+    ControlSchemeParsed {
+        target: String,
+    },
+    StoreCookie {
+        target: String,
+        name: String,
+        value: String,
+    },
+    RequestCookie {
+        target: String,
+        name: String,
+    },
+    SendCookie {
+        target: String,
+        name: String,
+        value: String,
     },
 }

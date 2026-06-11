@@ -12,7 +12,7 @@ pub mod state;
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
 
-pub use events::{Command, ControlConfig, Event, Outgoing, ProcessOutput};
+pub use events::{Command, ControlConfig, Event, Outgoing, ProcessOutput, Sensor};
 pub use processing::Engine;
 pub use registry::{DeviceRecord, DeviceRegistry};
 pub use state::EngineState;

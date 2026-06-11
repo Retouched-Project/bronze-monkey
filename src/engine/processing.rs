@@ -18,7 +18,7 @@ use crate::codec::messages::touch::Touch;
 use crate::codec::messages::touch_set::TouchSet;
 use crate::codec::object::Object;
 use crate::devices::device_core::DeviceCore;
-use crate::engine::events::{Command, ControlConfig, Event, Outgoing, ProcessOutput};
+use crate::engine::events::{Command, ControlConfig, Event, Outgoing, ProcessOutput, Sensor};
 use crate::engine::protocol::{deserialize_packet, serialize_packet};
 use crate::engine::registry::{DeviceRecord, DeviceRegistry};
 use crate::engine::state::EngineState;
@@ -220,22 +220,244 @@ impl Engine {
                     payload,
                 }]
             }
-            Command::Packet {
+            Command::SendObject {
                 target,
+                object,
                 channel,
                 reliability,
-                packet_type,
-                message,
-            } => self.make_packet(&target, channel, reliability, packet_type, message),
+            } => {
+                let channel = channel.unwrap_or_else(|| Self::default_channel_for_object(&object));
+                let reliability =
+                    reliability.unwrap_or_else(|| self.reliability_for(&target, channel));
+                let msg = match self.build_object_bytes(object) {
+                    Ok(m) => m,
+                    Err(e) => {
+                        log::error!("emit SendObject: encode failed: {e}");
+                        return Vec::new();
+                    }
+                };
+                self.make_packet(
+                    &target,
+                    channel,
+                    Some(reliability),
+                    PacketType::Data,
+                    Some(msg),
+                )
+            }
             Command::Invoke {
                 target,
                 method,
                 return_method,
                 params,
             } => self.make_message_invoke(&target, &method, return_method.as_deref(), params),
-            Command::DropDevice { device_id } => self.drop_device(&device_id),
+            Command::Relay {
+                target,
+                destination,
+                method,
+                return_method,
+                params,
+            } => {
+                let inner = BMInvoke {
+                    id: 0,
+                    method,
+                    return_method,
+                    params,
+                };
+                self.make_registry_relay(&target, destination, inner)
+            }
             Command::ApproveRegistration { device_id } => self.approve_registration(&device_id),
             Command::DenyRegistration { device_id } => self.deny_registration(&device_id),
+            Command::DropDevice { device_id } => self.drop_device(&device_id),
+            Command::Register {
+                target,
+                info,
+                domain,
+            } => self.make_registry_register(&target, info, domain),
+            Command::RequestHostList { target } => self.make_registry_list(&target),
+            Command::UpdateHostInfo { target, info } => self.make_message_invoke(
+                &target,
+                "registry.update",
+                Some("onUpdateSuccess"),
+                vec![Value::Object(Object::BMRegistryInfo(info))],
+            ),
+            Command::Unregister { target } => {
+                let device_id = self.local_device_id();
+                self.make_message_invoke(
+                    &target,
+                    "registry.remove",
+                    Some("onRemoveSuccess"),
+                    vec![Value::String(device_id)],
+                )
+            }
+            Command::SetHostVisible {
+                target,
+                visible,
+                notify_everyone,
+            } => self.make_message_invoke(
+                &target,
+                "registry.setVisible",
+                None,
+                vec![Value::Bool(visible), Value::Bool(notify_everyone)],
+            ),
+            Command::ConnectToHost {
+                target,
+                host,
+                self_info,
+            } => self.make_device_connect_requested(&target, host, self_info),
+            Command::SendTouch { target, touches } => {
+                let reliability = self.reliability_for(&target, ChannelType::Touch.value());
+                self.make_touch_set(&target, touches, reliability)
+            }
+            Command::SendAccel { target, x, y, z } => {
+                let reliability = self.reliability_for(&target, ChannelType::Acceleration.value());
+                self.make_accel(&target, x, y, z, reliability)
+            }
+            Command::SendGyro { target, x, y, z } => {
+                let reliability = self.reliability_for(&target, ChannelType::Gyro.value());
+                self.make_gyro(&target, x, y, z, reliability)
+            }
+            Command::SendOrientation { target, x, y, z, w } => {
+                let reliability = self.reliability_for(&target, ChannelType::Orientation.value());
+                self.make_orientation(&target, x, y, z, w, reliability)
+            }
+            Command::SendDPad { target, x, y } => self.make_dpad_update(&target, x, y),
+            Command::SendButton {
+                target,
+                handler,
+                pressed,
+            } => self.make_button_invoke(&target, &handler, pressed),
+            Command::SendMenuEvent { target, event } => {
+                self.make_message_invoke(&target, "menuEvent", None, vec![Value::String(event)])
+            }
+            Command::SendKeyString { target, key } => {
+                self.make_message_invoke(&target, "onKeyString", None, vec![Value::String(key)])
+            }
+            Command::SendNavigation { target, nav } => self.make_message_invoke(
+                &target,
+                "onNavigationString",
+                None,
+                vec![Value::String(nav)],
+            ),
+            Command::SetCapabilities {
+                target,
+                gyroscope,
+                orientation,
+            } => {
+                let mask = (gyroscope as u64) | ((orientation as u64) << 1);
+                self.make_set_capabilities(&target, mask)
+            }
+            Command::ConfigureSensor {
+                target,
+                sensor,
+                enabled,
+                interval_ms,
+            } => self.configure_sensor(&target, sensor, enabled, interval_ms),
+            Command::SetReliability {
+                target,
+                touch,
+                sensors,
+            } => self.make_set_reliability_for_touch(&target, touch, sensors),
+            Command::SetControlMode { target, mode, text } => {
+                self.make_set_control_mode(&target, mode, text.as_deref())
+            }
+            Command::Vibrate { target } => self.make_vibrate(&target),
+            Command::Pause { target } => self.make_message_invoke(&target, "bmPause", None, vec![]),
+            Command::RequestControlScheme {
+                target,
+                width,
+                height,
+            } => {
+                let requester = self.local_device_id();
+                self.make_request_xml(&target, width, height, &requester)
+            }
+            Command::ControlSchemeParsed { target } => {
+                let device_id = self.local_device_id();
+                self.make_on_control_scheme_parsed(&target, &device_id)
+            }
+            Command::StoreCookie {
+                target,
+                name,
+                value,
+            } => self.make_set_cookie(&target, &name, &value),
+            Command::RequestCookie { target, name } => self.make_get_cookie(&target, &name),
+            Command::SendCookie {
+                target,
+                name,
+                value,
+            } => self.make_message_invoke(
+                &target,
+                "gotCookie",
+                None,
+                vec![Value::String(name), Value::String(value)],
+            ),
+        }
+    }
+
+    fn local_device_id(&self) -> String {
+        self.state
+            .local_device
+            .as_ref()
+            .map(|d| d.device_id.clone())
+            .unwrap_or_default()
+    }
+
+    fn configure_sensor(
+        &mut self,
+        target: &str,
+        sensor: Sensor,
+        enabled: Option<bool>,
+        interval_ms: Option<i32>,
+    ) -> Vec<Outgoing> {
+        let interval_s = interval_ms.map(|ms| ms as f64 / 1000.0);
+        let mut out = Vec::new();
+        match sensor {
+            Sensor::Accel => {
+                if enabled.is_some() || interval_s.is_some() {
+                    out.extend(self.make_enable_accelerometer(
+                        target,
+                        enabled.unwrap_or(true),
+                        interval_s,
+                    ));
+                }
+            }
+            Sensor::Touch => {
+                if let Some(enabled) = enabled {
+                    out.extend(self.make_enable_touch(target, enabled));
+                }
+                if let Some(s) = interval_s {
+                    out.extend(self.make_set_touch_interval(target, s));
+                }
+            }
+            Sensor::Gyro => {
+                if let Some(enabled) = enabled {
+                    out.extend(self.make_enable_gyro(target, enabled));
+                }
+                if let Some(s) = interval_s {
+                    out.extend(self.make_set_gyro_interval(target, s));
+                }
+            }
+            Sensor::Orientation => {
+                if let Some(enabled) = enabled {
+                    out.extend(self.make_enable_orientation(target, enabled));
+                }
+                if let Some(s) = interval_s {
+                    out.extend(self.make_set_orientation_interval(target, s));
+                }
+            }
+        }
+        out
+    }
+
+    fn default_channel_for_object(object: &Object) -> i32 {
+        match object {
+            Object::TouchSet(_) => ChannelType::Touch.value(),
+            Object::Acceleration(_) => ChannelType::Acceleration.value(),
+            Object::BMGyro(_) => ChannelType::Gyro.value(),
+            Object::Orientation(_) => ChannelType::Orientation.value(),
+            Object::DPadUpdate(_) => ChannelType::DPad.value(),
+            Object::BMByteChunk(_) => ChannelType::Bytes.value(),
+            Object::StringLiteral(_) => ChannelType::String.value(),
+            _ => ChannelType::Message.value(),
         }
     }
 
@@ -583,11 +805,8 @@ impl Engine {
         });
 
         if !engine.state.is_server() {
-            // Controller/host received the `onRegister` result.
             if let Some(success) = success {
-                for info in infos {
-                    out.events.push(Event::PeerRegistered { info, success });
-                }
+                out.events.push(Event::RegistrationResult { success });
             }
             return;
         }
@@ -1731,9 +1950,9 @@ impl Engine {
         let tracked = self.state.input_reliability.get(target);
         let requested = match ChannelType::from_i32(channel) {
             Some(ChannelType::Touch) => tracked.and_then(|r| r.touch),
-            Some(
-                ChannelType::Acceleration | ChannelType::Gyro | ChannelType::Orientation,
-            ) => tracked.and_then(|r| r.sensors),
+            Some(ChannelType::Acceleration | ChannelType::Gyro | ChannelType::Orientation) => {
+                tracked.and_then(|r| r.sensors)
+            }
             _ => None,
         };
         requested.unwrap_or_else(|| Self::default_reliability_for_channel(channel))
