@@ -531,6 +531,9 @@ impl Engine {
         let mut claimed = false;
 
         if let Some(cfg) = self.parse_control_rpc(&inv) {
+            if let Some(sender) = sender_id.as_deref() {
+                self.track_reliability(sender, &cfg);
+            }
             out.events.push(Event::ControlConfig(cfg));
             claimed = true;
         }
@@ -1647,6 +1650,7 @@ impl Engine {
 
     pub fn drop_device(&mut self, device_id: &str) -> Vec<Outgoing> {
         let mut out = Vec::new();
+        self.state.input_reliability.remove(device_id);
         if let Some(rec) = self.state.registry.remove(device_id) {
             if let Some(info) = rec.info {
                 if info.slot_id > 0 {
@@ -1704,6 +1708,35 @@ impl Engine {
         } else {
             BMReliability::Reliable.code()
         }
+    }
+
+    fn track_reliability(&mut self, sender: &str, cfg: &ControlConfig) {
+        if cfg.touch_reliability.is_none() && cfg.control_reliability.is_none() {
+            return;
+        }
+        let entry = self
+            .state
+            .input_reliability
+            .entry(sender.to_string())
+            .or_default();
+        if let Some(touch) = cfg.touch_reliability {
+            entry.touch = Some(touch);
+        }
+        if let Some(sensors) = cfg.control_reliability {
+            entry.sensors = Some(sensors);
+        }
+    }
+
+    pub fn reliability_for(&self, target: &str, channel: i32) -> i32 {
+        let tracked = self.state.input_reliability.get(target);
+        let requested = match ChannelType::from_i32(channel) {
+            Some(ChannelType::Touch) => tracked.and_then(|r| r.touch),
+            Some(
+                ChannelType::Acceleration | ChannelType::Gyro | ChannelType::Orientation,
+            ) => tracked.and_then(|r| r.sensors),
+            _ => None,
+        };
+        requested.unwrap_or_else(|| Self::default_reliability_for_channel(channel))
     }
 
     fn parse_control_rpc(&self, inv: &ReceivedInvoke) -> Option<ControlConfig> {

@@ -7,6 +7,12 @@ use crate::engine::registry::{DeviceRecord, DeviceRegistry};
 use crate::types::device_type::DeviceType;
 use std::collections::{HashMap, HashSet};
 
+#[derive(Debug, Default, Clone, Copy)]
+pub struct InputReliability {
+    pub touch: Option<i32>,
+    pub sensors: Option<i32>,
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct EngineState {
     pub(crate) registry: DeviceRegistry,
@@ -16,6 +22,7 @@ pub struct EngineState {
     pub(crate) invoke_counter: i32,
     pub(crate) used_slots: HashSet<i16>,
     pub(crate) button_handlers: HashSet<String>,
+    pub(crate) input_reliability: HashMap<String, InputReliability>,
 }
 
 impl EngineState {
@@ -28,6 +35,7 @@ impl EngineState {
             invoke_counter: 1,
             used_slots: HashSet::new(),
             button_handlers: HashSet::new(),
+            input_reliability: HashMap::new(),
         }
     }
 
