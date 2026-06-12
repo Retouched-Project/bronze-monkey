@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+use crate::codec::messages::touch::Touch;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
+use crate::engine::events::Command;
 use crate::engine::registry::DeviceRecord;
-use crate::codec::externals::bm_registry_info::BMRegistryInfo;
-use crate::codec::messages::touch::Touch;
 use crate::types::device_type::DeviceType;
 use console_error_panic_hook;
 use js_sys;
@@ -295,6 +296,21 @@ impl BmEngineWasm {
         }
     }
 
+    pub fn emit(&mut self, command: JsValue) -> Result<JsValue, JsError> {
+        let cmd: Command =
+            serde_wasm_bindgen::from_value(command).map_err(|e| JsError::new(&e.to_string()))?;
+        let outgoings = self.inner.emit(cmd);
+        to_js(&outgoings)
+    }
+
+    pub fn register_button_handlers(&mut self, handlers: Vec<String>) {
+        self.inner.register_button_handlers(handlers);
+    }
+
+    pub fn clear_button_handlers(&mut self) {
+        self.inner.clear_button_handlers();
+    }
+
     pub fn make_registry_list(&mut self, target: &str) -> Result<JsValue, JsError> {
         let outgoings = self.inner.make_registry_list(target, None);
         to_js(&outgoings)
@@ -333,7 +349,9 @@ impl BmEngineWasm {
             device_address: addr,
         };
 
-        let outgoings = self.inner.make_registry_register(target, info, domain, None);
+        let outgoings = self
+            .inner
+            .make_registry_register(target, info, domain, None);
         to_js(&outgoings)
     }
 

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::devices::bm_address::BMAddress;
 use crate::codec::externals::bm_array::BMArray;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::externals::registry;
@@ -18,10 +17,11 @@ use crate::codec::messages::ping::Ping;
 use crate::codec::messages::shake::Shake;
 use crate::codec::messages::string_literal::StringLiteral;
 use crate::codec::messages::touch_set::TouchSet;
+use crate::devices::bm_address::BMAddress;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Object {
     BMArray(BMArray),
     BMAddress(BMAddress),

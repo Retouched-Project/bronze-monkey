@@ -11,9 +11,9 @@ use std::io::{Cursor, Read};
 use std::os::raw::c_char;
 use std::ptr;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BMInvoke {
     pub id: i32,
     pub method: String,

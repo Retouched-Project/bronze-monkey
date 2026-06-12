@@ -9,9 +9,9 @@ use crate::devices::device_core::DeviceCore;
 use crate::codec::externals::registry;
 use crate::codec::io::{DataInput, DataOutput, Result};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AckPacket {
     pub device: DeviceCore,
     pub device_address: BMAddress,

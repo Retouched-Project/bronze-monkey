@@ -4,9 +4,9 @@
 use crate::codec::io::{DataInput, DataOutput, Result};
 use crate::codec::object::Object;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Value {
     String(String),
     Bool(bool),

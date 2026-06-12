@@ -6,9 +6,9 @@ use crate::codec::io::{DataInput, DataOutput, Result};
 pub(crate) use crate::codec::messages::touch::Touch;
 use std::collections::HashMap;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct TouchSet {
     pub touches: HashMap<i32, Touch>,
 }

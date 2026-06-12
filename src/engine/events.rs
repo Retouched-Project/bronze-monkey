@@ -6,7 +6,7 @@ use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::touch::Touch;
 use crate::codec::object::Object;
 use crate::engine::registry::DeviceRecord;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -14,6 +14,7 @@ pub struct Outgoing {
     pub target_device_id: String,
     pub channel: i32,
     pub reliability: i32,
+    #[serde(with = "serde_bytes")]
     pub payload: Vec<u8>,
 }
 
@@ -171,6 +172,7 @@ pub enum Event {
     ChunkComplete {
         device_id: String,
         set_id: String,
+        #[serde(with = "serde_bytes")]
         blob: Vec<u8>,
     },
 }
@@ -193,7 +195,7 @@ pub struct ControlConfig {
     pub return_app_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Sensor {
     Touch,
     Accel,
@@ -202,12 +204,14 @@ pub enum Sensor {
 }
 
 #[non_exhaustive]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all_fields = "camelCase")]
 pub enum Command {
     Raw {
         target: String,
         channel: i32,
         reliability: i32,
+        #[serde(with = "serde_bytes")]
         payload: Vec<u8>,
     },
     SendObject {
@@ -346,6 +350,7 @@ pub enum Command {
     },
     SendControlScheme {
         target: String,
+        #[serde(with = "serde_bytes")]
         xml: Vec<u8>,
     },
     ControlSchemeParsed {

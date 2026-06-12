@@ -4,9 +4,9 @@
 use crate::codec::externals::registry;
 use crate::codec::io::{DataInput, DataOutput, Result};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DPadUpdate {
     pub x: i16,
     pub y: i16,

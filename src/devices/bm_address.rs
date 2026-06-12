@@ -4,9 +4,9 @@
 use crate::codec::externals::registry;
 use crate::codec::io::{DataInput, DataOutput, Result};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct BMAddress {
     pub address: String,
     pub unreliable_port: i32,

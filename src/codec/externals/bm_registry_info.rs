@@ -9,9 +9,9 @@ use crate::types::device_type::DeviceType;
 use std::os::raw::c_char;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BMRegistryInfo {
     pub slot_id: i16,
     pub app_id: String,

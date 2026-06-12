@@ -4,14 +4,15 @@
 use crate::codec::externals::registry;
 use crate::codec::io::{DataInput, DataOutput, Result};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BMByteChunk {
     pub set_id: String,
     pub start_byte: i32,
     pub chunk_size: i32,
     pub total_size: i32,
+    #[serde(with = "serde_bytes")]
     pub data: Vec<u8>,
 }
 

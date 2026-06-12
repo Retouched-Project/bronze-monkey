@@ -17,7 +17,7 @@ use crate::codec::object::Object;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
-use crate::engine::events::Outgoing;
+use crate::engine::events::{Command, Outgoing};
 use crate::engine::processing::Engine;
 use crate::engine::protocol::{
     deserialize_packet as protocol_deserialize_packet, serialize_packet,
@@ -28,7 +28,7 @@ use crate::types::packet_type::PacketType;
 use prost::Message;
 use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyBytes, PyDict, PyFloat, PyInt, PyList, PyModule, PyString};
-use pythonize::pythonize;
+use pythonize::{depythonize, pythonize};
 use std::sync::Mutex;
 use std::sync::RwLock;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -121,6 +121,27 @@ impl BMEnginePy {
     ) -> PyResult<Bound<'py, PyAny>> {
         let out = self.inner.write().unwrap().process_incoming_udp(data);
         Ok(pythonize(py, &out)?)
+    }
+
+    fn emit<'py>(
+        &self,
+        py: Python<'py>,
+        command: Bound<'py, PyAny>,
+    ) -> PyResult<Bound<'py, PyList>> {
+        let cmd: Command = depythonize(&command)?;
+        let outgoings = self.inner.write().unwrap().emit(cmd);
+        outgoings_to_py(py, outgoings)
+    }
+
+    fn register_button_handlers(&self, handlers: Vec<String>) {
+        self.inner
+            .write()
+            .unwrap()
+            .register_button_handlers(handlers);
+    }
+
+    fn clear_button_handlers(&self) {
+        self.inner.write().unwrap().clear_button_handlers();
     }
 
     fn make_on_host_connected<'py>(
@@ -420,11 +441,12 @@ impl BMEnginePy {
         domain: Option<String>,
     ) -> PyResult<Bound<'py, PyList>> {
         let reg_info = dict_to_registry_info(&info)?;
-        let actions =
-            self.inner
-                .write()
-                .unwrap()
-                .make_registry_register(&target_device_id, reg_info, domain, None);
+        let actions = self.inner.write().unwrap().make_registry_register(
+            &target_device_id,
+            reg_info,
+            domain,
+            None,
+        );
         outgoings_to_py(py, actions)
     }
 

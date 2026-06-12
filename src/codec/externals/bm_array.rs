@@ -6,9 +6,9 @@ use crate::codec::io::{DataInput, DataOutput, Result};
 use crate::codec::messages::bm_encoding::{BMEncoding, Value};
 use std::fmt;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct BMArray {
     pub items: Vec<Value>,
 }
