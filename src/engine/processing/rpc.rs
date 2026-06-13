@@ -368,6 +368,17 @@ impl Engine {
         }
     }
 
+    pub(crate) fn rpc_on_kill_event(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        _sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let device_id = engine.param_string(&inv.params, 0).unwrap_or_default();
+        out.events.push(Event::DeviceKilled { device_id });
+    }
+
     fn sender_string(sender_id: Option<&str>) -> String {
         sender_id.unwrap_or_default().to_string()
     }

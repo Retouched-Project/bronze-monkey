@@ -11,6 +11,7 @@ pub const REGISTRY_SET_VISIBLE: &str = "registry.setVisible";
 pub const ON_HOST_CONNECTED: &str = "onHostConnected";
 pub const ON_HOST_UPDATE: &str = "onHostUpdate";
 pub const ON_HOST_DISCONNECTED: &str = "onHostDisconnected";
+pub const ON_KILL_EVENT: &str = "onKillEvent";
 pub const DEVICE_CONNECT_REQUESTED: &str = "deviceConnectRequested";
 pub const CONNECTION_FAILED: &str = "connectionFailed";
 

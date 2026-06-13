@@ -79,6 +79,9 @@ pub enum Event {
     DeviceConnectRequested {
         info: BMRegistryInfo,
     },
+    DeviceKilled {
+        device_id: String,
+    },
     Touch {
         sender: String,
         touches: Vec<Touch>,

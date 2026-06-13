@@ -79,6 +79,7 @@ pub enum EventTagC {
     RegistrationResult = 31,
     ControlScheme = 32,
     SlotAssigned = 33,
+    DeviceKilled = 34,
 }
 
 #[repr(C)]

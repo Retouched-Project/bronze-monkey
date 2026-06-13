@@ -266,6 +266,10 @@ pub(super) fn event_to_c(event: Event) -> EventC {
             out.tag = EventTagC::DeviceConnectRequested;
             set_event_registry(&mut out, vec![info]);
         }
+        Event::DeviceKilled { device_id } => {
+            out.tag = EventTagC::DeviceKilled;
+            set_string_field(device_id, |p| event_set_device_id_inner(&mut out, p));
+        }
         Event::Invoke {
             sender,
             method,
