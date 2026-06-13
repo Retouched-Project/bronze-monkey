@@ -79,3 +79,62 @@ impl BMEncoding {
         }
     }
 }
+
+#[repr(i32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ValueTagC {
+    String = 0,
+    Bool = 1,
+    I16 = 2,
+    U16 = 3,
+    I32 = 4,
+    U32 = 5,
+    F32 = 6,
+    F64 = 7,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct ValueC {
+    pub tag: ValueTagC,
+    pub string_ptr: *const std::os::raw::c_char,
+    pub bool_value: bool,
+    pub int_value: i64,
+    pub float_value: f64,
+}
+
+impl ValueC {
+    pub fn to_rust(&self) -> Option<Value> {
+        Some(match self.tag {
+            ValueTagC::String => {
+                if self.string_ptr.is_null() {
+                    return None;
+                }
+                let c_str = unsafe { std::ffi::CStr::from_ptr(self.string_ptr) };
+                Value::String(c_str.to_str().ok()?.to_owned())
+            }
+            ValueTagC::Bool => Value::Bool(self.bool_value),
+            ValueTagC::I16 => Value::I16(i16::try_from(self.int_value).ok()?),
+            ValueTagC::U16 => Value::U16(u16::try_from(self.int_value).ok()?),
+            ValueTagC::I32 => Value::I32(i32::try_from(self.int_value).ok()?),
+            ValueTagC::U32 => Value::U32(u32::try_from(self.int_value).ok()?),
+            ValueTagC::F32 => Value::F32(self.float_value as f32),
+            ValueTagC::F64 => Value::F64(self.float_value),
+        })
+    }
+}
+
+pub(crate) fn values_from_c(ptr: *const ValueC, len: usize) -> Option<Vec<Value>> {
+    if len == 0 {
+        return Some(Vec::new());
+    }
+    if ptr.is_null() {
+        return None;
+    }
+    let items = unsafe { std::slice::from_raw_parts(ptr, len) };
+    let mut out = Vec::with_capacity(len);
+    for item in items {
+        out.push(item.to_rust()?);
+    }
+    Some(out)
+}

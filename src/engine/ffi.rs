@@ -11,14 +11,14 @@ use crate::codec::externals::bm_registry_info::{
     bm_registry_info_set_app_id_inner, bm_registry_info_set_device_id_inner,
     bm_registry_info_set_device_name_inner,
 };
-use crate::codec::messages::bm_encoding::Value;
+use crate::codec::messages::bm_encoding::{Value, ValueC, values_from_c};
 use crate::codec::messages::bm_invoke::{BMInvoke, BMInvokeC};
 use crate::codec::messages::bm_parameter::VecOutput;
 use crate::codec::messages::touch::Touch;
 use crate::codec::object::Object;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::device_core::DeviceCoreC;
-use crate::engine::events::{Event, Outgoing, ProcessOutput};
+use crate::engine::events::{Command, Event, Outgoing, ProcessOutput, Sensor};
 use crate::engine::processing::Engine;
 use crate::engine::registry::DeviceRecord;
 use crate::types::touch_state::TouchState;
@@ -251,6 +251,188 @@ pub struct EventListC {
 pub struct ProcessOutputC {
     pub events: EventListC,
     pub outgoings: OutgoingListC,
+}
+
+#[repr(i32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommandTagC {
+    Raw = 0,
+    Invoke = 1,
+    Relay = 2,
+    ApproveRegistration = 3,
+    DenyRegistration = 4,
+    DropDevice = 5,
+    Register = 6,
+    RequestHostList = 7,
+    UpdateHostInfo = 8,
+    Unregister = 9,
+    SetHostVisible = 10,
+    ConnectToHost = 11,
+    SendTouch = 12,
+    SendAccel = 13,
+    SendGyro = 14,
+    SendOrientation = 15,
+    SendDPad = 16,
+    SendButton = 17,
+    SendMenuEvent = 18,
+    SendKeyString = 19,
+    SendNavigation = 20,
+    SetCapabilities = 21,
+    ConfigureSensor = 22,
+    SetReliability = 23,
+    SetControlMode = 24,
+    Vibrate = 25,
+    Pause = 26,
+    RequestControlScheme = 27,
+    SendControlScheme = 28,
+    ControlSchemeParsed = 29,
+    StoreCookie = 30,
+    RequestCookie = 31,
+    SendCookie = 32,
+}
+
+impl CommandTagC {
+    fn from_i32(v: i32) -> Option<Self> {
+        Some(match v {
+            0 => Self::Raw,
+            1 => Self::Invoke,
+            2 => Self::Relay,
+            3 => Self::ApproveRegistration,
+            4 => Self::DenyRegistration,
+            5 => Self::DropDevice,
+            6 => Self::Register,
+            7 => Self::RequestHostList,
+            8 => Self::UpdateHostInfo,
+            9 => Self::Unregister,
+            10 => Self::SetHostVisible,
+            11 => Self::ConnectToHost,
+            12 => Self::SendTouch,
+            13 => Self::SendAccel,
+            14 => Self::SendGyro,
+            15 => Self::SendOrientation,
+            16 => Self::SendDPad,
+            17 => Self::SendButton,
+            18 => Self::SendMenuEvent,
+            19 => Self::SendKeyString,
+            20 => Self::SendNavigation,
+            21 => Self::SetCapabilities,
+            22 => Self::ConfigureSensor,
+            23 => Self::SetReliability,
+            24 => Self::SetControlMode,
+            25 => Self::Vibrate,
+            26 => Self::Pause,
+            27 => Self::RequestControlScheme,
+            28 => Self::SendControlScheme,
+            29 => Self::ControlSchemeParsed,
+            30 => Self::StoreCookie,
+            31 => Self::RequestCookie,
+            32 => Self::SendCookie,
+            _ => return None,
+        })
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct CommandC {
+    pub tag: i32,
+
+    pub target: *const c_char,
+    pub device_id: *const c_char,
+    pub method: *const c_char,
+    pub return_method: *const c_char,
+    pub domain: *const c_char,
+    pub name: *const c_char,
+    pub value: *const c_char,
+
+    pub params_ptr: *const ValueC,
+    pub params_len: usize,
+    pub info: *const BMRegistryInfoC,
+    pub self_info: *const BMRegistryInfoC,
+    pub touches_ptr: *const TouchPointC,
+    pub touches_len: usize,
+    pub payload_ptr: *const c_uchar,
+    pub payload_len: usize,
+
+    pub channel: i32,
+    pub reliability: i32,
+    pub sensor: i32,
+    pub enabled: i32,
+    pub interval_ms: i32,
+    pub touch_reliability: i32,
+    pub sensors_reliability: i32,
+    pub mode: i32,
+    pub width: i32,
+    pub height: i32,
+
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub w: f64,
+    pub dpad_x: i16,
+    pub dpad_y: i16,
+
+    pub pressed: bool,
+    pub visible: bool,
+    pub notify_everyone: bool,
+    pub gyroscope: bool,
+    pub orientation: bool,
+}
+
+impl Default for CommandC {
+    fn default() -> Self {
+        Self {
+            tag: 0,
+            target: ptr::null(),
+            device_id: ptr::null(),
+            method: ptr::null(),
+            return_method: ptr::null(),
+            domain: ptr::null(),
+            name: ptr::null(),
+            value: ptr::null(),
+            params_ptr: ptr::null(),
+            params_len: 0,
+            info: ptr::null(),
+            self_info: ptr::null(),
+            touches_ptr: ptr::null(),
+            touches_len: 0,
+            payload_ptr: ptr::null(),
+            payload_len: 0,
+            channel: 0,
+            reliability: 0,
+            sensor: 0,
+            enabled: -1,
+            interval_ms: -1,
+            touch_reliability: 0,
+            sensors_reliability: 0,
+            mode: 0,
+            width: 0,
+            height: 0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+            w: 0.0,
+            dpad_x: 0,
+            dpad_y: 0,
+            pressed: false,
+            visible: false,
+            notify_everyone: false,
+            gyroscope: false,
+            orientation: false,
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn bm_command_init(command: *mut CommandC) {
+    catch_void(|| {
+        if command.is_null() {
+            return;
+        }
+        unsafe {
+            *command = CommandC::default();
+        }
+    });
 }
 
 crate::ffi_cstring_accessors!(
@@ -706,6 +888,308 @@ pub extern "C" fn bm_engine_process_incoming_udp(
         unsafe {
             *out = result;
         }
+        true
+    })
+}
+
+fn req_str(ptr: *const c_char) -> Option<String> {
+    if ptr.is_null() {
+        return None;
+    }
+    let c_str = unsafe { std::ffi::CStr::from_ptr(ptr) };
+    c_str.to_str().ok().map(str::to_owned)
+}
+
+fn opt_str(ptr: *const c_char) -> Option<Option<String>> {
+    if ptr.is_null() {
+        return Some(None);
+    }
+    let c_str = unsafe { std::ffi::CStr::from_ptr(ptr) };
+    c_str.to_str().ok().map(|s| Some(s.to_owned()))
+}
+
+fn bytes_from_c(ptr: *const c_uchar, len: usize) -> Option<Vec<u8>> {
+    if len == 0 {
+        return Some(Vec::new());
+    }
+    if ptr.is_null() {
+        return None;
+    }
+    let bytes = unsafe { std::slice::from_raw_parts(ptr, len) };
+    Some(bytes.to_vec())
+}
+
+fn info_from_c(
+    ptr: *const BMRegistryInfoC,
+) -> Option<crate::codec::externals::bm_registry_info::BMRegistryInfo> {
+    if ptr.is_null() {
+        return None;
+    }
+    unsafe { &*ptr }.to_rust()
+}
+
+fn touches_from_c(ptr: *const TouchPointC, len: usize) -> Option<Vec<Touch>> {
+    if len == 0 {
+        return Some(Vec::new());
+    }
+    if ptr.is_null() {
+        return None;
+    }
+    let items = unsafe { std::slice::from_raw_parts(ptr, len) };
+    let mut touches = Vec::with_capacity(len);
+    for t in items {
+        touches.push(Touch {
+            id: t.id,
+            x: t.x,
+            y: t.y,
+            screen_width: t.screen_width,
+            screen_height: t.screen_height,
+            state: TouchState::from_value(t.state)?,
+        });
+    }
+    Some(touches)
+}
+
+fn sensor_from_c(v: i32) -> Option<Sensor> {
+    Some(match v {
+        0 => Sensor::Touch,
+        1 => Sensor::Accel,
+        2 => Sensor::Gyro,
+        3 => Sensor::Orientation,
+        _ => return None,
+    })
+}
+
+fn command_from_c(c: &CommandC) -> Option<Command> {
+    Some(match CommandTagC::from_i32(c.tag)? {
+        CommandTagC::Raw => Command::Raw {
+            target: req_str(c.target)?,
+            channel: c.channel,
+            reliability: c.reliability,
+            payload: bytes_from_c(c.payload_ptr, c.payload_len)?,
+        },
+        CommandTagC::Invoke => Command::Invoke {
+            target: req_str(c.target)?,
+            method: req_str(c.method)?,
+            return_method: opt_str(c.return_method)?,
+            params: values_from_c(c.params_ptr, c.params_len)?,
+        },
+        CommandTagC::Relay => Command::Relay {
+            target: req_str(c.target)?,
+            destination: info_from_c(c.info)?,
+            method: req_str(c.method)?,
+            return_method: opt_str(c.return_method)?,
+            params: values_from_c(c.params_ptr, c.params_len)?,
+        },
+        CommandTagC::ApproveRegistration => Command::ApproveRegistration {
+            device_id: req_str(c.device_id)?,
+        },
+        CommandTagC::DenyRegistration => Command::DenyRegistration {
+            device_id: req_str(c.device_id)?,
+        },
+        CommandTagC::DropDevice => Command::DropDevice {
+            device_id: req_str(c.device_id)?,
+        },
+        CommandTagC::Register => Command::Register {
+            target: req_str(c.target)?,
+            info: info_from_c(c.info)?,
+            domain: opt_str(c.domain)?,
+            return_method: opt_str(c.return_method)?,
+        },
+        CommandTagC::RequestHostList => Command::RequestHostList {
+            target: req_str(c.target)?,
+            return_method: opt_str(c.return_method)?,
+        },
+        CommandTagC::UpdateHostInfo => Command::UpdateHostInfo {
+            target: req_str(c.target)?,
+            info: info_from_c(c.info)?,
+            return_method: opt_str(c.return_method)?,
+        },
+        CommandTagC::Unregister => Command::Unregister {
+            target: req_str(c.target)?,
+            return_method: opt_str(c.return_method)?,
+        },
+        CommandTagC::SetHostVisible => Command::SetHostVisible {
+            target: req_str(c.target)?,
+            visible: c.visible,
+            notify_everyone: c.notify_everyone,
+        },
+        CommandTagC::ConnectToHost => Command::ConnectToHost {
+            target: req_str(c.target)?,
+            host: info_from_c(c.info)?,
+            self_info: info_from_c(c.self_info)?,
+        },
+        CommandTagC::SendTouch => Command::SendTouch {
+            target: req_str(c.target)?,
+            touches: touches_from_c(c.touches_ptr, c.touches_len)?,
+        },
+        CommandTagC::SendAccel => Command::SendAccel {
+            target: req_str(c.target)?,
+            x: c.x,
+            y: c.y,
+            z: c.z,
+        },
+        CommandTagC::SendGyro => Command::SendGyro {
+            target: req_str(c.target)?,
+            x: c.x as f32,
+            y: c.y as f32,
+            z: c.z as f32,
+        },
+        CommandTagC::SendOrientation => Command::SendOrientation {
+            target: req_str(c.target)?,
+            x: c.x as f32,
+            y: c.y as f32,
+            z: c.z as f32,
+            w: c.w as f32,
+        },
+        CommandTagC::SendDPad => Command::SendDPad {
+            target: req_str(c.target)?,
+            x: c.dpad_x,
+            y: c.dpad_y,
+        },
+        CommandTagC::SendButton => Command::SendButton {
+            target: req_str(c.target)?,
+            handler: req_str(c.name)?,
+            pressed: c.pressed,
+        },
+        CommandTagC::SendMenuEvent => Command::SendMenuEvent {
+            target: req_str(c.target)?,
+            event: req_str(c.name)?,
+        },
+        CommandTagC::SendKeyString => Command::SendKeyString {
+            target: req_str(c.target)?,
+            key: req_str(c.name)?,
+        },
+        CommandTagC::SendNavigation => Command::SendNavigation {
+            target: req_str(c.target)?,
+            nav: req_str(c.name)?,
+        },
+        CommandTagC::SetCapabilities => Command::SetCapabilities {
+            target: req_str(c.target)?,
+            gyroscope: c.gyroscope,
+            orientation: c.orientation,
+        },
+        CommandTagC::ConfigureSensor => Command::ConfigureSensor {
+            target: req_str(c.target)?,
+            sensor: sensor_from_c(c.sensor)?,
+            enabled: match c.enabled {
+                v if v < 0 => None,
+                0 => Some(false),
+                _ => Some(true),
+            },
+            interval_ms: if c.interval_ms < 0 {
+                None
+            } else {
+                Some(c.interval_ms)
+            },
+        },
+        CommandTagC::SetReliability => Command::SetReliability {
+            target: req_str(c.target)?,
+            touch: c.touch_reliability,
+            sensors: c.sensors_reliability,
+        },
+        CommandTagC::SetControlMode => Command::SetControlMode {
+            target: req_str(c.target)?,
+            mode: c.mode,
+            text: opt_str(c.value)?,
+        },
+        CommandTagC::Vibrate => Command::Vibrate {
+            target: req_str(c.target)?,
+        },
+        CommandTagC::Pause => Command::Pause {
+            target: req_str(c.target)?,
+        },
+        CommandTagC::RequestControlScheme => Command::RequestControlScheme {
+            target: req_str(c.target)?,
+            width: c.width,
+            height: c.height,
+        },
+        CommandTagC::SendControlScheme => Command::SendControlScheme {
+            target: req_str(c.target)?,
+            xml: bytes_from_c(c.payload_ptr, c.payload_len)?,
+        },
+        CommandTagC::ControlSchemeParsed => Command::ControlSchemeParsed {
+            target: req_str(c.target)?,
+        },
+        CommandTagC::StoreCookie => Command::StoreCookie {
+            target: req_str(c.target)?,
+            name: req_str(c.name)?,
+            value: req_str(c.value)?,
+        },
+        CommandTagC::RequestCookie => Command::RequestCookie {
+            target: req_str(c.target)?,
+            name: req_str(c.name)?,
+        },
+        CommandTagC::SendCookie => Command::SendCookie {
+            target: req_str(c.target)?,
+            name: req_str(c.name)?,
+            value: req_str(c.value)?,
+        },
+    })
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn bm_engine_emit(
+    ptr_engine: *mut Engine,
+    command: *const CommandC,
+    out_actions: *mut OutgoingListC,
+) -> bool {
+    catch_bool(|| {
+        if ptr_engine.is_null() || command.is_null() || out_actions.is_null() {
+            return false;
+        }
+        let engine = unsafe { &mut *ptr_engine };
+        let cmd = match command_from_c(unsafe { &*command }) {
+            Some(c) => c,
+            None => return false,
+        };
+        let actions = engine.emit(cmd);
+        let list = outgoings_to_c(actions);
+        unsafe {
+            *out_actions = list;
+        }
+        true
+    })
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn bm_engine_register_button_handlers(
+    ptr_engine: *mut Engine,
+    handlers_ptr: *const *const c_char,
+    handlers_len: usize,
+) -> bool {
+    catch_bool(|| {
+        if ptr_engine.is_null() {
+            return false;
+        }
+        let engine = unsafe { &mut *ptr_engine };
+        if handlers_len == 0 {
+            return true;
+        }
+        if handlers_ptr.is_null() {
+            return false;
+        }
+        let items = unsafe { std::slice::from_raw_parts(handlers_ptr, handlers_len) };
+        let mut handlers = Vec::with_capacity(handlers_len);
+        for &p in items {
+            match req_str(p) {
+                Some(s) => handlers.push(s),
+                None => return false,
+            }
+        }
+        engine.register_button_handlers(handlers);
+        true
+    })
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn bm_engine_clear_button_handlers(ptr_engine: *mut Engine) -> bool {
+    catch_bool(|| {
+        if ptr_engine.is_null() {
+            return false;
+        }
+        let engine = unsafe { &mut *ptr_engine };
+        engine.clear_button_handlers();
         true
     })
 }

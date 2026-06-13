@@ -14,6 +14,7 @@ crates = ["bronze-monkey"]
 
 [export]
 prefix = ""
+include = ["CommandTagC"]
 
 [enum]
 prefix_with_name = true

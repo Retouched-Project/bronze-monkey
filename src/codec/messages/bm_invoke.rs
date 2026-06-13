@@ -4,7 +4,7 @@
 use crate::codec::externals::registry;
 use crate::codec::io::{DataInput, DataOutput, Result};
 use crate::codec::object::Object;
-use crate::codec::messages::bm_encoding::Value;
+use crate::codec::messages::bm_encoding::{Value, ValueC, values_from_c};
 use crate::codec::messages::bm_parameter::VecOutput;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read};
@@ -137,8 +137,8 @@ pub struct BMInvokeC {
     pub method_len: usize,
     pub return_method_ptr: *mut c_char,
     pub return_method_len: usize,
-    pub params_json_ptr: *mut c_char,
-    pub params_json_len: usize,
+    pub params_ptr: *const ValueC,
+    pub params_len: usize,
 }
 
 crate::ffi_cstring_accessors!(
@@ -163,23 +163,11 @@ crate::ffi_cstring_accessors!(
     free_field = bm_invoke_free_return_method
 );
 
-crate::ffi_cstring_accessors!(
-    BMInvokeC,
-    params_json_ptr,
-    params_json_len,
-    set_inner = bm_invoke_set_params_json_inner,
-    set = bm_invoke_set_params_json,
-    get_len = bm_invoke_get_params_json_len,
-    get = bm_invoke_get_params_json,
-    free_field = bm_invoke_free_params_json
-);
-
 crate::ffi_free_struct!(
     BMInvokeC,
     bm_invoke_free,
     bm_invoke_free_method,
-    bm_invoke_free_return_method,
-    bm_invoke_free_params_json
+    bm_invoke_free_return_method
 );
 
 #[unsafe(no_mangle)]
@@ -190,9 +178,27 @@ pub extern "C" fn bm_invoke_new() -> *mut BMInvokeC {
         method_len: 0,
         return_method_ptr: ptr::null_mut(),
         return_method_len: 0,
-        params_json_ptr: ptr::null_mut(),
-        params_json_len: 0,
+        params_ptr: ptr::null(),
+        params_len: 0,
     }))
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn bm_invoke_set_params(
+    invoke: *mut BMInvokeC,
+    params_ptr: *const ValueC,
+    params_len: usize,
+) -> bool {
+    if invoke.is_null() {
+        return false;
+    }
+    if params_len > 0 && params_ptr.is_null() {
+        return false;
+    }
+    let inv = unsafe { &mut *invoke };
+    inv.params_ptr = params_ptr;
+    inv.params_len = params_len;
+    true
 }
 
 impl BMInvokeC {
@@ -216,7 +222,7 @@ impl BMInvokeC {
             };
             Some(String::from_utf8(bytes.to_vec()).ok()?)
         };
-        let params = Vec::new();
+        let params = values_from_c(self.params_ptr, self.params_len)?;
         Some(BMInvoke {
             id: self.id,
             method,
