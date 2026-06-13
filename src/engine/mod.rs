@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+pub mod cffi;
 pub mod events;
-pub mod ffi;
 pub mod methods;
 pub mod processing;
 pub mod protocol;
