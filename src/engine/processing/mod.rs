@@ -137,7 +137,7 @@ impl Engine {
             return;
         }
         let entry = self
-            .game_policy
+            .controller_policy
             .input_reliability
             .entry(sender.to_string())
             .or_default();
@@ -150,7 +150,7 @@ impl Engine {
     }
 
     pub fn reliability_for(&self, target: &str, channel: i32) -> i32 {
-        let tracked = self.game_policy.input_reliability.get(target);
+        let tracked = self.controller_policy.input_reliability.get(target);
         let requested = match ChannelType::from_i32(channel) {
             Some(ChannelType::Touch) => tracked.and_then(|r| r.touch),
             Some(ChannelType::Acceleration | ChannelType::Gyro | ChannelType::Orientation) => {

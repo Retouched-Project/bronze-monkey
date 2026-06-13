@@ -317,7 +317,7 @@ impl Engine {
     ) {
         let mut claimed = false;
 
-        if self.roles.game {
+        if self.roles.controller {
             if let Some(cfg) = self.parse_control_rpc(&inv) {
                 if let Some(sender) = sender_id.as_deref() {
                     self.track_reliability(sender, &cfg);

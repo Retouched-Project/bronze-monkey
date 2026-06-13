@@ -1,24 +1,18 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-//! Game-role policy: handlers for messages a game receives from controllers
-//! (input config, capabilities, control scheme requests, key/nav/menu), plus
-//! the client-reply handlers shared with the controller role.
+//! Game-role policy: handlers for messages a game receives from a controller
+//! (capabilities, control scheme requests, key/nav/menu, pause, buttons), plus
+//! the client-reply handlers shared with the controller role. Holds the set of
+//! scheme-defined button handler names used to recognise incoming button invokes.
 
 use crate::engine::methods;
 use crate::engine::processing::{Engine, RpcHandler};
-use std::collections::{HashMap, HashSet};
-
-#[derive(Debug, Default, Clone, Copy)]
-pub struct InputReliability {
-    pub touch: Option<i32>,
-    pub sensors: Option<i32>,
-}
+use std::collections::HashSet;
 
 #[derive(Debug, Default, Clone)]
 pub struct GamePolicy {
     pub(crate) button_handlers: HashSet<String>,
-    pub(crate) input_reliability: HashMap<String, InputReliability>,
 }
 
 impl GamePolicy {
@@ -37,6 +31,7 @@ impl GamePolicy {
             methods::ON_KEY_STRING => Engine::rpc_on_key_string,
             methods::ON_NAVIGATION_STRING => Engine::rpc_on_navigation_string,
             methods::MENU_EVENT => Engine::rpc_menu_event,
+            methods::BM_PAUSE => Engine::rpc_bm_pause,
             methods::ON_CONTROL_SCHEME_PARSED => Engine::rpc_on_control_scheme_parsed,
             methods::GET_COOKIE => Engine::rpc_get_cookie,
             methods::SET_COOKIE => Engine::rpc_set_cookie,

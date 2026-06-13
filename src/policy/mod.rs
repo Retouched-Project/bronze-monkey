@@ -5,8 +5,8 @@ pub mod controller;
 pub mod game;
 pub mod server;
 
-pub use controller::ControllerPolicy;
-pub use game::{GamePolicy, InputReliability};
+pub use controller::{ControllerPolicy, InputReliability};
+pub use game::GamePolicy;
 pub use server::ServerPolicy;
 
 use crate::types::device_type::DeviceType;
