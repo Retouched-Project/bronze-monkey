@@ -242,6 +242,10 @@ pub(super) fn event_to_c(event: Event) -> EventC {
             out.tag = EventTagC::RegistrationResult;
             out.registry_success = if success { 1 } else { 0 };
         }
+        Event::SlotAssigned { info } => {
+            out.tag = EventTagC::SlotAssigned;
+            set_event_registry(&mut out, vec![info]);
+        }
         Event::HostConnected { info } => {
             out.tag = EventTagC::HostConnected;
             set_event_registry(&mut out, vec![info]);

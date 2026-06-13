@@ -426,7 +426,7 @@ impl Engine {
             params.push(Value::String(d));
         }
         let return_method = Self::return_method_or(return_method, methods::DEFAULT_RETURN_REGISTER);
-        self.bind_continuation(return_method, Self::rpc_registry_register);
+        self.bind_continuation(return_method, Self::rpc_on_register_reply);
         let msg = match self.build_invoke_payload(
             methods::REGISTRY_REGISTER,
             Some(return_method),
@@ -453,7 +453,7 @@ impl Engine {
         return_method: Option<&str>,
     ) -> Vec<Outgoing> {
         let return_method = Self::return_method_or(return_method, methods::DEFAULT_RETURN_LIST);
-        self.bind_continuation(return_method, Self::rpc_registry_list);
+        self.bind_continuation(return_method, Self::rpc_on_list);
         let msg = match self.build_invoke_payload(
             methods::REGISTRY_LIST,
             Some(return_method),

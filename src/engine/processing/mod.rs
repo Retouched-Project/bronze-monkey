@@ -10,9 +10,9 @@ mod server_ops;
 use crate::codec::messages::bm_encoding::Value;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::events::{ControlConfig, ProcessOutput};
-use crate::engine::methods;
 use crate::engine::registry::DeviceRegistry;
 use crate::engine::state::EngineState;
+use crate::policy::{ActiveRoles, ControllerPolicy, GamePolicy, Role, ServerPolicy};
 use crate::types::channel_type::ChannelType;
 use std::collections::HashMap;
 
@@ -23,97 +23,64 @@ pub struct ReceivedInvoke {
     pub params: Vec<Value>,
 }
 
-type RpcHandler = fn(&mut Engine, &ReceivedInvoke, Option<&str>, i32, &mut ProcessOutput);
+pub(crate) type RpcHandler =
+    fn(&mut Engine, &ReceivedInvoke, Option<&str>, i32, &mut ProcessOutput);
 
 #[derive(Debug, Default, Clone)]
 pub struct Engine {
     pub(crate) state: EngineState,
-    rpc_handlers: HashMap<String, RpcHandler>,
-    pub server_policy: crate::policy::ServerPolicy,
+    pub(crate) roles: ActiveRoles,
+    bound_continuations: HashMap<String, RpcHandler>,
+    pub server_policy: ServerPolicy,
+    pub game_policy: GamePolicy,
+    pub controller_policy: ControllerPolicy,
 }
 
 impl Engine {
     pub fn new() -> Self {
-        let mut handlers: HashMap<String, RpcHandler> = HashMap::with_capacity(32);
-        handlers.insert(
-            methods::REGISTRY_REGISTER.to_string(),
-            Self::rpc_registry_register,
-        );
-        handlers.insert(
-            methods::DEFAULT_RETURN_REGISTER.to_string(),
-            Self::rpc_registry_register,
-        );
-        handlers.insert(methods::REGISTRY_LIST.to_string(), Self::rpc_registry_list);
-        handlers.insert(
-            methods::DEFAULT_RETURN_LIST.to_string(),
-            Self::rpc_registry_list,
-        );
-        handlers.insert(
-            methods::REGISTRY_RELAY.to_string(),
-            Self::rpc_registry_relay,
-        );
-        handlers.insert(
-            methods::ON_HOST_CONNECTED.to_string(),
-            Self::rpc_on_host_connected,
-        );
-        handlers.insert(
-            methods::REGISTRY_UPDATE.to_string(),
-            Self::rpc_registry_update,
-        );
-        handlers.insert(
-            methods::ON_HOST_UPDATE.to_string(),
-            Self::rpc_registry_update,
-        );
-        handlers.insert(
-            methods::ON_HOST_DISCONNECTED.to_string(),
-            Self::rpc_on_host_disconnected,
-        );
-        handlers.insert(
-            methods::DEVICE_CONNECT_REQUESTED.to_string(),
-            Self::rpc_device_connect_requested,
-        );
-        handlers.insert(
-            methods::CONNECTION_FAILED.to_string(),
-            Self::rpc_connection_failed,
-        );
-        handlers.insert(methods::VIBRATE.to_string(), Self::rpc_vibrate);
-        handlers.insert(methods::BM_PAUSE.to_string(), Self::rpc_bm_pause);
-        handlers.insert(methods::MENU_EVENT.to_string(), Self::rpc_menu_event);
-        handlers.insert(methods::ON_KEY_STRING.to_string(), Self::rpc_on_key_string);
-        handlers.insert(
-            methods::ON_NAVIGATION_STRING.to_string(),
-            Self::rpc_on_navigation_string,
-        );
-        handlers.insert(
-            methods::SET_CAPABILITIES.to_string(),
-            Self::rpc_set_capabilities,
-        );
-        handlers.insert(methods::REQUEST_XML.to_string(), Self::rpc_request_xml);
-        handlers.insert(
-            methods::ON_CONTROL_SCHEME_PARSED.to_string(),
-            Self::rpc_on_control_scheme_parsed,
-        );
-        handlers.insert(methods::GET_COOKIE.to_string(), Self::rpc_get_cookie);
-        handlers.insert(methods::SET_COOKIE.to_string(), Self::rpc_set_cookie);
-        handlers.insert(methods::GOT_COOKIE.to_string(), Self::rpc_got_cookie);
-        handlers.insert(
-            methods::REGISTRY_REMOVE.to_string(),
-            Self::rpc_registry_remove,
-        );
-        handlers.insert(
-            methods::REGISTRY_SET_VISIBLE.to_string(),
-            Self::rpc_registry_set_visible,
-        );
-
         Self {
             state: EngineState::new(),
-            rpc_handlers: handlers,
-            server_policy: crate::policy::ServerPolicy::new(),
+            roles: ActiveRoles::default(),
+            bound_continuations: HashMap::new(),
+            server_policy: ServerPolicy::new(),
+            game_policy: GamePolicy::new(),
+            controller_policy: ControllerPolicy::new(),
         }
     }
 
     pub fn init_local_device(&mut self, core: DeviceCore) {
+        self.roles = ActiveRoles::for_device_type(core.device_type);
         self.state.init_local_device(core);
+    }
+
+    pub fn roles(&self) -> ActiveRoles {
+        self.roles
+    }
+
+    pub fn set_role_enabled(&mut self, role: Role, enabled: bool) {
+        self.roles.set(role, enabled);
+    }
+
+    pub(crate) fn resolve_handler(&self, method: &str) -> Option<RpcHandler> {
+        if let Some(handler) = self.bound_continuations.get(method) {
+            return Some(*handler);
+        }
+        if self.roles.server {
+            if let Some(handler) = ServerPolicy::claims(method) {
+                return Some(handler);
+            }
+        }
+        if self.roles.game {
+            if let Some(handler) = GamePolicy::claims(method) {
+                return Some(handler);
+            }
+        }
+        if self.roles.controller {
+            if let Some(handler) = ControllerPolicy::claims(method) {
+                return Some(handler);
+            }
+        }
+        None
     }
 
     fn reply_method(return_method: Option<&str>) -> Option<&str> {
@@ -148,20 +115,21 @@ impl Engine {
         I: IntoIterator,
         I::Item: Into<String>,
     {
-        self.state
+        self.game_policy
             .button_handlers
             .extend(handlers.into_iter().map(Into::into));
     }
 
     pub fn clear_button_handlers(&mut self) {
-        self.state.button_handlers.clear();
+        self.game_policy.button_handlers.clear();
     }
 
     fn bind_continuation(&mut self, return_method: &str, handler: RpcHandler) {
-        if return_method.is_empty() || self.rpc_handlers.contains_key(return_method) {
+        if return_method.is_empty() || self.resolve_handler(return_method).is_some() {
             return;
         }
-        self.rpc_handlers.insert(return_method.to_string(), handler);
+        self.bound_continuations
+            .insert(return_method.to_string(), handler);
     }
 
     fn track_reliability(&mut self, sender: &str, cfg: &ControlConfig) {
@@ -169,7 +137,7 @@ impl Engine {
             return;
         }
         let entry = self
-            .state
+            .game_policy
             .input_reliability
             .entry(sender.to_string())
             .or_default();
@@ -182,7 +150,7 @@ impl Engine {
     }
 
     pub fn reliability_for(&self, target: &str, channel: i32) -> i32 {
-        let tracked = self.state.input_reliability.get(target);
+        let tracked = self.game_policy.input_reliability.get(target);
         let requested = match ChannelType::from_i32(channel) {
             Some(ChannelType::Touch) => tracked.and_then(|r| r.touch),
             Some(ChannelType::Acceleration | ChannelType::Gyro | ChannelType::Orientation) => {

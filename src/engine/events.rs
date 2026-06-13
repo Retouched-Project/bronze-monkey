@@ -61,6 +61,9 @@ pub enum Event {
     RegistrationResult {
         success: bool,
     },
+    SlotAssigned {
+        info: BMRegistryInfo,
+    },
     HostConnected {
         info: BMRegistryInfo,
     },

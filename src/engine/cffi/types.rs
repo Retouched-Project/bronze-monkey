@@ -78,6 +78,7 @@ pub enum EventTagC {
     Cookie = 30,
     RegistrationResult = 31,
     ControlScheme = 32,
+    SlotAssigned = 33,
 }
 
 #[repr(C)]

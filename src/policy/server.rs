@@ -5,7 +5,9 @@
 //! Holds state that is meaningful only when the engine is acting as a server.
 
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
-use std::collections::HashMap;
+use crate::engine::methods;
+use crate::engine::processing::{Engine, RpcHandler};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub(crate) struct PendingRegistration {
@@ -18,6 +20,7 @@ pub(crate) struct PendingRegistration {
 pub struct ServerPolicy {
     pub auto_approve_registration: bool,
     pub(crate) pending_registrations: HashMap<String, PendingRegistration>,
+    pub(crate) hidden_hosts: HashSet<String>,
 }
 
 impl Default for ServerPolicy {
@@ -25,6 +28,7 @@ impl Default for ServerPolicy {
         Self {
             auto_approve_registration: true,
             pending_registrations: HashMap::new(),
+            hidden_hosts: HashSet::new(),
         }
     }
 }
@@ -32,5 +36,17 @@ impl Default for ServerPolicy {
 impl ServerPolicy {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub(crate) fn claims(method: &str) -> Option<RpcHandler> {
+        Some(match method {
+            methods::REGISTRY_REGISTER => Engine::rpc_registry_register,
+            methods::REGISTRY_LIST => Engine::rpc_registry_list,
+            methods::REGISTRY_RELAY => Engine::rpc_registry_relay,
+            methods::REGISTRY_UPDATE => Engine::rpc_registry_update,
+            methods::REGISTRY_REMOVE => Engine::rpc_registry_remove,
+            methods::REGISTRY_SET_VISIBLE => Engine::rpc_registry_set_visible,
+            _ => return None,
+        })
     }
 }

@@ -317,20 +317,22 @@ impl Engine {
     ) {
         let mut claimed = false;
 
-        if let Some(cfg) = self.parse_control_rpc(&inv) {
-            if let Some(sender) = sender_id.as_deref() {
-                self.track_reliability(sender, &cfg);
+        if self.roles.game {
+            if let Some(cfg) = self.parse_control_rpc(&inv) {
+                if let Some(sender) = sender_id.as_deref() {
+                    self.track_reliability(sender, &cfg);
+                }
+                out.events.push(Event::ControlConfig(cfg));
+                claimed = true;
             }
-            out.events.push(Event::ControlConfig(cfg));
-            claimed = true;
         }
 
-        if let Some(handler) = self.rpc_handlers.get(&inv.method).cloned() {
+        if let Some(handler) = self.resolve_handler(&inv.method) {
             handler(self, &inv, sender_id.as_deref(), channel, out);
             claimed = true;
         }
 
-        if !claimed && self.state.button_handlers.contains(&inv.method) {
+        if !claimed && self.roles.game && self.game_policy.button_handlers.contains(&inv.method) {
             if let Some(state) = self.param_string(&inv.params, 0) {
                 if state == methods::BUTTON_DOWN || state == methods::BUTTON_UP {
                     out.events.push(Event::Button {

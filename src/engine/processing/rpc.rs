@@ -12,7 +12,7 @@ use crate::policy::server::PendingRegistration;
 use crate::types::device_type::DeviceType;
 
 impl Engine {
-    pub(super) fn rpc_registry_register(
+    pub(crate) fn rpc_registry_register(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -20,22 +20,7 @@ impl Engine {
         out: &mut ProcessOutput,
     ) {
         let infos = engine.collect_registry_infos(&inv.params);
-        let success = inv.params.iter().find_map(|p| {
-            if let Value::Bool(b) = engine.unwrap_value(p) {
-                Some(*b)
-            } else {
-                None
-            }
-        });
 
-        if !engine.state.is_server() {
-            if let Some(success) = success {
-                out.events.push(Event::RegistrationResult { success });
-            }
-            return;
-        }
-
-        // Server received a `registry.register` request.
         let Some(target_id) = sender_id else {
             log::warn!("registry.register missing sender id");
             return;
@@ -136,21 +121,32 @@ impl Engine {
         }
     }
 
-    pub(super) fn rpc_registry_list(
+    pub(crate) fn rpc_on_register_reply(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        _sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let success = inv.params.iter().find_map(|p| {
+            if let Value::Bool(b) = engine.unwrap_value(p) {
+                Some(*b)
+            } else {
+                None
+            }
+        });
+        if let Some(success) = success {
+            out.events.push(Event::RegistrationResult { success });
+        }
+    }
+
+    pub(crate) fn rpc_registry_list(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
         _channel: i32,
         out: &mut ProcessOutput,
     ) {
-        let infos = engine.collect_registry_infos(&inv.params);
-
-        if !engine.state.is_server() {
-            // Received the full host-list snapshot in response to our request.
-            out.events.push(Event::HostList { infos });
-            return;
-        }
-
         // Server side: answer the list request via the caller's return method.
         let Some(target_id) = sender_id else {
             return;
@@ -170,7 +166,9 @@ impl Engine {
             return;
         };
 
-        let list_infos = engine.state.registry_infos_for_viewer(viewer_type);
+        let list_infos = engine
+            .state
+            .registry_infos_for_viewer(viewer_type, &engine.server_policy.hidden_hosts);
         let mut arr = BMArray::default();
         for r in list_infos {
             arr.push(Value::Object(Object::BMRegistryInfo(r)));
@@ -183,7 +181,18 @@ impl Engine {
         ));
     }
 
-    pub(super) fn rpc_registry_relay(
+    pub(crate) fn rpc_on_list(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        _sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let infos = engine.collect_registry_infos(&inv.params);
+        out.events.push(Event::HostList { infos });
+    }
+
+    pub(crate) fn rpc_registry_relay(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         _sender_id: Option<&str>,
@@ -192,10 +201,6 @@ impl Engine {
     ) {
         for info in engine.collect_registry_infos(&inv.params) {
             out.events.push(Event::DeviceConnectRequested { info });
-        }
-
-        if !engine.state.is_server() {
-            return;
         }
 
         let mut target_id = None;
@@ -228,7 +233,7 @@ impl Engine {
         ));
     }
 
-    pub(super) fn rpc_on_host_connected(
+    pub(crate) fn rpc_on_host_connected(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         _sender_id: Option<&str>,
@@ -240,7 +245,22 @@ impl Engine {
         }
     }
 
-    pub(super) fn rpc_registry_update(
+    pub(crate) fn rpc_host_slot_assigned(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        _sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        let local = engine.local_device_id();
+        for info in engine.collect_registry_infos(&inv.params) {
+            if info.device.device_id == local {
+                out.events.push(Event::SlotAssigned { info });
+            }
+        }
+    }
+
+    pub(crate) fn rpc_registry_update(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -250,10 +270,6 @@ impl Engine {
         let infos = engine.collect_registry_infos(&inv.params);
         for info in &infos {
             out.events.push(Event::HostUpdated { info: info.clone() });
-        }
-
-        if !engine.state.is_server() {
-            return;
         }
 
         if infos.is_empty() {
@@ -283,7 +299,7 @@ impl Engine {
             ) {
                 continue;
             }
-            if engine.state.hidden_hosts.contains(&info.device.device_id) {
+            if engine.server_policy.hidden_hosts.contains(&info.device.device_id) {
                 continue;
             }
             let Some(stored) = engine
@@ -316,7 +332,19 @@ impl Engine {
         }
     }
 
-    pub(super) fn rpc_on_host_disconnected(
+    pub(crate) fn rpc_host_updated(
+        engine: &mut Engine,
+        inv: &ReceivedInvoke,
+        _sender_id: Option<&str>,
+        _channel: i32,
+        out: &mut ProcessOutput,
+    ) {
+        for info in engine.collect_registry_infos(&inv.params) {
+            out.events.push(Event::HostUpdated { info });
+        }
+    }
+
+    pub(crate) fn rpc_on_host_disconnected(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         _sender_id: Option<&str>,
@@ -328,7 +356,7 @@ impl Engine {
         }
     }
 
-    pub(super) fn rpc_device_connect_requested(
+    pub(crate) fn rpc_device_connect_requested(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         _sender_id: Option<&str>,
@@ -344,7 +372,7 @@ impl Engine {
         sender_id.unwrap_or_default().to_string()
     }
 
-    pub(super) fn rpc_connection_failed(
+    pub(crate) fn rpc_connection_failed(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         _sender_id: Option<&str>,
@@ -355,7 +383,7 @@ impl Engine {
         out.events.push(Event::ConnectionFailed { device_id });
     }
 
-    pub(super) fn rpc_vibrate(
+    pub(crate) fn rpc_vibrate(
         _engine: &mut Engine,
         _inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -367,7 +395,7 @@ impl Engine {
         });
     }
 
-    pub(super) fn rpc_bm_pause(
+    pub(crate) fn rpc_bm_pause(
         _engine: &mut Engine,
         _inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -379,7 +407,7 @@ impl Engine {
         });
     }
 
-    pub(super) fn rpc_menu_event(
+    pub(crate) fn rpc_menu_event(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -393,7 +421,7 @@ impl Engine {
         });
     }
 
-    pub(super) fn rpc_on_key_string(
+    pub(crate) fn rpc_on_key_string(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -407,7 +435,7 @@ impl Engine {
         });
     }
 
-    pub(super) fn rpc_on_navigation_string(
+    pub(crate) fn rpc_on_navigation_string(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -421,7 +449,7 @@ impl Engine {
         });
     }
 
-    pub(super) fn rpc_set_capabilities(
+    pub(crate) fn rpc_set_capabilities(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -436,7 +464,7 @@ impl Engine {
         });
     }
 
-    pub(super) fn rpc_request_xml(
+    pub(crate) fn rpc_request_xml(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -454,7 +482,7 @@ impl Engine {
         });
     }
 
-    pub(super) fn rpc_on_control_scheme_parsed(
+    pub(crate) fn rpc_on_control_scheme_parsed(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -468,7 +496,7 @@ impl Engine {
         });
     }
 
-    pub(super) fn rpc_get_cookie(
+    pub(crate) fn rpc_get_cookie(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -482,7 +510,7 @@ impl Engine {
         });
     }
 
-    pub(super) fn rpc_set_cookie(
+    pub(crate) fn rpc_set_cookie(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -498,7 +526,7 @@ impl Engine {
         });
     }
 
-    pub(super) fn rpc_got_cookie(
+    pub(crate) fn rpc_got_cookie(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
@@ -514,16 +542,13 @@ impl Engine {
         });
     }
 
-    pub(super) fn rpc_registry_remove(
+    pub(crate) fn rpc_registry_remove(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
         _channel: i32,
         out: &mut ProcessOutput,
     ) {
-        if !engine.state.is_server() {
-            return;
-        }
         let device_id = engine
             .param_string(&inv.params, 0)
             .or_else(|| sender_id.map(|s| s.to_string()));
@@ -546,16 +571,13 @@ impl Engine {
         out.outgoings.extend(engine.drop_device(&device_id));
     }
 
-    pub(super) fn rpc_registry_set_visible(
+    pub(crate) fn rpc_registry_set_visible(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
         sender_id: Option<&str>,
         _channel: i32,
         out: &mut ProcessOutput,
     ) {
-        if !engine.state.is_server() {
-            return;
-        }
         let Some(target_id) = sender_id else {
             return;
         };
@@ -566,9 +588,9 @@ impl Engine {
 
         let device_id = target_id.to_string();
         let changed = if visible {
-            engine.state.hidden_hosts.remove(&device_id)
+            engine.server_policy.hidden_hosts.remove(&device_id)
         } else {
-            engine.state.hidden_hosts.insert(device_id.clone())
+            engine.server_policy.hidden_hosts.insert(device_id.clone())
         };
 
         if changed && notify_everyone {

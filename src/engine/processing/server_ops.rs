@@ -113,8 +113,8 @@ impl Engine {
 
     pub fn drop_device(&mut self, device_id: &str) -> Vec<Outgoing> {
         let mut out = Vec::new();
-        self.state.input_reliability.remove(device_id);
-        self.state.hidden_hosts.remove(device_id);
+        self.game_policy.input_reliability.remove(device_id);
+        self.server_policy.hidden_hosts.remove(device_id);
         if let Some(rec) = self.state.registry.remove(device_id) {
             if let Some(info) = rec.info {
                 if info.slot_id > 0 {
@@ -127,7 +127,7 @@ impl Engine {
                     info.device.device_type,
                     DeviceType::Flash | DeviceType::Unity | DeviceType::Native
                 );
-                if is_game && self.state.is_server() {
+                if is_game && self.roles.server {
                     let info_val = Value::Object(Object::BMRegistryInfo(info));
                     let viewer_ids: Vec<String> = self
                         .state
