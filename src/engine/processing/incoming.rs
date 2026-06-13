@@ -5,9 +5,11 @@ use super::{Engine, ReceivedInvoke};
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::messages::bm_byte_chunk::BMByteChunk;
 use crate::codec::object::Object;
+use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::events::{Event, ProcessOutput};
 use crate::engine::methods;
+use prost::Message;
 use crate::engine::protocol::deserialize_packet;
 use crate::engine::registry::DeviceRecord;
 use crate::types::packet_type::PacketType;
@@ -265,13 +267,45 @@ impl Engine {
 
         if current >= total {
             if let Some(blob) = self.state.chunk_buffers.remove(&set_id) {
-                out.events.push(Event::ChunkComplete {
-                    device_id,
-                    set_id,
-                    blob,
-                });
+                if set_id == methods::CONTROL_SCHEME_SET_ID {
+                    self.complete_control_scheme(device_id, set_id, blob, out);
+                } else {
+                    out.events.push(Event::ChunkComplete {
+                        device_id,
+                        set_id,
+                        blob,
+                    });
+                }
             }
         }
+    }
+
+    fn complete_control_scheme(
+        &mut self,
+        device_id: String,
+        set_id: String,
+        blob: Vec<u8>,
+        out: &mut ProcessOutput,
+    ) {
+        match BMApplicationSchemeParser::new().parse(&blob) {
+            Ok(scheme) => {
+                let mut encoded = Vec::with_capacity(scheme.encoded_len());
+                if scheme.encode(&mut encoded).is_ok() {
+                    out.events.push(Event::ControlScheme {
+                        device_id,
+                        scheme: encoded,
+                    });
+                    return;
+                }
+                log::warn!("control scheme encode failed, surfacing raw blob");
+            }
+            Err(e) => log::warn!("control scheme parse failed, surfacing raw blob: {e}"),
+        }
+        out.events.push(Event::ChunkComplete {
+            device_id,
+            set_id,
+            blob,
+        });
     }
 
     fn handle_invoke(

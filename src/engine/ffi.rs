@@ -91,6 +91,7 @@ pub enum EventTagC {
     CookieStored = 29,
     Cookie = 30,
     RegistrationResult = 31,
+    ControlScheme = 32,
 }
 
 #[repr(C)]
@@ -1539,6 +1540,11 @@ fn event_to_c(event: Event) -> EventC {
             set_string_field(device_id, |p| event_set_device_id_inner(&mut out, p));
             set_string_field(set_id, |p| event_set_chunk_set_id_inner(&mut out, p));
             event_set_payload_inner(&mut out, blob.as_ptr(), blob.len());
+        }
+        Event::ControlScheme { device_id, scheme } => {
+            out.tag = EventTagC::ControlScheme;
+            set_string_field(device_id, |p| event_set_device_id_inner(&mut out, p));
+            event_set_payload_inner(&mut out, scheme.as_ptr(), scheme.len());
         }
         Event::ControlConfig(cfg) => {
             out.tag = EventTagC::ControlConfig;
