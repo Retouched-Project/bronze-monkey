@@ -24,7 +24,7 @@ impl GamePolicy {
         Some(match method {
             methods::DEFAULT_RETURN_REGISTER => Engine::rpc_on_register_reply,
             methods::ON_HOST_CONNECTED => Engine::rpc_host_slot_assigned,
-            methods::CONNECTION_FAILED => Engine::rpc_connection_failed,
+            methods::DEFAULT_RETURN_LIST => Engine::rpc_host_slot_assigned,
             methods::DEVICE_CONNECT_REQUESTED => Engine::rpc_device_connect_requested,
             methods::ON_KILL_EVENT => Engine::rpc_on_kill_event,
             methods::SET_CAPABILITIES => Engine::rpc_set_capabilities,
