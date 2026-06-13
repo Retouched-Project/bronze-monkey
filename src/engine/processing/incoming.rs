@@ -109,29 +109,45 @@ impl Engine {
 
     fn handle_ping(
         &mut self,
-        _pkt: &BMPacket,
+        pkt: &BMPacket,
         channel: i32,
         sender_id: Option<String>,
         out: &mut ProcessOutput,
     ) {
-        log::info!("rx ping");
+        let Some(id) = sender_id else {
+            return;
+        };
 
-        if let Some(id) = sender_id {
+        // A game answers a ping with an Ack carrying its own address (the
+        // connection handshake); every other role echoes for liveness.
+        if self.roles.game {
+            out.outgoings.extend(self.make_ack_packet(&id));
+        } else {
             out.outgoings.extend(self.make_packet(
                 &id,
                 channel,
                 Some(Self::default_reliability_for_channel(channel)),
                 PacketType::Echo,
-                None,
+                pkt.message.clone(),
             ));
         }
     }
 
     fn handle_ack(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
+        if let Some(msg) = &pkt.message {
+            let mut cur = Cursor::new(msg.as_slice());
+            if let Ok(Object::AckPacket(ack)) = Object::decode(&mut cur) {
+                let mut core = ack.device;
+                core.address = Some(ack.device_address);
+                out.events.push(Event::PeerConnected {
+                    record: DeviceRecord::new(core, None, None),
+                });
+                return;
+            }
+        }
         if let Some(rec) = self.device_record_from_packet(pkt) {
             out.events.push(Event::PeerConnected { record: rec });
         }
-        log::info!("rx ack");
     }
 
     fn handle_data(&mut self, pkt: &BMPacket, channel: i32, out: &mut ProcessOutput) {

@@ -203,6 +203,9 @@ pub(super) fn command_from_c(c: &CommandC) -> Option<Command> {
         CommandTagC::Pause => Command::Pause {
             target: req_str(c.target)?,
         },
+        CommandTagC::Ping => Command::Ping {
+            target: req_str(c.target)?,
+        },
         CommandTagC::RequestControlScheme => Command::RequestControlScheme {
             target: req_str(c.target)?,
             width: c.width,

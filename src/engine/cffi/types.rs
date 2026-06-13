@@ -278,6 +278,7 @@ pub enum CommandTagC {
     StoreCookie = 30,
     RequestCookie = 31,
     SendCookie = 32,
+    Ping = 33,
 }
 
 impl CommandTagC {
@@ -316,6 +317,7 @@ impl CommandTagC {
             30 => Self::StoreCookie,
             31 => Self::RequestCookie,
             32 => Self::SendCookie,
+            33 => Self::Ping,
             _ => return None,
         })
     }

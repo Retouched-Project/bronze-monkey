@@ -7,6 +7,7 @@ use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::externals::bm_reliability::BMReliability;
 use crate::codec::io::Result;
 use crate::codec::messages::acceleration::Acceleration;
+use crate::codec::messages::ack_packet::AckPacket;
 use crate::codec::messages::bm_byte_chunk::BMByteChunk;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_gyro::BMGyro;
@@ -14,6 +15,7 @@ use crate::codec::messages::bm_invoke::BMInvoke;
 use crate::codec::messages::bm_parameter::VecOutput;
 use crate::codec::messages::dpad_update::DPadUpdate;
 use crate::codec::messages::orientation::Orientation;
+use crate::codec::messages::ping::Ping;
 use crate::codec::messages::touch::Touch;
 use crate::codec::messages::touch_set::TouchSet;
 use crate::codec::object::Object;
@@ -543,6 +545,55 @@ impl Engine {
         params: Vec<Value>,
     ) -> Vec<Outgoing> {
         self.make_message_invoke(target, method, None, params)
+    }
+
+    pub fn make_ping_packet(&mut self, target: &str) -> Vec<Outgoing> {
+        let Some(local) = self.state.local_device.clone() else {
+            log::warn!("make_ping_packet: no local device");
+            return Vec::new();
+        };
+        let address = local.address.clone().unwrap_or_default();
+        let ping = Ping {
+            device_id: local.device_id,
+            address,
+        };
+        let msg = match self.build_object_bytes(Object::Ping(ping)) {
+            Ok(m) => m,
+            Err(e) => {
+                log::error!("build ping failed: {e}");
+                return Vec::new();
+            }
+        };
+        self.make_packet(
+            target,
+            ChannelType::Broadcast.value(),
+            Some(BMReliability::Unreliable.code()),
+            PacketType::Ping,
+            Some(msg),
+        )
+    }
+
+    pub fn make_ack_packet(&mut self, target: &str) -> Vec<Outgoing> {
+        let Some(local) = self.state.local_device.clone() else {
+            log::warn!("make_ack_packet: no local device");
+            return Vec::new();
+        };
+        let address = local.address.clone().unwrap_or_default();
+        let ack = AckPacket::new(local, address);
+        let msg = match self.build_object_bytes(Object::AckPacket(ack)) {
+            Ok(m) => m,
+            Err(e) => {
+                log::error!("build ack failed: {e}");
+                return Vec::new();
+            }
+        };
+        self.make_packet(
+            target,
+            ChannelType::Message.value(),
+            Some(BMReliability::Reliable.code()),
+            PacketType::Ack,
+            Some(msg),
+        )
     }
 
     pub fn make_packet(

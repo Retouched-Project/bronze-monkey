@@ -198,6 +198,7 @@ impl Engine {
             Command::Pause { target } => {
                 self.make_message_invoke(&target, methods::BM_PAUSE, None, vec![])
             }
+            Command::Ping { target } => self.make_ping_packet(&target),
             Command::RequestControlScheme {
                 target,
                 width,

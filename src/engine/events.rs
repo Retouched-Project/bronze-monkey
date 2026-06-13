@@ -354,6 +354,9 @@ pub enum Command {
     Pause {
         target: String,
     },
+    Ping {
+        target: String,
+    },
     RequestControlScheme {
         target: String,
         width: i32,
