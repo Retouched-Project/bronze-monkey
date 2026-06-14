@@ -4,6 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Default, Serialize, Deserialize)]
+#[serde(into = "i32", try_from = "i32")]
 pub enum DeviceType {
     #[default]
     Any,
@@ -14,6 +15,20 @@ pub enum DeviceType {
     Native,
     Palm,
     Server,
+}
+
+impl From<DeviceType> for i32 {
+    fn from(value: DeviceType) -> Self {
+        value.code()
+    }
+}
+
+impl TryFrom<i32> for DeviceType {
+    type Error = DeviceTypeError;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        Self::for_value(value)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
