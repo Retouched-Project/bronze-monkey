@@ -12,7 +12,8 @@ pub struct Shake;
 impl Shake {
     pub const CLASS_ID: u32 = registry::BM_CLASS_ID_SHAKE;
 
-    pub fn read_from(_input: &mut dyn DataInput) -> Result<Self> {
+    pub fn read_from(input: &mut dyn DataInput) -> Result<Self> {
+        let _ = input.read_int()?;
         Ok(Self)
     }
 
