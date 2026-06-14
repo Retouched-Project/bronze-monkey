@@ -3,12 +3,13 @@
 
 use std::collections::HashMap;
 
-use crate::devices::device_core::DeviceCore;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+use crate::devices::device_core::DeviceCore;
 
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct DeviceRecord {
     pub core: DeviceCore,
     pub class_id: Option<u16>,

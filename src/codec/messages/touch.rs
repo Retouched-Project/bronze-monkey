@@ -7,6 +7,7 @@ use crate::types::touch_state::TouchState;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct Touch {
     pub id: i32,
     pub x: f32,

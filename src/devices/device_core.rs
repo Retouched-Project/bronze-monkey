@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::devices::bm_address::BMAddress;
 use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::devices::bm_address::BMAddress;
 use crate::types::device_type::DeviceType;
 use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::c_char;
@@ -14,6 +14,7 @@ use std::ptr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct DeviceCore {
     pub device_id: String,
     pub device_name: String,

@@ -7,6 +7,7 @@ use crate::codec::io::{DataInput, DataOutput, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct BMByteChunk {
     pub set_id: String,
     pub start_byte: i32,

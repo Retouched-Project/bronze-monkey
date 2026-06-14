@@ -7,6 +7,7 @@ use crate::codec::io::{DataInput, DataOutput, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct BMAddress {
     pub address: String,
     pub unreliable_port: i32,

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::devices::bm_address::BMAddress;
-use crate::devices::device_core::DeviceCore;
 use crate::codec::externals::registry;
 use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::devices::bm_address::BMAddress;
+use crate::devices::device_core::DeviceCore;
 use crate::types::device_type::DeviceType;
 use std::os::raw::c_char;
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -12,6 +12,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct BMRegistryInfo {
     pub slot_id: i16,
     pub app_id: String,

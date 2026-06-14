@@ -14,6 +14,7 @@ use std::ptr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct BMInvoke {
     pub id: i32,
     pub method: String,

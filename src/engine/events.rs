@@ -9,7 +9,7 @@ use crate::engine::registry::DeviceRecord;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct Outgoing {
     pub target_device_id: String,
     pub channel: i32,
@@ -25,7 +25,7 @@ impl Outgoing {
 }
 
 #[derive(Debug, Default, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct ProcessOutput {
     pub events: Vec<Event>,
     pub outgoings: Vec<Outgoing>,
@@ -39,7 +39,8 @@ impl ProcessOutput {
 
 #[non_exhaustive]
 #[derive(Debug, Clone, Serialize)]
-#[serde(tag = "type", rename_all_fields = "camelCase")]
+#[serde(tag = "type")]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all_fields = "camelCase"))]
 pub enum Event {
     Handshake {
         current: u32,
@@ -189,7 +190,7 @@ pub enum Event {
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct ControlConfig {
     pub touch_enabled: Option<bool>,
     pub accel_enabled: Option<bool>,
@@ -216,7 +217,8 @@ pub enum Sensor {
 
 #[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all_fields = "camelCase")]
+#[serde(tag = "type")]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all_fields = "camelCase"))]
 pub enum Command {
     Raw {
         target: String,

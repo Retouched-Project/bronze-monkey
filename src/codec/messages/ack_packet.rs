@@ -12,6 +12,7 @@ use crate::codec::io::{DataInput, DataOutput, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct AckPacket {
     pub device: DeviceCore,
     pub device_address: BMAddress,
