@@ -20,6 +20,13 @@ impl Engine {
         out: &mut ProcessOutput,
     ) {
         let infos = engine.collect_registry_infos(&inv.params);
+        let domain = inv
+            .params
+            .iter()
+            .find_map(|p| match engine.unwrap_value(p) {
+                Value::String(s) => Some(s.clone()),
+                _ => None,
+            });
 
         let Some(target_id) = sender_id else {
             log::warn!("registry.register missing sender id");
@@ -67,6 +74,7 @@ impl Engine {
             }
             out.events.push(Event::PeerRegistered {
                 info: info.clone(),
+                domain,
                 success: true,
             });
 
@@ -299,7 +307,11 @@ impl Engine {
             ) {
                 continue;
             }
-            if engine.server_policy.hidden_hosts.contains(&info.device.device_id) {
+            if engine
+                .server_policy
+                .hidden_hosts
+                .contains(&info.device.device_id)
+            {
                 continue;
             }
             let Some(stored) = engine

@@ -233,9 +233,16 @@ pub(super) fn event_to_c(event: Event) -> EventC {
             set_string_field(name, |p| event_set_name_inner(&mut out, p));
             set_string_field(value, |p| event_set_value_inner(&mut out, p));
         }
-        Event::PeerRegistered { info, success } => {
+        Event::PeerRegistered {
+            info,
+            domain,
+            success,
+        } => {
             out.tag = EventTagC::PeerRegistered;
             out.registry_success = if success { 1 } else { 0 };
+            if let Some(d) = domain {
+                set_string_field(d, |p| event_set_domain_inner(&mut out, p));
+            }
             set_event_registry(&mut out, vec![info]);
         }
         Event::RegistrationResult { success } => {

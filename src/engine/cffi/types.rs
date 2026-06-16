@@ -102,6 +102,8 @@ pub struct EventC {
     pub registry_success: i32,
     pub registry_ptr: *mut BMRegistryInfoC,
     pub registry_len: usize,
+    pub domain_ptr: *mut c_char,
+    pub domain_len: usize,
 
     pub sender_ptr: *mut c_char,
     pub sender_len: usize,
@@ -177,6 +179,8 @@ impl Default for EventC {
             registry_success: -1,
             registry_ptr: ptr::null_mut(),
             registry_len: 0,
+            domain_ptr: ptr::null_mut(),
+            domain_len: 0,
             sender_ptr: ptr::null_mut(),
             sender_len: 0,
             invoke_method_ptr: ptr::null_mut(),
@@ -577,6 +581,17 @@ crate::ffi_cstring_accessors!(
     free_field = event_free_value
 );
 
+crate::ffi_cstring_accessors!(
+    EventC,
+    domain_ptr,
+    domain_len,
+    set_inner = event_set_domain_inner,
+    set = event_set_domain,
+    get_len = event_get_domain_len,
+    get = event_get_domain,
+    free_field = event_free_domain
+);
+
 crate::ffi_vec_u8_accessors!(
     EventC,
     payload_ptr,
@@ -603,6 +618,7 @@ crate::ffi_free_struct!(
     event_free_control_return_app_id,
     event_free_name,
     event_free_value,
+    event_free_domain,
     event_free_payload
 );
 

@@ -57,6 +57,7 @@ pub enum Event {
     },
     PeerRegistered {
         info: BMRegistryInfo,
+        domain: Option<String>,
         success: bool,
     },
     RegistrationResult {
