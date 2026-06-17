@@ -7,6 +7,7 @@ pub mod devices;
 pub mod engine;
 mod ffi_macros;
 pub mod policy;
+pub mod policy_file;
 pub mod types;
 
 #[deprecated(
