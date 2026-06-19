@@ -297,16 +297,16 @@ pub enum Command {
     },
     SendGyro {
         target: String,
-        x: f32,
-        y: f32,
-        z: f32,
+        x: f64,
+        y: f64,
+        z: f64,
     },
     SendOrientation {
         target: String,
-        x: f32,
-        y: f32,
-        z: f32,
-        w: f32,
+        x: f64,
+        y: f64,
+        z: f64,
+        w: f64,
     },
     SendDPad {
         target: String,

@@ -142,11 +142,11 @@ impl Engine {
             }
             Command::SendGyro { target, x, y, z } => {
                 let reliability = self.reliability_for(&target, ChannelType::Gyro.value());
-                self.make_gyro(&target, x, y, z, reliability)
+                self.make_gyro(&target, x as f32, y as f32, z as f32, reliability)
             }
             Command::SendOrientation { target, x, y, z, w } => {
                 let reliability = self.reliability_for(&target, ChannelType::Orientation.value());
-                self.make_orientation(&target, x, y, z, w, reliability)
+                self.make_orientation(&target, x as f32, y as f32, z as f32, w as f32, reliability)
             }
             Command::SendDPad { target, x, y } => self.make_dpad_update(&target, x, y),
             Command::SendButton {

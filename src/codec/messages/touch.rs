@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct Touch {
     pub id: i32,
-    pub x: f32,
-    pub y: f32,
+    pub x: f64,
+    pub y: f64,
     pub screen_width: i16,
     pub screen_height: i16,
     pub state: TouchState,
@@ -19,8 +19,8 @@ pub struct Touch {
 
 impl Touch {
     pub fn read_from(input: &mut dyn DataInput) -> crate::codec::io::Result<Self> {
-        let x = input.read_float()?;
-        let y = input.read_float()?;
+        let x = input.read_float()? as f64;
+        let y = input.read_float()? as f64;
         let screen_width = input.read_short()?;
         let screen_height = input.read_short()?;
         let state_val = input.read_int()?;
@@ -37,8 +37,8 @@ impl Touch {
     }
 
     pub fn write_to(&self, out: &mut dyn DataOutput) -> crate::codec::io::Result<()> {
-        out.write_float(self.x)?;
-        out.write_float(self.y)?;
+        out.write_float(self.x as f32)?;
+        out.write_float(self.y as f32)?;
         out.write_short(self.screen_width)?;
         out.write_short(self.screen_height)?;
         out.write_int(self.state.value())?;

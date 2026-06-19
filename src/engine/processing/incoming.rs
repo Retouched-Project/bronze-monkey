@@ -9,10 +9,10 @@ use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::events::{Event, ProcessOutput};
 use crate::engine::methods;
-use prost::Message;
 use crate::engine::protocol::deserialize_packet;
 use crate::engine::registry::DeviceRecord;
 use crate::types::packet_type::PacketType;
+use prost::Message;
 use std::io::Cursor;
 
 impl Engine {
