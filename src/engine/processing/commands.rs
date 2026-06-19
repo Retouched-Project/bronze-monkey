@@ -228,6 +228,12 @@ impl Engine {
                 None,
                 vec![Value::String(name), Value::String(value)],
             ),
+            Command::UpdateWallet { target } => self.make_update_wallet(&target),
+            Command::PromptTrialUpsell { target } => self.make_prompt_trial_upsell(&target),
+            Command::WaitForNewHost {
+                target,
+                host_device_id,
+            } => self.make_wait_for_new_host(&target, &host_device_id),
         }
     }
 

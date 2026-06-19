@@ -387,4 +387,14 @@ pub enum Command {
         name: String,
         value: String,
     },
+    UpdateWallet {
+        target: String,
+    },
+    PromptTrialUpsell {
+        target: String,
+    },
+    WaitForNewHost {
+        target: String,
+        host_device_id: String,
+    },
 }
