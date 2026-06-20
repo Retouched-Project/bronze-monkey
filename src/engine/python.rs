@@ -14,7 +14,7 @@ use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_invoke::BMInvoke;
 use crate::codec::messages::bm_parameter::VecOutput;
 use crate::codec::object::Object;
-use crate::controls::ControlScheme;
+use crate::controls::assembler::SchemeAssembler;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
@@ -930,22 +930,41 @@ fn parse_control_scheme_xml<'py>(
     Ok(PyBytes::new(py, &buf))
 }
 
-#[pyfunction]
-fn merge_control_scheme<'py>(
-    py: Python<'py>,
-    base: &[u8],
-    update: &[u8],
-) -> PyResult<Bound<'py, PyBytes>> {
-    let mut base_scheme = ControlScheme::decode(base)
-        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
-    let update_scheme = ControlScheme::decode(update)
-        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
-    crate::controls::merge::apply_update(&mut base_scheme, update_scheme);
-    let mut buf = Vec::with_capacity(base_scheme.encoded_len());
-    base_scheme
-        .encode(&mut buf)
-        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
-    Ok(PyBytes::new(py, &buf))
+#[pyclass]
+pub struct SchemeAssemblerPy {
+    inner: RwLock<SchemeAssembler>,
+}
+
+#[pymethods]
+impl SchemeAssemblerPy {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: RwLock::new(SchemeAssembler::new()),
+        }
+    }
+
+    fn offer<'py>(
+        &self,
+        py: Python<'py>,
+        set_id: &str,
+        blob: &[u8],
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let result = self.inner.write().unwrap().offer(set_id, blob);
+        Ok(pythonize(py, &result)?)
+    }
+
+    fn current<'py>(&self, py: Python<'py>) -> Option<Bound<'py, PyBytes>> {
+        self.inner
+            .read()
+            .unwrap()
+            .current()
+            .map(|bytes| PyBytes::new(py, &bytes))
+    }
+
+    fn reset(&self) {
+        self.inner.write().unwrap().reset();
+    }
 }
 
 #[pymodule]
@@ -953,6 +972,7 @@ fn merge_control_scheme<'py>(
 fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     crate::log_library_loaded("pyo3");
     m.add_class::<BMEnginePy>()?;
+    m.add_class::<SchemeAssemblerPy>()?;
     m.add_function(wrap_pyfunction!(handshake, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_invoke_packet, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_device_packet, m)?)?;
@@ -961,7 +981,6 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_device_type_codes, m)?)?;
     m.add_function(wrap_pyfunction!(get_packet_type_codes, m)?)?;
     m.add_function(wrap_pyfunction!(parse_control_scheme_xml, m)?)?;
-    m.add_function(wrap_pyfunction!(merge_control_scheme, m)?)?;
     m.add("DEVICE_TYPE_ANY", DeviceType::Any.code())?;
     m.add("DEVICE_TYPE_UNITY", DeviceType::Unity.code())?;
     m.add("DEVICE_TYPE_IPHONE", DeviceType::IPhone.code())?;

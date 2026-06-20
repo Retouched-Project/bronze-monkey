@@ -3,7 +3,7 @@
 
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::messages::touch::Touch;
-use crate::controls::ControlScheme;
+use crate::controls::assembler::SchemeAssembler;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
@@ -40,18 +40,31 @@ pub fn parse_control_scheme_xml(xml_data: &str) -> Result<Vec<u8>, JsError> {
 }
 
 #[wasm_bindgen]
-pub fn merge_control_scheme(base: &[u8], update: &[u8]) -> Result<Vec<u8>, JsError> {
-    let mut base_scheme = ControlScheme::decode(base).map_err(|e| JsError::new(&e.to_string()))?;
-    let update_scheme = ControlScheme::decode(update).map_err(|e| JsError::new(&e.to_string()))?;
+pub struct SchemeAssemblerWasm {
+    inner: SchemeAssembler,
+}
 
-    crate::controls::merge::apply_update(&mut base_scheme, update_scheme);
+#[wasm_bindgen]
+impl SchemeAssemblerWasm {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {
+            inner: SchemeAssembler::new(),
+        }
+    }
 
-    let mut buf = Vec::with_capacity(base_scheme.encoded_len());
-    base_scheme
-        .encode(&mut buf)
-        .map_err(|e| JsError::new(&e.to_string()))?;
+    pub fn offer(&mut self, set_id: &str, blob: &[u8]) -> Result<JsValue, JsError> {
+        let result = self.inner.offer(set_id, blob);
+        serde_wasm_bindgen::to_value(&result).map_err(|e| JsError::new(&e.to_string()))
+    }
 
-    Ok(buf)
+    pub fn current(&self) -> Option<Vec<u8>> {
+        self.inner.current()
+    }
+
+    pub fn reset(&mut self) {
+        self.inner.reset();
+    }
 }
 
 #[wasm_bindgen]

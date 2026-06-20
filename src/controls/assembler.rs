@@ -4,14 +4,17 @@
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::controls::{CONTROL_SCHEME_SET_ID, ControlScheme, UPDATE_SCHEME_SET_ID, merge};
 use prost::Message;
+use serde::Serialize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SchemeUpdate {
+    #[serde(with = "serde_bytes")]
     pub scheme: Vec<u8>,
     pub initial: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
+#[serde(tag = "type")]
 pub enum SchemeOffer {
     Updated(SchemeUpdate),
     Consumed,
