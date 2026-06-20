@@ -183,11 +183,6 @@ pub enum Event {
         #[serde(with = "serde_bytes")]
         blob: Vec<u8>,
     },
-    ControlScheme {
-        device_id: String,
-        #[serde(with = "serde_bytes")]
-        scheme: Vec<u8>,
-    },
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
