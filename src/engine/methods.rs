@@ -47,6 +47,7 @@ pub const BUTTON_DOWN: &str = "down";
 pub const BUTTON_UP: &str = "up";
 
 pub const CONTROL_SCHEME_SET_ID: &str = "testXML";
+pub const UPDATE_SCHEME_SET_ID: &str = "updateXML";
 
 pub const DEFAULT_RETURN_REGISTER: &str = "onRegister";
 pub const DEFAULT_RETURN_LIST: &str = "onList";
