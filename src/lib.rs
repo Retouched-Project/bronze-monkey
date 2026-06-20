@@ -112,7 +112,7 @@ pub extern "C" fn bm_library_init() -> bool {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_get_last_error(buf: *mut c_char, len: usize) -> i32 {
+pub unsafe extern "C" fn bm_get_last_error(buf: *mut c_char, len: usize) -> i32 {
     catch_unwind(AssertUnwindSafe(|| {
         if buf.is_null() || len == 0 {
             return -1;

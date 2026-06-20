@@ -77,7 +77,7 @@ pub fn handshake_bytes(current: Option<BMVersion>, minimum: Option<BMVersion>) -
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_handshake_bytes(
+pub unsafe extern "C" fn bm_handshake_bytes(
     cur_major: u8,
     cur_minor: u8,
     cur_build: u16,

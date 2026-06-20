@@ -72,7 +72,7 @@ pub extern "C" fn bm_registry_has(id: u32) -> bool {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_registry_ids(out: *mut u32, out_len: usize) -> usize {
+pub unsafe extern "C" fn bm_registry_ids(out: *mut u32, out_len: usize) -> usize {
     if out.is_null() || out_len == 0 {
         return 0;
     }
@@ -91,7 +91,7 @@ pub extern "C" fn bm_registry_name_len(id: u32) -> usize {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_registry_name(id: u32, out: *mut c_char, out_len: usize) -> usize {
+pub unsafe extern "C" fn bm_registry_name(id: u32, out: *mut c_char, out_len: usize) -> usize {
     if out.is_null() || out_len == 0 {
         return 0;
     }

@@ -38,7 +38,7 @@ fn engine_mut<'a>(ptr: *mut Engine) -> Option<&'a mut Engine> {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_buffer_free(ptr: *mut u8, len: usize) {
+pub unsafe extern "C" fn bm_buffer_free(ptr: *mut u8, len: usize) {
     catch_void(|| {
         if ptr.is_null() || len == 0 {
             return;
@@ -55,7 +55,7 @@ pub extern "C" fn bm_engine_new() -> *mut Engine {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_engine_free(ptr_engine: *mut Engine) {
+pub unsafe extern "C" fn bm_engine_free(ptr_engine: *mut Engine) {
     catch_void(|| {
         if ptr_engine.is_null() {
             return;
@@ -67,7 +67,7 @@ pub extern "C" fn bm_engine_free(ptr_engine: *mut Engine) {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_engine_init_local_device(
+pub unsafe extern "C" fn bm_engine_init_local_device(
     ptr_engine: *mut Engine,
     mp_ptr: *const u8,
     mp_len: usize,
@@ -86,7 +86,7 @@ pub extern "C" fn bm_engine_init_local_device(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_engine_register_device(
+pub unsafe extern "C" fn bm_engine_register_device(
     ptr_engine: *mut Engine,
     mp_ptr: *const u8,
     mp_len: usize,
@@ -107,7 +107,7 @@ pub extern "C" fn bm_engine_register_device(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_engine_process_incoming(
+pub unsafe extern "C" fn bm_engine_process_incoming(
     ptr_engine: *mut Engine,
     payload: *const u8,
     payload_len: usize,
@@ -133,7 +133,7 @@ pub extern "C" fn bm_engine_process_incoming(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_engine_process_incoming_udp(
+pub unsafe extern "C" fn bm_engine_process_incoming_udp(
     ptr_engine: *mut Engine,
     payload: *const u8,
     payload_len: usize,
@@ -159,7 +159,7 @@ pub extern "C" fn bm_engine_process_incoming_udp(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_engine_emit(
+pub unsafe extern "C" fn bm_engine_emit(
     ptr_engine: *mut Engine,
     cmd_ptr: *const u8,
     cmd_len: usize,
@@ -188,7 +188,7 @@ pub extern "C" fn bm_engine_emit(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_engine_registry(
+pub unsafe extern "C" fn bm_engine_registry(
     ptr_engine: *mut Engine,
     out_ptr: *mut *mut u8,
     out_len: *mut usize,
@@ -211,7 +211,7 @@ pub extern "C" fn bm_engine_registry(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_engine_set_role_enabled(
+pub unsafe extern "C" fn bm_engine_set_role_enabled(
     ptr_engine: *mut Engine,
     role_code: i32,
     enabled: bool,
@@ -232,7 +232,7 @@ pub extern "C" fn bm_engine_set_role_enabled(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_engine_set_auto_approve_registration(
+pub unsafe extern "C" fn bm_engine_set_auto_approve_registration(
     ptr_engine: *mut Engine,
     value: bool,
 ) -> bool {
@@ -246,7 +246,7 @@ pub extern "C" fn bm_engine_set_auto_approve_registration(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_engine_register_button_handlers(
+pub unsafe extern "C" fn bm_engine_register_button_handlers(
     ptr_engine: *mut Engine,
     mp_ptr: *const u8,
     mp_len: usize,
@@ -265,7 +265,7 @@ pub extern "C" fn bm_engine_register_button_handlers(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_engine_clear_button_handlers(ptr_engine: *mut Engine) -> bool {
+pub unsafe extern "C" fn bm_engine_clear_button_handlers(ptr_engine: *mut Engine) -> bool {
     catch_bool(|| {
         let Some(engine) = engine_mut(ptr_engine) else {
             return false;
@@ -276,7 +276,7 @@ pub extern "C" fn bm_engine_clear_button_handlers(ptr_engine: *mut Engine) -> bo
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_engine_handshake(out_ptr: *mut u8, out_len: usize) -> bool {
+pub unsafe extern "C" fn bm_engine_handshake(out_ptr: *mut u8, out_len: usize) -> bool {
     catch_bool(|| {
         if out_ptr.is_null() || out_len < 12 {
             return false;
@@ -290,7 +290,7 @@ pub extern "C" fn bm_engine_handshake(out_ptr: *mut u8, out_len: usize) -> bool 
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_controls_parse_xml(
+pub unsafe extern "C" fn bm_controls_parse_xml(
     xml_ptr: *const u8,
     xml_len: usize,
     out_ptr: *mut *mut u8,
@@ -315,7 +315,7 @@ pub extern "C" fn bm_controls_parse_xml(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_safe_image_memory(
+pub unsafe extern "C" fn bm_safe_image_memory(
     in_ptr: *const u8,
     in_len: usize,
     out_ptr: *mut *mut u8,
