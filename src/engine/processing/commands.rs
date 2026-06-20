@@ -298,7 +298,7 @@ impl Engine {
             }
             Err(e) => log::warn!("control scheme parse failed, sending anyway: {e}"),
         }
-        self.make_byte_chunks(target, methods::CONTROL_SCHEME_SET_ID, xml)
+        self.make_byte_chunks(target, crate::controls::CONTROL_SCHEME_SET_ID, xml)
     }
 
     fn default_channel_for_object(object: &Object) -> i32 {
