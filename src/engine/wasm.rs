@@ -3,6 +3,7 @@
 
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::messages::touch::Touch;
+use crate::controls::ControlScheme;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
@@ -32,6 +33,21 @@ pub fn parse_control_scheme_xml(xml_data: &str) -> Result<Vec<u8>, JsError> {
 
     let mut buf = Vec::with_capacity(scheme.encoded_len());
     scheme
+        .encode(&mut buf)
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
+    Ok(buf)
+}
+
+#[wasm_bindgen]
+pub fn merge_control_scheme(base: &[u8], update: &[u8]) -> Result<Vec<u8>, JsError> {
+    let mut base_scheme = ControlScheme::decode(base).map_err(|e| JsError::new(&e.to_string()))?;
+    let update_scheme = ControlScheme::decode(update).map_err(|e| JsError::new(&e.to_string()))?;
+
+    crate::controls::merge::apply_update(&mut base_scheme, update_scheme);
+
+    let mut buf = Vec::with_capacity(base_scheme.encoded_len());
+    base_scheme
         .encode(&mut buf)
         .map_err(|e| JsError::new(&e.to_string()))?;
 

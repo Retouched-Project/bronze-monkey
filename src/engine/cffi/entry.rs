@@ -3,6 +3,7 @@
 
 use prost::Message;
 
+use crate::controls::ControlScheme;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::events::Command;
@@ -307,6 +308,37 @@ pub unsafe extern "C" fn bm_controls_parse_xml(
         };
         let mut buf = Vec::new();
         if scheme.encode(&mut buf).is_err() {
+            return false;
+        }
+        write_buf(buf, out_ptr, out_len);
+        true
+    })
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_controls_merge_scheme(
+    base_ptr: *const u8,
+    base_len: usize,
+    update_ptr: *const u8,
+    update_len: usize,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        let mut base = match ControlScheme::decode(in_slice(base_ptr, base_len)) {
+            Ok(s) => s,
+            Err(_) => return false,
+        };
+        let update = match ControlScheme::decode(in_slice(update_ptr, update_len)) {
+            Ok(s) => s,
+            Err(_) => return false,
+        };
+        crate::controls::merge::apply_update(&mut base, update);
+        let mut buf = Vec::with_capacity(base.encoded_len());
+        if base.encode(&mut buf).is_err() {
             return false;
         }
         write_buf(buf, out_ptr, out_len);
