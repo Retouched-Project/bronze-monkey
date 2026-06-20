@@ -13,6 +13,11 @@ fn catch_bool<F: FnOnce() -> bool>(f: F) -> bool {
 }
 
 #[inline]
+fn catch_i32<F: FnOnce() -> i32>(f: F) -> i32 {
+    catch_unwind(AssertUnwindSafe(f)).unwrap_or(-1)
+}
+
+#[inline]
 fn catch_ptr<T, F: FnOnce() -> *mut T>(f: F) -> *mut T {
     catch_unwind(AssertUnwindSafe(f)).unwrap_or(std::ptr::null_mut())
 }

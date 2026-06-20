@@ -3,7 +3,7 @@
 
 use prost::Message;
 
-use crate::controls::ControlScheme;
+use crate::controls::assembler::{SchemeAssembler, SchemeOffer};
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::events::Command;
@@ -11,7 +11,7 @@ use crate::engine::processing::Engine;
 use crate::engine::registry::DeviceRecord;
 use crate::policy::Role;
 
-use super::{catch_bool, catch_ptr, catch_void};
+use super::{catch_bool, catch_i32, catch_ptr, catch_void};
 
 fn write_buf(buf: Vec<u8>, out_ptr: *mut *mut u8, out_len: *mut usize) {
     let mut boxed = buf.into_boxed_slice();
@@ -31,6 +31,14 @@ fn in_slice<'a>(ptr: *const u8, len: usize) -> &'a [u8] {
 }
 
 fn engine_mut<'a>(ptr: *mut Engine) -> Option<&'a mut Engine> {
+    if ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { &mut *ptr })
+    }
+}
+
+fn assembler_mut<'a>(ptr: *mut SchemeAssembler) -> Option<&'a mut SchemeAssembler> {
     if ptr.is_null() {
         None
     } else {
@@ -316,11 +324,61 @@ pub unsafe extern "C" fn bm_controls_parse_xml(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn bm_controls_merge_scheme(
-    base_ptr: *const u8,
-    base_len: usize,
-    update_ptr: *const u8,
-    update_len: usize,
+pub extern "C" fn bm_scheme_assembler_new() -> *mut SchemeAssembler {
+    catch_ptr(|| Box::into_raw(Box::new(SchemeAssembler::new())))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_scheme_assembler_free(ptr: *mut SchemeAssembler) {
+    catch_void(|| {
+        if ptr.is_null() {
+            return;
+        }
+        drop(unsafe { Box::from_raw(ptr) });
+    });
+}
+
+/// Offers a completed chunk set. Returns 0 when the set is not a control scheme
+/// (the caller owns the blob), 1 when consumed with nothing new, 2 when updated
+/// (the merged scheme is written to out_scheme and out_initial is set), or -1 on
+/// error.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_scheme_assembler_offer(
+    ptr: *mut SchemeAssembler,
+    set_id_ptr: *const u8,
+    set_id_len: usize,
+    blob_ptr: *const u8,
+    blob_len: usize,
+    out_scheme_ptr: *mut *mut u8,
+    out_scheme_len: *mut usize,
+    out_initial: *mut bool,
+) -> i32 {
+    catch_i32(|| {
+        let Some(assembler) = assembler_mut(ptr) else {
+            return -1;
+        };
+        let set_id = std::str::from_utf8(in_slice(set_id_ptr, set_id_len)).unwrap_or("");
+        match assembler.offer(set_id, in_slice(blob_ptr, blob_len)) {
+            SchemeOffer::Updated(update) => {
+                if !out_scheme_ptr.is_null() && !out_scheme_len.is_null() {
+                    write_buf(update.scheme, out_scheme_ptr, out_scheme_len);
+                }
+                if !out_initial.is_null() {
+                    unsafe { *out_initial = update.initial };
+                }
+                2
+            }
+            SchemeOffer::Consumed => 1,
+            SchemeOffer::NotScheme => 0,
+        }
+    })
+}
+
+/// Writes the current merged scheme to out and returns true, or returns false
+/// when no scheme has been assembled yet.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_scheme_assembler_current(
+    ptr: *mut SchemeAssembler,
     out_ptr: *mut *mut u8,
     out_len: *mut usize,
 ) -> bool {
@@ -328,22 +386,26 @@ pub unsafe extern "C" fn bm_controls_merge_scheme(
         if out_ptr.is_null() || out_len.is_null() {
             return false;
         }
-        let mut base = match ControlScheme::decode(in_slice(base_ptr, base_len)) {
-            Ok(s) => s,
-            Err(_) => return false,
-        };
-        let update = match ControlScheme::decode(in_slice(update_ptr, update_len)) {
-            Ok(s) => s,
-            Err(_) => return false,
-        };
-        crate::controls::merge::apply_update(&mut base, update);
-        let mut buf = Vec::with_capacity(base.encoded_len());
-        if base.encode(&mut buf).is_err() {
+        let Some(assembler) = assembler_mut(ptr) else {
             return false;
+        };
+        match assembler.current() {
+            Some(bytes) => {
+                write_buf(bytes, out_ptr, out_len);
+                true
+            }
+            None => false,
         }
-        write_buf(buf, out_ptr, out_len);
-        true
     })
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_scheme_assembler_reset(ptr: *mut SchemeAssembler) {
+    catch_void(|| {
+        if let Some(assembler) = assembler_mut(ptr) {
+            assembler.reset();
+        }
+    });
 }
 
 #[unsafe(no_mangle)]
