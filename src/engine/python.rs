@@ -554,11 +554,11 @@ impl BMEnginePy {
                 .get_item("id")?
                 .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("missing touch id"))?
                 .extract()?;
-            let x: f32 = td
+            let x: f64 = td
                 .get_item("x")?
                 .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("missing touch x"))?
                 .extract()?;
-            let y: f32 = td
+            let y: f64 = td
                 .get_item("y")?
                 .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("missing touch y"))?
                 .extract()?;

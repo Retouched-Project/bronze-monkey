@@ -4,12 +4,10 @@
 use crate::codec::externals::registry;
 use crate::codec::io::{DataInput, DataOutput, Result};
 use crate::codec::object::Object;
-use crate::codec::messages::bm_encoding::{Value, ValueC, values_from_c};
+use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_parameter::VecOutput;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read};
-use std::os::raw::c_char;
-use std::ptr;
 
 use serde::{Deserialize, Serialize};
 
@@ -128,107 +126,4 @@ fn read_utf_bytes(cur: &mut Cursor<&[u8]>) -> Result<String> {
     let mut v = vec![0u8; len];
     cur.read_exact(&mut v)?;
     Ok(String::from_utf8(v)?)
-}
-
-#[repr(C)]
-#[derive(Debug, Clone)]
-pub struct BMInvokeC {
-    pub id: i32,
-    pub method_ptr: *mut c_char,
-    pub method_len: usize,
-    pub return_method_ptr: *mut c_char,
-    pub return_method_len: usize,
-    pub params_ptr: *const ValueC,
-    pub params_len: usize,
-}
-
-crate::ffi_cstring_accessors!(
-    BMInvokeC,
-    method_ptr,
-    method_len,
-    set_inner = bm_invoke_set_method_inner,
-    set = bm_invoke_set_method,
-    get_len = bm_invoke_get_method_len,
-    get = bm_invoke_get_method,
-    free_field = bm_invoke_free_method
-);
-
-crate::ffi_cstring_accessors!(
-    BMInvokeC,
-    return_method_ptr,
-    return_method_len,
-    set_inner = bm_invoke_set_return_method_inner,
-    set = bm_invoke_set_return_method,
-    get_len = bm_invoke_get_return_method_len,
-    get = bm_invoke_get_return_method,
-    free_field = bm_invoke_free_return_method
-);
-
-crate::ffi_free_struct!(
-    BMInvokeC,
-    bm_invoke_free,
-    bm_invoke_free_method,
-    bm_invoke_free_return_method
-);
-
-#[unsafe(no_mangle)]
-pub extern "C" fn bm_invoke_new() -> *mut BMInvokeC {
-    Box::into_raw(Box::new(BMInvokeC {
-        id: 0,
-        method_ptr: ptr::null_mut(),
-        method_len: 0,
-        return_method_ptr: ptr::null_mut(),
-        return_method_len: 0,
-        params_ptr: ptr::null(),
-        params_len: 0,
-    }))
-}
-
-#[unsafe(no_mangle)]
-pub extern "C" fn bm_invoke_set_params(
-    invoke: *mut BMInvokeC,
-    params_ptr: *const ValueC,
-    params_len: usize,
-) -> bool {
-    if invoke.is_null() {
-        return false;
-    }
-    if params_len > 0 && params_ptr.is_null() {
-        return false;
-    }
-    let inv = unsafe { &mut *invoke };
-    inv.params_ptr = params_ptr;
-    inv.params_len = params_len;
-    true
-}
-
-impl BMInvokeC {
-    pub fn to_rust(&self) -> Option<BMInvoke> {
-        let method = if self.method_len == 0 {
-            String::new()
-        } else {
-            let bytes = unsafe {
-                std::slice::from_raw_parts(self.method_ptr as *const u8, self.method_len)
-            };
-            String::from_utf8(bytes.to_vec()).ok()?
-        };
-        let return_method = if self.return_method_len == 0 {
-            None
-        } else {
-            let bytes = unsafe {
-                std::slice::from_raw_parts(
-                    self.return_method_ptr as *const u8,
-                    self.return_method_len,
-                )
-            };
-            Some(String::from_utf8(bytes.to_vec()).ok()?)
-        };
-        let params = values_from_c(self.params_ptr, self.params_len)?;
-        Some(BMInvoke {
-            id: self.id,
-            method,
-            return_method,
-            params,
-        })
-    }
 }
