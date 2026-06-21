@@ -710,8 +710,6 @@ impl Engine {
         let mut accel_interval_ms = None;
         let mut gyro_interval_ms = None;
         let mut orientation_interval_ms = None;
-        let mut touch_reliability = None;
-        let mut control_reliability = None;
         let mut control_mode = None;
         let mut portal_id = None;
         let mut return_app_id = None;
@@ -748,10 +746,6 @@ impl Engine {
                     orientation_interval_ms = Some((sec * 1000.0) as i32);
                 }
             }
-            methods::SET_RELIABILITY_FOR_TOUCH => {
-                touch_reliability = self.param_i32(&inv.params, 0);
-                control_reliability = self.param_i32(&inv.params, 1);
-            }
             methods::SET_CONTROL_MODE => {
                 control_mode = self.param_i32(&inv.params, 0);
                 return_app_id = self.param_string(&inv.params, 1);
@@ -775,8 +769,6 @@ impl Engine {
             accel_interval_ms,
             gyro_interval_ms,
             orientation_interval_ms,
-            touch_reliability,
-            control_reliability,
             control_mode,
             portal_id,
             return_app_id,
@@ -794,7 +786,7 @@ impl Engine {
         }
     }
 
-    fn param_i32(&self, params: &[Value], idx: usize) -> Option<i32> {
+    pub(super) fn param_i32(&self, params: &[Value], idx: usize) -> Option<i32> {
         match params.get(idx)? {
             Value::I16(v) => Some(*v as i32),
             Value::I32(v) => Some(*v),

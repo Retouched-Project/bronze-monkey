@@ -196,8 +196,6 @@ pub struct ControlConfig {
     pub accel_interval_ms: Option<i32>,
     pub gyro_interval_ms: Option<i32>,
     pub orientation_interval_ms: Option<i32>,
-    pub touch_reliability: Option<i32>,
-    pub control_reliability: Option<i32>,
     pub control_mode: Option<i32>,
     pub portal_id: Option<String>,
     pub return_app_id: Option<String>,

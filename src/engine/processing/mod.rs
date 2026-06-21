@@ -9,7 +9,7 @@ mod server_ops;
 
 use crate::codec::messages::bm_encoding::Value;
 use crate::devices::device_core::DeviceCore;
-use crate::engine::events::{ControlConfig, ProcessOutput};
+use crate::engine::events::ProcessOutput;
 use crate::engine::registry::DeviceRegistry;
 use crate::engine::state::EngineState;
 use crate::policy::{ActiveRoles, ControllerPolicy, GamePolicy, Role, ServerPolicy};
@@ -132,29 +132,21 @@ impl Engine {
             .insert(return_method.to_string(), handler);
     }
 
-    fn track_reliability(&mut self, sender: &str, cfg: &ControlConfig) {
-        if cfg.touch_reliability.is_none() && cfg.control_reliability.is_none() {
-            return;
+    pub(crate) fn set_input_reliability(&mut self, touch: Option<i32>, sensors: Option<i32>) {
+        if let Some(touch) = touch {
+            self.controller_policy.input_reliability.touch = Some(touch);
         }
-        let entry = self
-            .controller_policy
-            .input_reliability
-            .entry(sender.to_string())
-            .or_default();
-        if let Some(touch) = cfg.touch_reliability {
-            entry.touch = Some(touch);
-        }
-        if let Some(sensors) = cfg.control_reliability {
-            entry.sensors = Some(sensors);
+        if let Some(sensors) = sensors {
+            self.controller_policy.input_reliability.sensors = Some(sensors);
         }
     }
 
-    pub fn reliability_for(&self, target: &str, channel: i32) -> i32 {
-        let tracked = self.controller_policy.input_reliability.get(target);
+    pub fn reliability_for(&self, _target: &str, channel: i32) -> i32 {
+        let tracked = &self.controller_policy.input_reliability;
         let requested = match ChannelType::from_i32(channel) {
-            Some(ChannelType::Touch) => tracked.and_then(|r| r.touch),
+            Some(ChannelType::Touch) => tracked.touch,
             Some(ChannelType::Acceleration | ChannelType::Gyro | ChannelType::Orientation) => {
-                tracked.and_then(|r| r.sensors)
+                tracked.sensors
             }
             _ => None,
         };

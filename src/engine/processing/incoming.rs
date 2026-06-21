@@ -300,10 +300,13 @@ impl Engine {
         let mut claimed = false;
 
         if self.roles.controller {
-            if let Some(cfg) = self.parse_control_rpc(&inv) {
-                if let Some(sender) = sender_id.as_deref() {
-                    self.track_reliability(sender, &cfg);
-                }
+            if inv.method == methods::SET_RELIABILITY_FOR_TOUCH {
+                // Transport config: tracked internally, never surfaced to the consumer.
+                let touch = self.param_i32(&inv.params, 0);
+                let sensors = self.param_i32(&inv.params, 1);
+                self.set_input_reliability(touch, sensors);
+                claimed = true;
+            } else if let Some(cfg) = self.parse_control_rpc(&inv) {
                 out.events.push(Event::ControlConfig(cfg));
                 claimed = true;
             }

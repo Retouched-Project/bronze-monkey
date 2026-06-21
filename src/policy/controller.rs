@@ -3,13 +3,12 @@
 
 //! Controller-role policy: handlers for messages a controller receives from a
 //! game (vibrate, sensor/input configuration, host-list updates), plus the
-//! client-reply handlers shared with the game role. Holds the per-game input
+//! client-reply handlers shared with the game role. Holds the session input
 //! reliability the game requested via setReliabilityForTouch, applied when the
 //! controller emits touch/sensor packets.
 
 use crate::engine::methods;
 use crate::engine::processing::{Engine, RpcHandler};
-use std::collections::HashMap;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct InputReliability {
@@ -19,7 +18,7 @@ pub struct InputReliability {
 
 #[derive(Debug, Default, Clone)]
 pub struct ControllerPolicy {
-    pub(crate) input_reliability: HashMap<String, InputReliability>,
+    pub(crate) input_reliability: InputReliability,
 }
 
 impl ControllerPolicy {
