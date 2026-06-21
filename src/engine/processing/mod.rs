@@ -132,6 +132,11 @@ impl Engine {
             .insert(return_method.to_string(), handler);
     }
 
+    pub(crate) fn reset_game_session(&mut self) {
+        self.controller_policy.input_reliability = Default::default();
+        self.state.chunk_buffers.clear();
+    }
+
     pub(crate) fn set_input_reliability(&mut self, touch: Option<i32>, sensors: Option<i32>) {
         if let Some(touch) = touch {
             self.controller_policy.input_reliability.touch = Some(touch);

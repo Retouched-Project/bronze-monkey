@@ -131,7 +131,10 @@ impl Engine {
                 target,
                 host,
                 self_info,
-            } => self.make_device_connect_requested(&target, host, self_info),
+            } => {
+                self.reset_game_session();
+                self.make_device_connect_requested(&target, host, self_info)
+            }
             Command::SendTouch { target, touches } => {
                 let reliability = self.reliability_for(&target, ChannelType::Touch.value());
                 self.make_touch_set(&target, touches, reliability)

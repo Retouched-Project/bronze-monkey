@@ -113,7 +113,6 @@ impl Engine {
 
     pub fn drop_device(&mut self, device_id: &str) -> Vec<Outgoing> {
         let mut out = Vec::new();
-        self.controller_policy.input_reliability = Default::default();
         self.server_policy.hidden_hosts.remove(device_id);
         if let Some(rec) = self.state.registry.remove(device_id) {
             if let Some(info) = rec.info {
