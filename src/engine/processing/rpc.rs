@@ -9,6 +9,7 @@ use crate::codec::object::Object;
 use crate::engine::events::{ControlConfig, Event, ProcessOutput};
 use crate::engine::methods;
 use crate::policy::server::PendingRegistration;
+use crate::types::control_mode::ControlMode;
 use crate::types::device_type::DeviceType;
 
 impl Engine {
@@ -747,12 +748,14 @@ impl Engine {
                 }
             }
             methods::SET_CONTROL_MODE => {
-                control_mode = self.param_i32(&inv.params, 0);
+                control_mode = self
+                    .param_i32(&inv.params, 0)
+                    .and_then(ControlMode::from_wire);
                 return_app_id = self.param_string(&inv.params, 1);
             }
             methods::WAIT_FOR_NEW_HOST => {
                 portal_id = self.param_string(&inv.params, 0);
-                control_mode = Some(3);
+                control_mode = Some(ControlMode::Wait);
             }
             methods::ON_PORTAL_ID => {
                 return_app_id = self.param_string(&inv.params, 0);

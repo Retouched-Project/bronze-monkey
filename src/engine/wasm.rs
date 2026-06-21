@@ -10,6 +10,7 @@ use crate::devices::device_core::DeviceCore;
 use crate::engine::events::Command;
 use crate::engine::registry::DeviceRecord;
 use crate::types::channel_type::ChannelType;
+use crate::types::control_mode::ControlMode;
 use crate::types::device_type::DeviceType;
 use console_error_panic_hook;
 use js_sys;
@@ -472,13 +473,7 @@ impl BmEngineWasm {
         to_js(&outgoings)
     }
 
-    pub fn make_accel(
-        &mut self,
-        target: &str,
-        x: f64,
-        y: f64,
-        z: f64,
-    ) -> Result<JsValue, JsError> {
+    pub fn make_accel(&mut self, target: &str, x: f64, y: f64, z: f64) -> Result<JsValue, JsError> {
         let rel = self
             .inner
             .reliability_for(target, ChannelType::Acceleration.value());
@@ -487,7 +482,9 @@ impl BmEngineWasm {
     }
 
     pub fn make_gyro(&mut self, target: &str, x: f32, y: f32, z: f32) -> Result<JsValue, JsError> {
-        let rel = self.inner.reliability_for(target, ChannelType::Gyro.value());
+        let rel = self
+            .inner
+            .reliability_for(target, ChannelType::Gyro.value());
         let outgoings = self.inner.make_gyro(target, x, y, z, rel);
         to_js(&outgoings)
     }
@@ -621,9 +618,11 @@ impl BmEngineWasm {
     pub fn make_set_control_mode(
         &mut self,
         target: &str,
-        mode: i32,
+        mode: JsValue,
         text: Option<String>,
     ) -> Result<JsValue, JsError> {
+        let mode: ControlMode =
+            serde_wasm_bindgen::from_value(mode).map_err(|e| JsError::new(&e.to_string()))?;
         let outgoings = self
             .inner
             .make_set_control_mode(target, mode, text.as_deref());

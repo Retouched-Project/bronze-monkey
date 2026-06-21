@@ -6,6 +6,7 @@ use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::touch::Touch;
 use crate::codec::object::Object;
 use crate::engine::registry::DeviceRecord;
+use crate::types::control_mode::ControlMode;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize)]
@@ -196,7 +197,7 @@ pub struct ControlConfig {
     pub accel_interval_ms: Option<i32>,
     pub gyro_interval_ms: Option<i32>,
     pub orientation_interval_ms: Option<i32>,
-    pub control_mode: Option<i32>,
+    pub control_mode: Option<ControlMode>,
     pub portal_id: Option<String>,
     pub return_app_id: Option<String>,
 }
@@ -341,7 +342,7 @@ pub enum Command {
     },
     SetControlMode {
         target: String,
-        mode: i32,
+        mode: ControlMode,
         text: Option<String>,
     },
     Vibrate {

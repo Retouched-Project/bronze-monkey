@@ -24,6 +24,7 @@ use crate::engine::events::Outgoing;
 use crate::engine::methods;
 use crate::engine::protocol::serialize_packet;
 use crate::types::channel_type::ChannelType;
+use crate::types::control_mode::ControlMode;
 use crate::types::packet_type::PacketType;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -305,10 +306,10 @@ impl Engine {
     pub fn make_set_control_mode(
         &mut self,
         target: &str,
-        mode: i32,
+        mode: ControlMode,
         text_content: Option<&str>,
     ) -> Vec<Outgoing> {
-        let mut params = vec![Value::I32(mode)];
+        let mut params = vec![Value::I32(mode.to_wire())];
         if let Some(text) = text_content {
             params.push(Value::String(text.to_string()));
         }

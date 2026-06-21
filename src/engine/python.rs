@@ -24,6 +24,8 @@ use crate::engine::protocol::{
     deserialize_packet as protocol_deserialize_packet, serialize_packet,
 };
 use crate::engine::registry::DeviceRecord;
+use crate::types::channel_type::ChannelType;
+use crate::types::control_mode::ControlMode;
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
 use prost::Message;
@@ -309,9 +311,10 @@ impl BMEnginePy {
         &self,
         py: Python<'py>,
         target_device_id: String,
-        mode: i32,
+        mode: Bound<'py, PyAny>,
         text_content: Option<String>,
     ) -> PyResult<Bound<'py, PyList>> {
+        let mode: ControlMode = depythonize(&mode)?;
         let actions = self.inner.write().unwrap().make_set_control_mode(
             &target_device_id,
             mode,
@@ -544,7 +547,6 @@ impl BMEnginePy {
         py: Python<'py>,
         target_device_id: String,
         touches: Bound<'py, PyList>,
-        reliability: i32,
     ) -> PyResult<Bound<'py, PyList>> {
         use crate::codec::messages::touch::Touch;
         use crate::types::touch_state::TouchState;
@@ -590,11 +592,9 @@ impl BMEnginePy {
                 state,
             });
         }
-        let actions = self.inner.write().unwrap().make_touch_set(
-            &target_device_id,
-            rust_touches,
-            reliability,
-        );
+        let mut eng = self.inner.write().unwrap();
+        let reliability = eng.reliability_for(&target_device_id, ChannelType::Touch.value());
+        let actions = eng.make_touch_set(&target_device_id, rust_touches, reliability);
         outgoings_to_py(py, actions)
     }
 
@@ -605,13 +605,10 @@ impl BMEnginePy {
         x: f64,
         y: f64,
         z: f64,
-        reliability: i32,
     ) -> PyResult<Bound<'py, PyList>> {
-        let actions =
-            self.inner
-                .write()
-                .unwrap()
-                .make_accel(&target_device_id, x, y, z, reliability);
+        let mut eng = self.inner.write().unwrap();
+        let reliability = eng.reliability_for(&target_device_id, ChannelType::Acceleration.value());
+        let actions = eng.make_accel(&target_device_id, x, y, z, reliability);
         outgoings_to_py(py, actions)
     }
 
@@ -622,13 +619,10 @@ impl BMEnginePy {
         x: f32,
         y: f32,
         z: f32,
-        reliability: i32,
     ) -> PyResult<Bound<'py, PyList>> {
-        let actions =
-            self.inner
-                .write()
-                .unwrap()
-                .make_gyro(&target_device_id, x, y, z, reliability);
+        let mut eng = self.inner.write().unwrap();
+        let reliability = eng.reliability_for(&target_device_id, ChannelType::Gyro.value());
+        let actions = eng.make_gyro(&target_device_id, x, y, z, reliability);
         outgoings_to_py(py, actions)
     }
 
@@ -640,16 +634,10 @@ impl BMEnginePy {
         y: f32,
         z: f32,
         w: f32,
-        reliability: i32,
     ) -> PyResult<Bound<'py, PyList>> {
-        let actions = self.inner.write().unwrap().make_orientation(
-            &target_device_id,
-            x,
-            y,
-            z,
-            w,
-            reliability,
-        );
+        let mut eng = self.inner.write().unwrap();
+        let reliability = eng.reliability_for(&target_device_id, ChannelType::Orientation.value());
+        let actions = eng.make_orientation(&target_device_id, x, y, z, w, reliability);
         outgoings_to_py(py, actions)
     }
 
