@@ -9,6 +9,7 @@ use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::events::Command;
 use crate::engine::registry::DeviceRecord;
+use crate::types::channel_type::ChannelType;
 use crate::types::device_type::DeviceType;
 use console_error_panic_hook;
 use js_sys;
@@ -477,21 +478,17 @@ impl BmEngineWasm {
         x: f64,
         y: f64,
         z: f64,
-        reliability: i32,
     ) -> Result<JsValue, JsError> {
-        let outgoings = self.inner.make_accel(target, x, y, z, reliability);
+        let rel = self
+            .inner
+            .reliability_for(target, ChannelType::Acceleration.value());
+        let outgoings = self.inner.make_accel(target, x, y, z, rel);
         to_js(&outgoings)
     }
 
-    pub fn make_gyro(
-        &mut self,
-        target: &str,
-        x: f32,
-        y: f32,
-        z: f32,
-        reliability: i32,
-    ) -> Result<JsValue, JsError> {
-        let outgoings = self.inner.make_gyro(target, x, y, z, reliability);
+    pub fn make_gyro(&mut self, target: &str, x: f32, y: f32, z: f32) -> Result<JsValue, JsError> {
+        let rel = self.inner.reliability_for(target, ChannelType::Gyro.value());
+        let outgoings = self.inner.make_gyro(target, x, y, z, rel);
         to_js(&outgoings)
     }
 
@@ -502,9 +499,11 @@ impl BmEngineWasm {
         y: f32,
         z: f32,
         w: f32,
-        reliability: i32,
     ) -> Result<JsValue, JsError> {
-        let outgoings = self.inner.make_orientation(target, x, y, z, w, reliability);
+        let rel = self
+            .inner
+            .reliability_for(target, ChannelType::Orientation.value());
+        let outgoings = self.inner.make_orientation(target, x, y, z, w, rel);
         to_js(&outgoings)
     }
 
@@ -523,15 +522,13 @@ impl BmEngineWasm {
         to_js(&outgoings)
     }
 
-    pub fn make_touch_set(
-        &mut self,
-        target: &str,
-        points: JsValue,
-        reliability: i32,
-    ) -> Result<JsValue, JsError> {
+    pub fn make_touch_set(&mut self, target: &str, points: JsValue) -> Result<JsValue, JsError> {
         let touches: Vec<Touch> =
             serde_wasm_bindgen::from_value(points).map_err(|e| JsError::new(&e.to_string()))?;
-        let outgoings = self.inner.make_touch_set(target, touches, reliability);
+        let rel = self
+            .inner
+            .reliability_for(target, ChannelType::Touch.value());
+        let outgoings = self.inner.make_touch_set(target, touches, rel);
         to_js(&outgoings)
     }
 
