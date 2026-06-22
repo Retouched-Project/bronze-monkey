@@ -13,10 +13,7 @@ pub mod types;
     note = "use `bronze_monkey::codec::externals` instead"
 )]
 pub use codec::externals;
-#[deprecated(
-    since = "2.0.0",
-    note = "use `bronze_monkey::codec::messages` instead"
-)]
+#[deprecated(since = "2.0.0", note = "use `bronze_monkey::codec::messages` instead")]
 pub use codec::messages;
 
 #[deprecated(
@@ -30,9 +27,9 @@ pub mod io {
     pub use crate::codec::object;
 }
 
+pub use codec::bm_stream;
 #[cfg(feature = "pyo3")]
 pub use engine::python::*;
-pub use codec::externals::bm_stream;
 
 use base64::prelude::*;
 use std::cell::RefCell;

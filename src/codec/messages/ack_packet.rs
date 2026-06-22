@@ -4,10 +4,10 @@
 use std::fmt;
 use std::io::Read;
 
-use crate::devices::bm_address::BMAddress;
-use crate::devices::device_core::DeviceCore;
 use crate::codec::externals::registry;
 use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::devices::bm_address::BMAddress;
+use crate::devices::device_core::DeviceCore;
 
 use serde::{Deserialize, Serialize};
 

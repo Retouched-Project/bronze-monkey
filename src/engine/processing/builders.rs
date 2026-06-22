@@ -2,6 +2,7 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 use super::Engine;
+use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::externals::bm_reliability::BMReliability;
@@ -12,7 +13,6 @@ use crate::codec::messages::bm_byte_chunk::BMByteChunk;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_gyro::BMGyro;
 use crate::codec::messages::bm_invoke::BMInvoke;
-use crate::codec::messages::bm_parameter::VecOutput;
 use crate::codec::messages::dpad_update::DPadUpdate;
 use crate::codec::messages::orientation::Orientation;
 use crate::codec::messages::ping::Ping;
@@ -82,9 +82,9 @@ impl Engine {
     }
 
     pub(super) fn build_object_bytes(&self, obj: Object) -> Result<Vec<u8>> {
-        let mut out = VecOutput::default();
+        let mut out = BMStream::new();
         obj.encode_with_marker(&mut out)?;
-        Ok(out.buf)
+        Ok(out.into_inner())
     }
 
     pub fn make_button_invoke(

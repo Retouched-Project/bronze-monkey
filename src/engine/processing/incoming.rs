@@ -2,6 +2,7 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 use super::{Engine, ReceivedInvoke};
+use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::messages::bm_byte_chunk::BMByteChunk;
 use crate::codec::object::Object;
@@ -11,7 +12,6 @@ use crate::engine::methods;
 use crate::engine::protocol::deserialize_packet;
 use crate::engine::registry::DeviceRecord;
 use crate::types::packet_type::PacketType;
-use std::io::Cursor;
 
 impl Engine {
     pub fn process_incoming(&mut self, payload: &[u8]) -> ProcessOutput {
@@ -133,7 +133,7 @@ impl Engine {
 
     fn handle_ack(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
         if let Some(msg) = &pkt.message {
-            let mut cur = Cursor::new(msg.as_slice());
+            let mut cur = BMStream::view(msg.as_slice());
             if let Ok(Object::AckPacket(ack)) = Object::decode(&mut cur) {
                 let mut core = ack.device;
                 core.address = Some(ack.device_address);
@@ -154,7 +154,7 @@ impl Engine {
                 #[cfg(target_arch = "wasm32")]
                 web_sys::console::log_1(&format!("WASM: handle_data msg_len={}", msg.len()).into());
 
-                let mut cur = Cursor::new(msg);
+                let mut cur = BMStream::view(msg.as_slice());
                 match Object::decode(&mut cur) {
                     Ok(obj) => {
                         #[cfg(target_arch = "wasm32")]

@@ -1,49 +1,50 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::externals::registry;
-use crate::codec::io::Result;
+use crate::codec::io::{DataInput, DataOutput, Result};
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
-use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{Cursor, Read};
 
 pub fn serialize_packet(packet: &BMPacket) -> Result<Vec<u8>> {
-    let mut body = Vec::new();
+    let mut body = BMStream::new();
 
-    write_object_envelope(&mut body, registry::BM_CLASS_ID_PACKET)?;
+    body.write_utf("@")?; // object marker
+    body.write_short(registry::BM_CLASS_ID_PACKET as i16)?;
 
-    body.extend_from_slice(&packet.channel.to_le_bytes());
-    body.extend_from_slice(&packet.sequence.to_le_bytes());
-    body.extend_from_slice(&packet.timestamp.to_le_bytes());
-    body.extend_from_slice(&packet.rtt.to_le_bytes());
-    body.extend_from_slice(&packet.packet_type.code().to_le_bytes());
-    body.extend_from_slice(&packet.device_type.code().to_le_bytes());
+    body.write_int(packet.channel)?;
+    body.write_int(packet.sequence)?;
+    body.write_double(packet.timestamp)?;
+    body.write_double(packet.rtt)?;
+    body.write_int(packet.packet_type.code())?;
+    body.write_int(packet.device_type.code())?;
 
-    write_utf(&mut body, &packet.device_id)?;
-    write_utf(&mut body, &packet.device_name)?;
+    body.write_utf(&packet.device_id)?;
+    body.write_utf(&packet.device_name)?;
 
-    if let Some(msg) = &packet.message {
-        body.push(1); // has_message = true
-        body.extend_from_slice(msg);
-    } else {
-        body.push(0); // has_message = false
+    match &packet.message {
+        Some(msg) => {
+            body.write_boolean(true)?;
+            body.write_bytes(msg)?;
+        }
+        None => body.write_boolean(false)?,
     }
 
-    let mut framed = Vec::with_capacity(4 + body.len());
-    framed.extend_from_slice(&(body.len() as u32).to_le_bytes());
-    framed.extend_from_slice(&body);
-
-    Ok(framed)
+    let body = body.into_inner();
+    let mut framed = BMStream::new();
+    framed.write_unsigned_int(body.len() as u32)?;
+    framed.write_bytes(&body)?;
+    Ok(framed.into_inner())
 }
 
 pub fn deserialize_packet(data: &[u8], pkt: &mut BMPacket) -> Result<()> {
     if data.len() < 4 {
         return Err("Buffer too small for length prefix".into());
     }
-    let mut cur = Cursor::new(data);
-    let size = cur.read_u32::<LittleEndian>()? as usize;
+    let mut framed = BMStream::view(data);
+    let size = framed.read_unsigned_int()? as usize;
 
     if size > 100 * 1024 * 1024 {
         // cap at 100MB sanity check
@@ -61,37 +62,39 @@ pub fn deserialize_packet(data: &[u8], pkt: &mut BMPacket) -> Result<()> {
     }
 
     let payload = &data[4..end_offset];
-    let mut cur = Cursor::new(payload);
+    let mut body = BMStream::view(payload);
 
     #[cfg(target_arch = "wasm32")]
     web_sys::console::log_1(&"WASM: deserialize_packet start".into());
 
-    let header = cur.read_i16::<LittleEndian>()?;
-    let at = cur.read_u8()?;
-    let class_id = cur.read_i16::<LittleEndian>()? as u32;
+    let marker = body.read_utf()?;
+    let class_id = body.read_short()? as u32;
 
-    if header != 1 || at != b'@' || class_id != registry::BM_CLASS_ID_PACKET {
+    if marker != "@" || class_id != registry::BM_CLASS_ID_PACKET {
         return Err("Invalid packet envelope".into());
     }
 
-    pkt.channel = cur.read_i32::<LittleEndian>()?;
-    pkt.sequence = cur.read_i32::<LittleEndian>()?;
-    pkt.timestamp = cur.read_f64::<LittleEndian>()?;
-    pkt.rtt = cur.read_f64::<LittleEndian>()?;
-    let pkt_type_code = cur.read_i32::<LittleEndian>()?;
-    let dev_type_code = cur.read_i32::<LittleEndian>()?;
+    pkt.channel = body.read_int()?;
+    pkt.sequence = body.read_int()?;
+    pkt.timestamp = body.read_double()?;
+    pkt.rtt = body.read_double()?;
+    let pkt_type_code = body.read_int()?;
+    let dev_type_code = body.read_int()?;
 
     pkt.packet_type = PacketType::from_i32(pkt_type_code).ok_or("Invalid packet type")?;
     pkt.device_type =
         DeviceType::for_value(dev_type_code).map_err(|e| format!("Invalid DeviceType: {}", e))?;
 
-    pkt.device_id = read_utf(&mut cur).map_err(|e| format!("Failed to read device_id: {}", e))?;
-    pkt.device_name =
-        read_utf(&mut cur).map_err(|e| format!("Failed to read device_name: {}", e))?;
+    pkt.device_id = body
+        .read_utf()
+        .map_err(|e| format!("Failed to read device_id: {}", e))?;
+    pkt.device_name = body
+        .read_utf()
+        .map_err(|e| format!("Failed to read device_name: {}", e))?;
 
-    let has_message = cur.read_u8()? != 0;
+    let has_message = body.read_boolean()?;
     pkt.message = if has_message {
-        let pos = cur.position() as usize;
+        let pos = body.position();
         if pos > payload.len() {
             return Err("Message position out of bounds".into());
         }
@@ -103,36 +106,93 @@ pub fn deserialize_packet(data: &[u8], pkt: &mut BMPacket) -> Result<()> {
     Ok(())
 }
 
-fn write_object_envelope(out: &mut Vec<u8>, class_id: u32) -> Result<()> {
-    out.extend_from_slice(&1i16.to_le_bytes());
-    out.push(b'@');
-    out.extend_from_slice(&(class_id as i16).to_le_bytes());
-    Ok(())
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-fn write_utf(out: &mut Vec<u8>, s: &str) -> Result<()> {
-    let bytes = s.as_bytes();
-    if bytes.len() > i16::MAX as usize {
-        return Err("UTF string too long".into());
+    fn sample(message: Option<Vec<u8>>) -> BMPacket {
+        let mut pkt = BMPacket::default();
+        pkt.channel = 3;
+        pkt.sequence = 99;
+        pkt.timestamp = 1234.5;
+        pkt.rtt = 12.0;
+        pkt.packet_type = PacketType::Data;
+        pkt.device_type = DeviceType::Flash;
+        pkt.device_id = "dev-id".to_string();
+        pkt.device_name = "Device Name".to_string();
+        pkt.message = message;
+        pkt
     }
-    out.extend_from_slice(&(bytes.len() as i16).to_le_bytes());
-    out.extend_from_slice(bytes);
-    Ok(())
-}
 
-fn read_utf(cur: &mut Cursor<&[u8]>) -> Result<String> {
-    let len = cur.read_i16::<LittleEndian>()?;
-    if len < 0 {
-        return Err("Negative UTF length".into());
+    fn assert_round_trip(original: &BMPacket) {
+        let bytes = serialize_packet(original).unwrap();
+        let mut decoded = BMPacket::default();
+        deserialize_packet(&bytes, &mut decoded).unwrap();
+
+        assert_eq!(decoded.channel, original.channel);
+        assert_eq!(decoded.sequence, original.sequence);
+        assert_eq!(decoded.timestamp, original.timestamp);
+        assert_eq!(decoded.rtt, original.rtt);
+        assert_eq!(decoded.packet_type, original.packet_type);
+        assert_eq!(decoded.device_type, original.device_type);
+        assert_eq!(decoded.device_id, original.device_id);
+        assert_eq!(decoded.device_name, original.device_name);
+        assert_eq!(decoded.message, original.message);
     }
-    let len = len as usize;
-    if len == 0 {
-        return Ok(String::new());
+
+    #[test]
+    fn packet_round_trips_with_message() {
+        assert_round_trip(&sample(Some(vec![1, 2, 3, 4, 5])));
     }
-    if cur.position() as usize + len > cur.get_ref().len() {
-        return Err("UTF length exceeds buffer".into());
+
+    #[test]
+    fn packet_round_trips_without_message() {
+        assert_round_trip(&sample(None));
     }
-    let mut buf = vec![0u8; len];
-    cur.read_exact(&mut buf)?;
-    Ok(String::from_utf8(buf)?)
+
+    #[test]
+    fn framing_prefixes_body_length() {
+        let bytes = serialize_packet(&sample(None)).unwrap();
+        let declared = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as usize;
+        assert_eq!(declared, bytes.len() - 4);
+    }
+
+    #[test]
+    fn truncated_buffer_errors() {
+        let mut decoded = BMPacket::default();
+        assert!(deserialize_packet(&[0x00, 0x00], &mut decoded).is_err());
+    }
+
+    // Golden bytes computed by hand from the wire format. Locks the exact
+    // packet envelope + framing so the codec cannot silently drift.
+    #[test]
+    fn packet_golden_bytes() {
+        let mut pkt = BMPacket::default();
+        pkt.channel = 2;
+        pkt.sequence = 7;
+        pkt.timestamp = 0.0;
+        pkt.rtt = 0.0;
+        pkt.packet_type = PacketType::Data;
+        pkt.device_type = DeviceType::Flash;
+        pkt.device_id = "a".to_string();
+        pkt.device_name = "b".to_string();
+        pkt.message = None;
+
+        let bytes = serialize_packet(&pkt).unwrap();
+        let expected: &[u8] = &[
+            0x2C, 0x00, 0x00, 0x00, // framed body length = 44
+            0x01, 0x00, 0x40, // "@" object marker
+            0x00, 0x00, // class id 0 (BMPacket)
+            0x02, 0x00, 0x00, 0x00, // channel = 2
+            0x07, 0x00, 0x00, 0x00, // sequence = 7
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // timestamp 0.0
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // rtt 0.0
+            0x00, 0x00, 0x00, 0x00, // packet_type Data (0)
+            0x03, 0x00, 0x00, 0x00, // device_type Flash (3)
+            0x01, 0x00, 0x61, // device_id "a"
+            0x01, 0x00, 0x62, // device_name "b"
+            0x00, // has_message = false
+        ];
+        assert_eq!(bytes, expected);
+    }
 }

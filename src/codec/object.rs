@@ -3,14 +3,13 @@
 
 use crate::codec::externals::bm_array::BMArray;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
-use crate::codec::externals::registry;
 use crate::codec::io::{DataInput, DataOutput, Result};
 use crate::codec::messages::acceleration::Acceleration;
 use crate::codec::messages::ack_packet::AckPacket;
 use crate::codec::messages::bm_byte_chunk::BMByteChunk;
-use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_gyro::BMGyro;
 use crate::codec::messages::bm_invoke::BMInvoke;
+use crate::codec::messages::bm_parameter::BMParameter;
 use crate::codec::messages::dpad_update::DPadUpdate;
 use crate::codec::messages::orientation::Orientation;
 use crate::codec::messages::ping::Ping;
@@ -37,7 +36,9 @@ pub enum Object {
     Orientation(Orientation),
     DPadUpdate(DPadUpdate),
     BMInvoke(BMInvoke),
-    BMParameter(Box<Value>),
+    // Boxed to break the Object -> Value -> Object recursion (a parameter's
+    // value may itself be an object); every other variant holds its type directly.
+    BMParameter(Box<BMParameter>),
 }
 
 impl Object {
@@ -57,7 +58,7 @@ impl Object {
             Object::Orientation(_) => Orientation::CLASS_ID,
             Object::DPadUpdate(_) => DPadUpdate::CLASS_ID,
             Object::BMInvoke(_) => BMInvoke::CLASS_ID,
-            Object::BMParameter(_) => registry::BM_CLASS_ID_PARAMETER,
+            Object::BMParameter(_) => BMParameter::CLASS_ID,
         }
     }
 
@@ -99,11 +100,9 @@ impl Object {
             Orientation::CLASS_ID => Ok(Object::Orientation(Orientation::read_from(input)?)),
             DPadUpdate::CLASS_ID => Ok(Object::DPadUpdate(DPadUpdate::read_from(input)?)),
             BMInvoke::CLASS_ID => Ok(Object::BMInvoke(BMInvoke::read_from(input)?)),
-            registry::BM_CLASS_ID_PARAMETER => {
-                use crate::codec::messages::bm_encoding::BMEncoding;
-                let val = BMEncoding::decode(input)?;
-                Ok(Object::BMParameter(Box::new(val)))
-            }
+            BMParameter::CLASS_ID => Ok(Object::BMParameter(Box::new(BMParameter::read_from(
+                input,
+            )?))),
             _ => Err(format!("unknown class id: {id_short}").into()),
         }
     }
@@ -125,10 +124,7 @@ impl Object {
             Object::Orientation(x) => x.write_to(out),
             Object::DPadUpdate(x) => x.write_to(out),
             Object::BMInvoke(x) => x.write_to(out),
-            Object::BMParameter(v) => {
-                use crate::codec::messages::bm_encoding::BMEncoding;
-                BMEncoding::encode(v, out)
-            }
+            Object::BMParameter(p) => p.write_to(out),
         }
     }
 

@@ -3,6 +3,7 @@
 
 #![cfg(feature = "pyo3")]
 
+use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_array::BMArray;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
@@ -12,7 +13,6 @@ use crate::codec::externals::registry;
 use crate::codec::io::DataOutput;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_invoke::BMInvoke;
-use crate::codec::messages::bm_parameter::VecOutput;
 use crate::codec::object::Object;
 use crate::controls::assembler::SchemeAssembler;
 use crate::controls::parser::BMApplicationSchemeParser;
@@ -815,7 +815,7 @@ fn serialize_device_packet<'py>(
     };
 
     let core = DeviceCore::new(device_id.clone(), device_name.clone(), device_type);
-    let mut out = VecOutput::default();
+    let mut out = BMStream::new();
     out.write_short(1)
         .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
     out.write_bytes(&[b'@'])
@@ -835,7 +835,7 @@ fn serialize_device_packet<'py>(
         reliability: 0,
         device_name,
         device_id,
-        message: Some(out.buf),
+        message: Some(out.into_inner()),
         address_host: None,
         addr_unreliable_port: 0,
         addr_reliable_port: 0,
@@ -863,7 +863,7 @@ fn deserialize_packet_dict<'py>(py: Python<'py>, data: &[u8]) -> PyResult<Bound<
     d.set_item("device_name", pkt.device_name.clone())?;
     if let Some(msg) = pkt.message.as_ref() {
         d.set_item("message_bytes", PyBytes::new(py, msg))?;
-        let mut cur = std::io::Cursor::new(msg.as_slice());
+        let mut cur = BMStream::view(msg.as_slice());
         match Object::decode(&mut cur) {
             Ok(obj) => {
                 d.set_item("message", object_to_py(py, &obj)?)?;
@@ -1037,7 +1037,7 @@ fn value_to_py(py: Python<'_>, v: &Value) -> PyResult<Py<PyAny>> {
 fn object_to_py(py: Python<'_>, o: &Object) -> PyResult<Py<PyAny>> {
     match o {
         Object::BMRegistryInfo(info) => registry_info_to_py(py, info),
-        Object::BMParameter(v) => value_to_py(py, v),
+        Object::BMParameter(p) => value_to_py(py, &p.value),
         Object::BMArray(arr) => {
             let mut py_items = Vec::new();
             for item in &arr.items {

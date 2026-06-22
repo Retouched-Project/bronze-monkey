@@ -676,7 +676,7 @@ impl Engine {
 
     fn unwrap_value<'a>(&self, v: &'a Value) -> &'a Value {
         if let Value::Object(Object::BMParameter(inner)) = v {
-            inner.as_ref()
+            &inner.value
         } else {
             v
         }
