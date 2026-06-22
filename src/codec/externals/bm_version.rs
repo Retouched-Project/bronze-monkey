@@ -54,32 +54,4 @@ impl BMVersion {
         }
     }
 
-    pub fn to_bytes(&self) -> [u8; 4] {
-        self.to_u32().to_le_bytes()
-    }
-
-    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        if bytes.len() < 4 {
-            return None;
-        }
-        let mut arr = [0u8; 4];
-        arr.copy_from_slice(&bytes[0..4]);
-        Some(Self::from_u32(u32::from_le_bytes(arr)))
-    }
-
-    pub fn encode(major: u8, minor: u8, build: u16) -> u32 {
-        Self::new(major, minor, build).to_u32()
-    }
-
-    pub fn major_from(version: u32) -> u8 {
-        ((version >> 24) & 0xFF) as u8
-    }
-
-    pub fn minor_from(version: u32) -> u8 {
-        ((version >> 16) & 0xFF) as u8
-    }
-
-    pub fn build_from(version: u32) -> u16 {
-        (version & 0xFFFF) as u16
-    }
 }
