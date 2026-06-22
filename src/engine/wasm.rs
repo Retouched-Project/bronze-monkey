@@ -70,6 +70,11 @@ impl SchemeAssemblerWasm {
 }
 
 #[wasm_bindgen]
+pub fn version_info() -> Result<JsValue, JsError> {
+    to_js(&crate::version::version_info())
+}
+
+#[wasm_bindgen]
 pub fn make_handshake_bytes() -> Vec<u8> {
     crate::codec::externals::handshake::Handshake::default_version()
         .to_bytes()

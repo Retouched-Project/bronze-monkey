@@ -7,6 +7,7 @@ pub mod devices;
 pub mod engine;
 pub mod policy;
 pub mod types;
+pub mod version;
 
 #[deprecated(
     since = "2.0.0",

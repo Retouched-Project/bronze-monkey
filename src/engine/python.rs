@@ -903,6 +903,11 @@ fn get_packet_type_codes<'py>(py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
 }
 
 #[pyfunction]
+fn version_info<'py>(py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+    Ok(pythonize(py, &crate::version::version_info())?)
+}
+
+#[pyfunction]
 fn parse_control_scheme_xml<'py>(
     py: Python<'py>,
     xml_data: String,
@@ -969,6 +974,8 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_device_type_codes, m)?)?;
     m.add_function(wrap_pyfunction!(get_packet_type_codes, m)?)?;
     m.add_function(wrap_pyfunction!(parse_control_scheme_xml, m)?)?;
+    m.add_function(wrap_pyfunction!(version_info, m)?)?;
+    m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add("DEVICE_TYPE_ANY", DeviceType::Any.code())?;
     m.add("DEVICE_TYPE_UNITY", DeviceType::Unity.code())?;
     m.add("DEVICE_TYPE_IPHONE", DeviceType::IPhone.code())?;

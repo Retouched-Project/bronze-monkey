@@ -59,6 +59,22 @@ pub unsafe extern "C" fn bm_buffer_free(ptr: *mut u8, len: usize) {
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_version_info(out_ptr: *mut *mut u8, out_len: *mut usize) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        match rmp_serde::to_vec_named(&crate::version::version_info()) {
+            Ok(buf) => {
+                write_buf(buf, out_ptr, out_len);
+                true
+            }
+            Err(_) => false,
+        }
+    })
+}
+
+#[unsafe(no_mangle)]
 pub extern "C" fn bm_engine_new() -> *mut Engine {
     catch_ptr(|| Box::into_raw(Box::new(Engine::new())))
 }
