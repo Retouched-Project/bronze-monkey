@@ -82,6 +82,13 @@ pub enum Event {
     DeviceConnectRequested {
         info: BMRegistryInfo,
     },
+    Relayed {
+        sender: Option<String>,
+        destination: String,
+        method: String,
+        return_method: Option<String>,
+        params: Vec<Value>,
+    },
     DeviceKilled {
         device_id: String,
     },

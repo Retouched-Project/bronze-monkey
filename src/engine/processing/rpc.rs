@@ -204,14 +204,10 @@ impl Engine {
     pub(crate) fn rpc_registry_relay(
         engine: &mut Engine,
         inv: &ReceivedInvoke,
-        _sender_id: Option<&str>,
+        sender_id: Option<&str>,
         _channel: i32,
         out: &mut ProcessOutput,
     ) {
-        for info in engine.collect_registry_infos(&inv.params) {
-            out.events.push(Event::DeviceConnectRequested { info });
-        }
-
         let mut target_id = None;
         let mut relayed = None;
 
@@ -233,6 +229,14 @@ impl Engine {
         let Some(relayed) = relayed else {
             return;
         };
+
+        out.events.push(Event::Relayed {
+            sender: sender_id.map(|s| s.to_string()),
+            destination: target_id.clone(),
+            method: relayed.method.clone(),
+            return_method: relayed.return_method.clone(),
+            params: relayed.params.clone(),
+        });
 
         out.outgoings.extend(engine.make_message_invoke(
             &target_id,
