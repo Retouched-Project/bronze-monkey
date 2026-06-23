@@ -516,6 +516,20 @@ impl Engine {
         self.make_registry_relay(target, game_info, inner)
     }
 
+    pub fn make_connection_failed(
+        &mut self,
+        target: &str,
+        controller_info: BMRegistryInfo,
+    ) -> Vec<Outgoing> {
+        let inner = BMInvoke {
+            id: 0,
+            method: methods::CONNECTION_FAILED.to_string(),
+            return_method: None,
+            params: vec![Value::String(self.local_device_id())],
+        };
+        self.make_registry_relay(target, controller_info, inner)
+    }
+
     pub fn make_message_invoke(
         &mut self,
         target: &str,

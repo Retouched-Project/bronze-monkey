@@ -286,6 +286,10 @@ pub enum Command {
         host: BMRegistryInfo,
         self_info: BMRegistryInfo,
     },
+    ReportConnectionFailed {
+        target: String,
+        controller: BMRegistryInfo,
+    },
     SendTouch {
         target: String,
         touches: Vec<Touch>,
