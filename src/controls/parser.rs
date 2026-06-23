@@ -78,6 +78,7 @@ impl BMApplicationSchemeParser {
                         b"DisplayObject" => {
                             let mut obj = DisplayObject::default();
                             obj.sampling_mode = self.sampling_mode.clone();
+                            obj.deadzone = 0.25; // default deadzone when unspecified
                             for attr in e.attributes() {
                                 let attr = attr.map_err(|e| e.to_string())?;
                                 let val = std::str::from_utf8(&attr.value).unwrap_or("");
@@ -117,14 +118,25 @@ impl BMApplicationSchemeParser {
                                         }
                                     }
                                     b"color" => {
+                                        // 6-hex is opaque, 8-hex carries its own alpha
                                         let hex = val.trim_start_matches('#');
-                                        if let Ok(v) = i32::from_str_radix(hex, 16) {
-                                            obj.color = v;
+                                        let parsed = match hex.len() {
+                                            6 => u32::from_str_radix(hex, 16)
+                                                .ok()
+                                                .map(|v| v | 0xFF00_0000),
+                                            8 => u32::from_str_radix(hex, 16).ok(),
+                                            _ => None,
+                                        };
+                                        if let Some(v) = parsed {
+                                            obj.color = v as i32;
                                         }
                                     }
                                     b"sample" => obj.sampling_mode = val.to_string(),
                                     b"deadzone" => {
-                                        if let Ok(v) = val.parse::<f32>() {
+                                        // values above 1.0 are ignored, keeping the default
+                                        if let Ok(v) = val.parse::<f32>()
+                                            && v <= 1.0
+                                        {
                                             obj.deadzone = v;
                                         }
                                     }
@@ -257,5 +269,50 @@ impl BMApplicationSchemeParser {
 
     fn is_yes(&self, val: &str) -> bool {
         val != "no"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::BMApplicationSchemeParser;
+    use crate::controls::DisplayObject;
+
+    fn parse_one(attrs: &str) -> DisplayObject {
+        let xml = format!(
+            "<BMApplicationScheme version=\"1.0\" width=\"480\" height=\"320\"><DisplayObject id=\"1\" {attrs}/></BMApplicationScheme>"
+        );
+        let mut parser = BMApplicationSchemeParser::new();
+        let scheme = parser.parse(xml.as_bytes()).unwrap();
+        scheme
+            .display_objects
+            .into_iter()
+            .next()
+            .expect("one display object")
+    }
+
+    #[test]
+    fn color_6hex_is_opaque() {
+        assert_eq!(parse_one("color=\"ff0000\"").color, 0xFFFF_0000u32 as i32);
+    }
+
+    #[test]
+    fn color_8hex_keeps_alpha() {
+        assert_eq!(parse_one("color=\"80ff0000\"").color, 0x80FF_0000u32 as i32);
+    }
+
+    #[test]
+    fn deadzone_defaults_to_quarter() {
+        assert_eq!(parse_one("").deadzone, 0.25);
+    }
+
+    #[test]
+    fn deadzone_above_one_keeps_default() {
+        assert_eq!(parse_one("deadzone=\"2.0\"").deadzone, 0.25);
+    }
+
+    #[test]
+    fn deadzone_valid_applied_including_zero() {
+        assert_eq!(parse_one("deadzone=\"0.3\"").deadzone, 0.3);
+        assert_eq!(parse_one("deadzone=\"0\"").deadzone, 0.0);
     }
 }
