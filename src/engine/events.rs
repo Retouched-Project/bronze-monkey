@@ -207,6 +207,7 @@ pub struct ControlConfig {
     pub control_mode: Option<ControlMode>,
     pub portal_id: Option<String>,
     pub return_app_id: Option<String>,
+    pub start_string: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

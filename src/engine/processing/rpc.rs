@@ -718,6 +718,7 @@ impl Engine {
         let mut control_mode = None;
         let mut portal_id = None;
         let mut return_app_id = None;
+        let mut start_string = None;
 
         match inv.method.as_str() {
             methods::ENABLE_ACCELEROMETER => {
@@ -755,7 +756,7 @@ impl Engine {
                 control_mode = self
                     .param_i32(&inv.params, 0)
                     .and_then(ControlMode::from_wire);
-                return_app_id = self.param_string(&inv.params, 1);
+                start_string = self.param_string(&inv.params, 1);
             }
             methods::WAIT_FOR_NEW_HOST => {
                 portal_id = self.param_string(&inv.params, 0);
@@ -779,6 +780,7 @@ impl Engine {
             control_mode,
             portal_id,
             return_app_id,
+            start_string,
         })
     }
 
