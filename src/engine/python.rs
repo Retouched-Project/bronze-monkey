@@ -56,6 +56,24 @@ fn set_log_callback(callback: Option<Py<PyAny>>) -> PyResult<()> {
     Ok(())
 }
 
+#[pyfunction]
+fn configure_logging(level: u8, capacity: usize) -> bool {
+    crate::logging::install(crate::logging::LogConfig {
+        level: crate::logging::level_filter_from_u8(level),
+        capacity,
+    })
+}
+
+#[pyfunction]
+fn set_log_level(level: u8) {
+    crate::logging::set_level(crate::logging::level_filter_from_u8(level));
+}
+
+#[pyfunction]
+fn take_logs<'py>(py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+    Ok(pythonize(py, &crate::logging::take_logs())?)
+}
+
 #[pyclass]
 pub struct BMEnginePy {
     inner: RwLock<Engine>,
@@ -971,6 +989,9 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(serialize_device_packet, m)?)?;
     m.add_function(wrap_pyfunction!(deserialize_packet_dict, m)?)?;
     m.add_function(wrap_pyfunction!(set_log_callback, m)?)?;
+    m.add_function(wrap_pyfunction!(configure_logging, m)?)?;
+    m.add_function(wrap_pyfunction!(set_log_level, m)?)?;
+    m.add_function(wrap_pyfunction!(take_logs, m)?)?;
     m.add_function(wrap_pyfunction!(get_device_type_codes, m)?)?;
     m.add_function(wrap_pyfunction!(get_packet_type_codes, m)?)?;
     m.add_function(wrap_pyfunction!(parse_control_scheme_xml, m)?)?;

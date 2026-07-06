@@ -75,6 +75,24 @@ pub fn version_info() -> Result<JsValue, JsError> {
 }
 
 #[wasm_bindgen]
+pub fn configure_logging(level: u8, capacity: u32) -> bool {
+    crate::logging::install(crate::logging::LogConfig {
+        level: crate::logging::level_filter_from_u8(level),
+        capacity: capacity as usize,
+    })
+}
+
+#[wasm_bindgen]
+pub fn set_log_level(level: u8) {
+    crate::logging::set_level(crate::logging::level_filter_from_u8(level));
+}
+
+#[wasm_bindgen]
+pub fn take_logs() -> Result<JsValue, JsError> {
+    to_js(&crate::logging::take_logs())
+}
+
+#[wasm_bindgen]
 pub fn make_handshake_bytes() -> Vec<u8> {
     crate::codec::externals::handshake::Handshake::default_version()
         .to_bytes()

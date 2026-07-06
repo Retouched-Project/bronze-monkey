@@ -440,3 +440,37 @@ pub unsafe extern "C" fn bm_safe_image_memory(
         true
     })
 }
+
+#[unsafe(no_mangle)]
+pub extern "C" fn bm_log_configure(level: u8, capacity: usize) -> bool {
+    catch_bool(|| {
+        crate::logging::install(crate::logging::LogConfig {
+            level: crate::logging::level_filter_from_u8(level),
+            capacity,
+        })
+    })
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn bm_log_set_level(level: u8) -> bool {
+    catch_bool(|| {
+        crate::logging::set_level(crate::logging::level_filter_from_u8(level));
+        true
+    })
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_log_take(out_ptr: *mut *mut u8, out_len: *mut usize) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        match rmp_serde::to_vec_named(&crate::logging::take_logs()) {
+            Ok(buf) => {
+                write_buf(buf, out_ptr, out_len);
+                true
+            }
+            Err(_) => false,
+        }
+    })
+}
