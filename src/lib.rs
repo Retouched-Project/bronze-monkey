@@ -40,15 +40,10 @@ use std::ffi::CString;
 use std::os::raw::c_char;
 #[cfg(not(target_arch = "wasm32"))]
 use std::panic::{AssertUnwindSafe, catch_unwind};
-use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 thread_local! {
     static LAST_ERROR: RefCell<Option<CString>> = RefCell::new(None);
 }
-
-static LIB_LOGGED: AtomicBool = AtomicBool::new(false);
-static PENDING_LOG: Mutex<Option<String>> = Mutex::new(None);
 
 pub fn set_last_error(e: impl std::fmt::Display) {
     LAST_ERROR.with(|prev| {
@@ -57,42 +52,7 @@ pub fn set_last_error(e: impl std::fmt::Display) {
 }
 
 pub fn log_library_loaded(context: &str) {
-    if LIB_LOGGED.load(Ordering::SeqCst) {
-        return;
-    }
-    let msg = format!("bronze-monkey library loaded ({})", context);
-    if try_log(&msg) {
-        LIB_LOGGED.store(true, Ordering::SeqCst);
-    } else {
-        let mut pending = PENDING_LOG.lock().unwrap();
-        *pending = Some(msg);
-    }
-}
-
-pub fn flush_pending_log() {
-    if LIB_LOGGED.load(Ordering::SeqCst) {
-        return;
-    }
-    let pending = { PENDING_LOG.lock().unwrap().take() };
-    if let Some(msg) = pending {
-        if try_log(&msg) {
-            LIB_LOGGED.store(true, Ordering::SeqCst);
-        } else {
-            let mut pending = PENDING_LOG.lock().unwrap();
-            *pending = Some(msg);
-        }
-    }
-}
-
-fn try_log(msg: &str) -> bool {
-    #[cfg(feature = "pyo3")]
-    {
-        if crate::engine::python::try_python_log(msg) {
-            return true;
-        }
-    }
-    eprintln!("{}", msg);
-    true
+    log::info!("bronze-monkey library loaded ({context})");
 }
 
 pub fn base64_decode(input: &str) -> Result<Vec<u8>, base64::DecodeError> {

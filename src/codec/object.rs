@@ -80,8 +80,7 @@ impl Object {
         }
         let id_short = input.read_short()? as u32;
 
-        #[cfg(target_arch = "wasm32")]
-        web_sys::console::log_1(&format!("WASM: Object::decode class_id={}", id_short).into());
+        log::trace!("decode object class_id={id_short}");
 
         match id_short {
             BMArray::CLASS_ID => Ok(Object::BMArray(BMArray::read_from(input)?)),

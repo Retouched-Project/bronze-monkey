@@ -23,7 +23,6 @@ use wasm_bindgen::{JsError, JsValue};
 #[wasm_bindgen]
 pub fn init_panic_hook() {
     console_error_panic_hook::set_once();
-    web_sys::console::log_1(&"WASM: Panic hook enabled".into());
 }
 
 #[wasm_bindgen]
@@ -332,7 +331,7 @@ impl BmEngineWasm {
         match result {
             Ok(out) => to_js(&out),
             Err(_) => {
-                web_sys::console::error_1(&"WASM: Panic in process_incoming logic!".into());
+                log::error!("panic in process_incoming");
                 Err(JsError::new("Rust panic in process_incoming"))
             }
         }
@@ -344,7 +343,7 @@ impl BmEngineWasm {
         match result {
             Ok(out) => to_js(&out),
             Err(_) => {
-                web_sys::console::error_1(&"WASM: Panic in process_incoming_udp logic!".into());
+                log::error!("panic in process_incoming_udp");
                 Err(JsError::new("Rust panic in process_incoming_udp"))
             }
         }

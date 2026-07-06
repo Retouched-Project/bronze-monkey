@@ -50,6 +50,11 @@ impl Engine {
 
     pub fn init_local_device(&mut self, core: DeviceCore) {
         self.roles = ActiveRoles::for_device_type(core.device_type);
+        log::info!(
+            "local device set: {} type={:?}",
+            core.device_name,
+            core.device_type
+        );
         self.state.init_local_device(core);
     }
 
@@ -58,6 +63,11 @@ impl Engine {
     }
 
     pub fn set_role_enabled(&mut self, role: Role, enabled: bool) {
+        log::info!(
+            "role {:?} {}",
+            role,
+            if enabled { "enabled" } else { "disabled" }
+        );
         self.roles.set(role, enabled);
     }
 

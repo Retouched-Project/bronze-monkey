@@ -15,10 +15,7 @@ use crate::types::packet_type::PacketType;
 
 impl Engine {
     pub fn process_incoming(&mut self, payload: &[u8]) -> ProcessOutput {
-        #[cfg(target_arch = "wasm32")]
-        web_sys::console::log_1(
-            &format!("WASM: Engine::process_incoming len={}", payload.len()).into(),
-        );
+        log::trace!("process_incoming payload len={}", payload.len());
 
         let mut out = ProcessOutput::new();
         let payload_safe = payload.to_vec();
@@ -31,9 +28,6 @@ impl Engine {
             if let Some(handshake) =
                 crate::codec::externals::handshake::Handshake::from_bytes(&payload_safe)
             {
-                #[cfg(target_arch = "wasm32")]
-                web_sys::console::log_1(&"WASM: Handshake detected".into());
-
                 out.events.push(Event::Handshake {
                     current: handshake.current.to_u32(),
                     minimum: handshake.minimum.to_u32(),
@@ -46,13 +40,9 @@ impl Engine {
         let mut pkt = Box::new(BMPacket::default());
         match deserialize_packet(&payload_safe, &mut pkt) {
             Ok(_) => {
-                #[cfg(target_arch = "wasm32")]
-                web_sys::console::log_1(&"WASM: deserialize success, calling handle".into());
                 self.handle_deserialized_packet(&pkt, &mut out);
             }
             Err(e) => {
-                #[cfg(target_arch = "wasm32")]
-                web_sys::console::log_1(&format!("WASM: deserialize failed: {}", e).into());
                 log::warn!("failed to deserialize packet: {}", e);
             }
         }
@@ -67,18 +57,6 @@ impl Engine {
     }
 
     fn handle_deserialized_packet(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
-        #[cfg(target_arch = "wasm32")]
-        web_sys::console::log_1(&"WASM: handle_deserialized_packet entry".into());
-
-        #[cfg(target_arch = "wasm32")]
-        web_sys::console::log_1(
-            &format!(
-                "WASM: handle_deserialized_packet type={:?}",
-                pkt.packet_type
-            )
-            .into(),
-        );
-
         let sender_id = if let Some(rec) = self.device_record_from_packet(pkt) {
             let id = rec.core.device_id.clone();
             out.events.push(self.push_registry_update(rec));
@@ -91,17 +69,13 @@ impl Engine {
         let pkt_type = pkt.packet_type;
         let reliability = pkt.reliability;
 
-        #[cfg(target_arch = "wasm32")]
-        web_sys::console::log_1(&format!("WASM: dispatching type={:?}", pkt_type).into());
+        log::trace!("rx packet type={pkt_type:?} channel={channel} reliability={reliability}");
 
         match pkt_type {
             PacketType::Ping => self.handle_ping(pkt, channel, sender_id, out),
             PacketType::Ack => self.handle_ack(pkt, out),
             PacketType::Data => self.handle_data(pkt, channel, out),
-            _ => log::info!(
-                "rx packet type {:?} channel {channel} reliability {reliability}",
-                pkt_type
-            ),
+            _ => log::debug!("unhandled packet type {pkt_type:?} channel {channel}"),
         }
     }
 
@@ -151,18 +125,9 @@ impl Engine {
     fn handle_data(&mut self, pkt: &BMPacket, channel: i32, out: &mut ProcessOutput) {
         if let Some(msg) = &pkt.message {
             if !msg.is_empty() {
-                #[cfg(target_arch = "wasm32")]
-                web_sys::console::log_1(&format!("WASM: handle_data msg_len={}", msg.len()).into());
-
                 let mut cur = BMStream::view(msg.as_slice());
                 match Object::decode(&mut cur) {
                     Ok(obj) => {
-                        #[cfg(target_arch = "wasm32")]
-                        web_sys::console::log_1(
-                            &format!("WASM: Object decode success: class_id={}", obj.class_id())
-                                .into(),
-                        );
-
                         match obj {
                             Object::BMInvoke(inv) => self.handle_invoke(
                                 ReceivedInvoke {
@@ -216,11 +181,6 @@ impl Engine {
                         }
                     }
                     Err(e) => {
-                        #[cfg(target_arch = "wasm32")]
-                        web_sys::console::log_1(
-                            &format!("WASM: Object decode error: {}", e).into(),
-                        );
-
                         let head = if msg.len() >= 5 {
                             format!(
                                 "{:02x} {:02x} {:02x} {:02x} {:02x}",
@@ -261,7 +221,7 @@ impl Engine {
             buffer[start..end].copy_from_slice(&chunk.data);
         } else {
             log::error!(
-                "Chunk out of bounds: {}..{} (total {})",
+                "chunk out of bounds: {}..{} (total {})",
                 start,
                 end,
                 buffer.len()
@@ -297,6 +257,7 @@ impl Engine {
         channel: i32,
         out: &mut ProcessOutput,
     ) {
+        log::debug!("rx invoke method={}", inv.method);
         let mut claimed = false;
 
         if self.roles.controller {
@@ -350,29 +311,13 @@ impl Engine {
     }
 
     pub fn push_registry_update(&mut self, mut record: DeviceRecord) -> Event {
-        #[cfg(target_arch = "wasm32")]
-        web_sys::console::log_1(&"WASM: push_registry_update start".into());
-
         if record.info.is_none() {
-            #[cfg(target_arch = "wasm32")]
-            web_sys::console::log_1(
-                &format!("WASM: checking existing for {}", record.device_id()).into(),
-            );
-
             if let Some(existing) = self.state.registry.get(record.device_id()) {
-                #[cfg(target_arch = "wasm32")]
-                web_sys::console::log_1(&"WASM: found existing check".into());
                 record.info = existing.info.clone();
             }
         }
 
-        #[cfg(target_arch = "wasm32")]
-        web_sys::console::log_1(&"WASM: upserting...".into());
-
         self.state.registry.upsert(record.clone());
-
-        #[cfg(target_arch = "wasm32")]
-        web_sys::console::log_1(&"WASM: upsert done.".into());
         Event::PeerSeen { record }
     }
 }

@@ -32,29 +32,8 @@ use prost::Message;
 use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyBytes, PyDict, PyFloat, PyInt, PyList, PyModule, PyString};
 use pythonize::{depythonize, pythonize};
-use std::sync::Mutex;
 use std::sync::RwLock;
 use std::time::{SystemTime, UNIX_EPOCH};
-
-static PY_LOG_CALLBACK: Mutex<Option<Py<PyAny>>> = Mutex::new(None);
-
-pub fn try_python_log(msg: &str) -> bool {
-    Python::attach(|py| {
-        let guard = PY_LOG_CALLBACK.lock().unwrap();
-        let Some(cb) = guard.as_ref() else {
-            return false;
-        };
-        cb.call1(py, (msg,)).is_ok()
-    })
-}
-
-#[pyfunction]
-fn set_log_callback(callback: Option<Py<PyAny>>) -> PyResult<()> {
-    let mut slot = PY_LOG_CALLBACK.lock().unwrap();
-    *slot = callback;
-    crate::flush_pending_log();
-    Ok(())
-}
 
 #[pyfunction]
 fn configure_logging(level: u8, capacity: usize) -> bool {
@@ -988,7 +967,6 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(serialize_invoke_packet, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_device_packet, m)?)?;
     m.add_function(wrap_pyfunction!(deserialize_packet_dict, m)?)?;
-    m.add_function(wrap_pyfunction!(set_log_callback, m)?)?;
     m.add_function(wrap_pyfunction!(configure_logging, m)?)?;
     m.add_function(wrap_pyfunction!(set_log_level, m)?)?;
     m.add_function(wrap_pyfunction!(take_logs, m)?)?;

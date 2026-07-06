@@ -64,9 +64,6 @@ pub fn deserialize_packet(data: &[u8], pkt: &mut BMPacket) -> Result<()> {
     let payload = &data[4..end_offset];
     let mut body = BMStream::view(payload);
 
-    #[cfg(target_arch = "wasm32")]
-    web_sys::console::log_1(&"WASM: deserialize_packet start".into());
-
     let marker = body.read_utf()?;
     let class_id = body.read_short()? as u32;
 
