@@ -12,13 +12,9 @@ pub struct BMPacket {
     pub rtt: f64,
     pub packet_type: PacketType,
     pub device_type: DeviceType,
-    pub reliability: i32,
-
     pub device_name: String,
     pub device_id: String,
-
     pub message: Option<Vec<u8>>,
-
     pub address_host: Option<String>,
     pub addr_unreliable_port: i32,
     pub addr_reliable_port: i32,
@@ -32,7 +28,6 @@ impl BMPacket {
         rtt: f64,
         packet_type: PacketType,
         device_type: DeviceType,
-        reliability: i32,
         device_name: String,
         device_id: String,
         message: Option<Vec<u8>>,
@@ -47,7 +42,6 @@ impl BMPacket {
             rtt,
             packet_type,
             device_type,
-            reliability,
             device_name,
             device_id,
             message,

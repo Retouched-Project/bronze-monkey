@@ -67,9 +67,8 @@ impl Engine {
 
         let channel = pkt.channel;
         let pkt_type = pkt.packet_type;
-        let reliability = pkt.reliability;
 
-        log::trace!("rx packet type={pkt_type:?} channel={channel} reliability={reliability}");
+        log::trace!("rx packet type={pkt_type:?} channel={channel}");
 
         match pkt_type {
             PacketType::Ping => self.handle_ping(pkt, channel, sender_id, out),
@@ -127,59 +126,53 @@ impl Engine {
             if !msg.is_empty() {
                 let mut cur = BMStream::view(msg.as_slice());
                 match Object::decode(&mut cur) {
-                    Ok(obj) => {
-                        match obj {
-                            Object::BMInvoke(inv) => self.handle_invoke(
-                                ReceivedInvoke {
-                                    method: inv.method,
-                                    return_method: inv.return_method,
-                                    params: inv.params,
-                                },
-                                Some(pkt.device_id.clone()),
-                                channel,
-                                out,
-                            ),
-                            Object::BMByteChunk(chunk) => {
-                                let device_id = pkt.device_id.clone();
-                                self.handle_chunk(device_id, chunk, out);
-                            }
-                            Object::TouchSet(ts) => out.events.push(Event::Touch {
-                                sender: pkt.device_id.clone(),
-                                touches: ts.touches.into_values().collect(),
-                            }),
-                            Object::Acceleration(a) => out.events.push(Event::Accel {
-                                sender: pkt.device_id.clone(),
-                                x: a.x,
-                                y: a.y,
-                                z: a.z,
-                            }),
-                            Object::BMGyro(g) => out.events.push(Event::Gyro {
-                                sender: pkt.device_id.clone(),
-                                x: g.x,
-                                y: g.y,
-                                z: g.z,
-                            }),
-                            Object::Orientation(o) => out.events.push(Event::Orientation {
-                                sender: pkt.device_id.clone(),
-                                x: o.x,
-                                y: o.y,
-                                z: o.z,
-                                w: o.w,
-                            }),
-                            Object::DPadUpdate(d) => out.events.push(Event::DPad {
-                                sender: pkt.device_id.clone(),
-                                x: d.x,
-                                y: d.y,
-                            }),
-                            _ => {
-                                log::debug!(
-                                    "rx data object {:?} channel={}",
-                                    obj.class_id(),
-                                    channel
-                                );
-                            }
+                    Ok(obj) => match obj {
+                        Object::BMInvoke(inv) => self.handle_invoke(
+                            ReceivedInvoke {
+                                method: inv.method,
+                                return_method: inv.return_method,
+                                params: inv.params,
+                            },
+                            Some(pkt.device_id.clone()),
+                            channel,
+                            out,
+                        ),
+                        Object::BMByteChunk(chunk) => {
+                            let device_id = pkt.device_id.clone();
+                            self.handle_chunk(device_id, chunk, out);
                         }
-                    }
+                        Object::TouchSet(ts) => out.events.push(Event::Touch {
+                            sender: pkt.device_id.clone(),
+                            touches: ts.touches.into_values().collect(),
+                        }),
+                        Object::Acceleration(a) => out.events.push(Event::Accel {
+                            sender: pkt.device_id.clone(),
+                            x: a.x,
+                            y: a.y,
+                            z: a.z,
+                        }),
+                        Object::BMGyro(g) => out.events.push(Event::Gyro {
+                            sender: pkt.device_id.clone(),
+                            x: g.x,
+                            y: g.y,
+                            z: g.z,
+                        }),
+                        Object::Orientation(o) => out.events.push(Event::Orientation {
+                            sender: pkt.device_id.clone(),
+                            x: o.x,
+                            y: o.y,
+                            z: o.z,
+                            w: o.w,
+                        }),
+                        Object::DPadUpdate(d) => out.events.push(Event::DPad {
+                            sender: pkt.device_id.clone(),
+                            x: d.x,
+                            y: d.y,
+                        }),
+                        _ => {
+                            log::debug!("rx data object {:?} channel={}", obj.class_id(), channel);
+                        }
+                    },
                     Err(e) => {
                         let head = if msg.len() >= 5 {
                             format!(

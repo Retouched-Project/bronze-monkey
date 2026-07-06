@@ -748,7 +748,6 @@ fn serialize_invoke_packet<'py>(
     device_id: String,
     device_name: String,
     channel: i32,
-    reliability: i32,
     packet_type_code: i32,
     device_type_code: i32,
 ) -> PyResult<Bound<'py, PyBytes>> {
@@ -775,7 +774,6 @@ fn serialize_invoke_packet<'py>(
         rtt: 0.0,
         packet_type: PacketType::from_i32(packet_type_code).unwrap_or(PacketType::Data),
         device_type: DeviceType::for_value(device_type_code).unwrap_or(DeviceType::Server),
-        reliability,
         device_name,
         device_id,
         message: Some(message_bytes),
@@ -829,7 +827,6 @@ fn serialize_device_packet<'py>(
         rtt: 0.0,
         packet_type: PacketType::from_i32(packet_type_code).unwrap_or(PacketType::Data),
         device_type,
-        reliability: 0,
         device_name,
         device_id,
         message: Some(out.into_inner()),
@@ -855,7 +852,6 @@ fn deserialize_packet_dict<'py>(py: Python<'py>, data: &[u8]) -> PyResult<Bound<
     d.set_item("rtt", pkt.rtt)?;
     d.set_item("packet_type", pkt.packet_type.code())?;
     d.set_item("device_type", pkt.device_type.code())?;
-    d.set_item("reliability", pkt.reliability)?;
     d.set_item("device_id", pkt.device_id.clone())?;
     d.set_item("device_name", pkt.device_name.clone())?;
     if let Some(msg) = pkt.message.as_ref() {

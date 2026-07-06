@@ -646,7 +646,6 @@ impl Engine {
             channel,
             seq,
             timestamp_ms,
-            rel,
             packet_type.code(),
             message,
         ) {
@@ -669,7 +668,6 @@ impl Engine {
         channel: i32,
         sequence: i32,
         timestamp_ms: f64,
-        reliability: i32,
         packet_type: i32,
         message: Option<Vec<u8>>,
     ) -> std::result::Result<Vec<u8>, String> {
@@ -680,7 +678,6 @@ impl Engine {
             0.0,
             PacketType::from_i32(packet_type).unwrap_or(PacketType::Data),
             sender.device_type,
-            reliability,
             sender.device_name.clone(),
             sender.device_id.clone(),
             message,
