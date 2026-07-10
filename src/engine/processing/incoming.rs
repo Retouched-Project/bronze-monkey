@@ -92,7 +92,13 @@ impl Engine {
         };
 
         if self.roles.game {
-            out.outgoings.extend(self.make_ack_packet(&id));
+            if !self.state.acked_peers.contains(&id) {
+                let ack = self.make_ack_packet(&id);
+                if !ack.is_empty() {
+                    self.state.acked_peers.insert(id.clone());
+                    out.outgoings.extend(ack);
+                }
+            }
         } else {
             out.outgoings.extend(self.make_packet(
                 &id,
