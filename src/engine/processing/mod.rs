@@ -49,7 +49,6 @@ impl Engine {
     }
 
     pub fn init_local_device(&mut self, core: DeviceCore) {
-        self.roles = ActiveRoles::for_device_type(core.device_type);
         log::info!(
             "local device set: {} type={:?}",
             core.device_name,

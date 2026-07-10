@@ -24,6 +24,7 @@ use crate::engine::protocol::{
     deserialize_packet as protocol_deserialize_packet, serialize_packet,
 };
 use crate::engine::registry::DeviceRecord;
+use crate::policy::Role;
 use crate::types::channel_type::ChannelType;
 use crate::types::control_mode::ControlMode;
 use crate::types::device_type::DeviceType;
@@ -92,6 +93,17 @@ impl BMEnginePy {
             reliable_port,
         });
         eng.init_local_device(core);
+    }
+
+    fn set_role_enabled(&self, role_code: i32, enabled: bool) -> PyResult<()> {
+        let role = match role_code {
+            0 => Role::Server,
+            1 => Role::Game,
+            2 => Role::Controller,
+            _ => return Err(pyo3::exceptions::PyValueError::new_err("invalid role code")),
+        };
+        self.inner.write().unwrap().set_role_enabled(role, enabled);
+        Ok(())
     }
 
     fn drop_device<'py>(&self, py: Python<'py>, device_id: String) -> PyResult<Bound<'py, PyList>> {

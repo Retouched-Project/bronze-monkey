@@ -9,8 +9,6 @@ pub use controller::{ControllerPolicy, InputReliability};
 pub use game::GamePolicy;
 pub use server::ServerPolicy;
 
-use crate::types::device_type::DeviceType;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Role {
     Server,
@@ -42,17 +40,6 @@ impl ActiveRoles {
         }
     }
 
-    pub fn for_device_type(device_type: DeviceType) -> Self {
-        let mut roles = Self::none();
-        match device_type {
-            DeviceType::Server => roles.server = true,
-            DeviceType::Flash | DeviceType::Unity | DeviceType::Native => roles.game = true,
-            DeviceType::IPhone | DeviceType::Android | DeviceType::Palm => roles.controller = true,
-            DeviceType::Any => return Self::all(),
-        }
-        roles
-    }
-
     pub fn has(&self, role: Role) -> bool {
         match role {
             Role::Server => self.server,
@@ -72,6 +59,6 @@ impl ActiveRoles {
 
 impl Default for ActiveRoles {
     fn default() -> Self {
-        Self::all()
+        Self::none()
     }
 }

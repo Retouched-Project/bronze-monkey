@@ -59,7 +59,9 @@ impl Engine {
     fn handle_deserialized_packet(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
         let sender_id = if let Some(rec) = self.device_record_from_packet(pkt) {
             let id = rec.core.device_id.clone();
-            out.events.push(self.push_registry_update(rec));
+            if let Some(event) = self.push_registry_update(rec) {
+                out.events.push(event);
+            }
             Some(id)
         } else {
             None
@@ -89,8 +91,6 @@ impl Engine {
             return;
         };
 
-        // A game answers a ping with an Ack carrying its own address (the
-        // connection handshake); every other role echoes for liveness.
         if self.roles.game {
             out.outgoings.extend(self.make_ack_packet(&id));
         } else {
@@ -303,7 +303,7 @@ impl Engine {
         Some(DeviceRecord::new(core, None, None))
     }
 
-    pub fn push_registry_update(&mut self, mut record: DeviceRecord) -> Event {
+    pub fn push_registry_update(&mut self, mut record: DeviceRecord) -> Option<Event> {
         if record.info.is_none() {
             if let Some(existing) = self.state.registry.get(record.device_id()) {
                 record.info = existing.info.clone();
@@ -311,6 +311,6 @@ impl Engine {
         }
 
         self.state.registry.upsert(record.clone());
-        Event::PeerSeen { record }
+        self.roles.server.then(|| Event::PeerSeen { record })
     }
 }
