@@ -6,9 +6,9 @@ use prost::Message;
 use crate::controls::assembler::{SchemeAssembler, SchemeOffer};
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::device_core::DeviceCore;
+use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::Command;
 use crate::engine::processing::Engine;
-use crate::engine::registry::DeviceRecord;
 use crate::policy::Role;
 
 use super::{catch_bool, catch_i32, catch_ptr, catch_void};

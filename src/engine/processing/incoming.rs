@@ -7,10 +7,10 @@ use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::messages::bm_byte_chunk::BMByteChunk;
 use crate::codec::object::Object;
 use crate::devices::device_core::DeviceCore;
+use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::{Event, ProcessOutput};
 use crate::engine::methods;
 use crate::engine::protocol::deserialize_packet;
-use crate::engine::registry::DeviceRecord;
 use crate::types::packet_type::PacketType;
 
 impl Engine {
@@ -76,6 +76,7 @@ impl Engine {
             PacketType::Ping => self.handle_ping(pkt, channel, sender_id, out),
             PacketType::Ack => self.handle_ack(pkt, out),
             PacketType::Data => self.handle_data(pkt, channel, out),
+            PacketType::Echo => {} // echo is a round-trip of a sent ping, do nothing
             _ => log::debug!("unhandled packet type {pkt_type:?} channel {channel}"),
         }
     }
@@ -111,20 +112,18 @@ impl Engine {
     }
 
     fn handle_ack(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
+        let Some(mut rec) = self.device_record_from_packet(pkt) else {
+            return;
+        };
         if let Some(msg) = &pkt.message {
             let mut cur = BMStream::view(msg.as_slice());
-            if let Ok(Object::AckPacket(ack)) = Object::decode(&mut cur) {
-                let mut core = ack.device;
-                core.address = Some(ack.device_address);
-                out.events.push(Event::PeerConnected {
-                    record: DeviceRecord::new(core, None, None),
-                });
-                return;
+            match Object::decode(&mut cur) {
+                Ok(Object::AckPacket(ack)) => rec.core.address = Some(ack.device_address),
+                Ok(_) => {}
+                Err(e) => log::debug!("ack decode failed: {e}"),
             }
         }
-        if let Some(rec) = self.device_record_from_packet(pkt) {
-            out.events.push(Event::PeerConnected { record: rec });
-        }
+        out.events.push(Event::PeerConnected { record: rec });
     }
 
     fn handle_data(&mut self, pkt: &BMPacket, channel: i32, out: &mut ProcessOutput) {

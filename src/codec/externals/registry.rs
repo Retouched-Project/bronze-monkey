@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+use crate::types::device_type::DeviceType;
 use std::os::raw::c_char;
 
 // Packet class IDs
@@ -29,6 +30,19 @@ pub const BM_CLASS_ID_NATIVE_DEVICE: u32 = 15;
 pub const BM_CLASS_ID_PALM_DEVICE: u32 = 16;
 pub const BM_CLASS_ID_SERVER_DEVICE: u32 = 17;
 pub const BM_CLASS_ID_FLASH_DEVICE: u32 = 18;
+
+pub fn class_id_for_device_type(dt: DeviceType) -> u32 {
+    match dt {
+        DeviceType::Flash => BM_CLASS_ID_FLASH_DEVICE,
+        DeviceType::Unity => BM_CLASS_ID_UNITY_DEVICE,
+        DeviceType::IPhone => BM_CLASS_ID_IPHONE_DEVICE,
+        DeviceType::Android => BM_CLASS_ID_ANDROID_DEVICE,
+        DeviceType::Native => BM_CLASS_ID_NATIVE_DEVICE,
+        DeviceType::Palm => BM_CLASS_ID_PALM_DEVICE,
+        DeviceType::Server => BM_CLASS_ID_SERVER_DEVICE,
+        _ => BM_CLASS_ID_FLASH_DEVICE,
+    }
+}
 
 const ENTRIES: &[(u32, &str)] = &[
     (BM_CLASS_ID_PACKET, "BMPacket"),

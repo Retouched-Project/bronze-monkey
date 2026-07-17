@@ -3,7 +3,7 @@
 
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::devices::device_core::DeviceCore;
-use crate::engine::registry::{DeviceRecord, DeviceRegistry};
+use crate::engine::device_registry::{DeviceRecord, DeviceRegistry};
 use crate::types::device_type::DeviceType;
 use std::collections::{HashMap, HashSet};
 

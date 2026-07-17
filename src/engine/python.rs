@@ -18,12 +18,12 @@ use crate::controls::assembler::SchemeAssembler;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
+use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::{Command, Outgoing};
 use crate::engine::processing::Engine;
 use crate::engine::protocol::{
     deserialize_packet as protocol_deserialize_packet, serialize_packet,
 };
-use crate::engine::registry::DeviceRecord;
 use crate::policy::Role;
 use crate::types::channel_type::ChannelType;
 use crate::types::control_mode::ControlMode;

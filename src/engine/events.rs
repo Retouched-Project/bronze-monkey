@@ -5,7 +5,7 @@ use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::touch::Touch;
 use crate::codec::object::Object;
-use crate::engine::registry::DeviceRecord;
+use crate::engine::device_registry::DeviceRecord;
 use crate::types::control_mode::ControlMode;
 use serde::{Deserialize, Serialize};
 

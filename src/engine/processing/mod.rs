@@ -9,8 +9,8 @@ mod server_ops;
 
 use crate::codec::messages::bm_encoding::Value;
 use crate::devices::device_core::DeviceCore;
+use crate::engine::device_registry::DeviceRegistry;
 use crate::engine::events::ProcessOutput;
-use crate::engine::registry::DeviceRegistry;
 use crate::engine::state::EngineState;
 use crate::policy::{ActiveRoles, ControllerPolicy, GamePolicy, Role, ServerPolicy};
 use crate::types::channel_type::ChannelType;

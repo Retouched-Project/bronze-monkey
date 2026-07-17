@@ -5,7 +5,6 @@ use crate::codec::externals::registry;
 use crate::codec::io::{DataInput, DataOutput, Result};
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
-use crate::types::device_type::DeviceType;
 
 use serde::{Deserialize, Serialize};
 
@@ -54,16 +53,7 @@ impl BMRegistryInfo {
     }
 
     pub fn write_to(&self, out: &mut dyn DataOutput) -> Result<()> {
-        let dev_class_id: u32 = match self.device.device_type {
-            DeviceType::Flash => registry::BM_CLASS_ID_FLASH_DEVICE,
-            DeviceType::Unity => registry::BM_CLASS_ID_UNITY_DEVICE,
-            DeviceType::IPhone => registry::BM_CLASS_ID_IPHONE_DEVICE,
-            DeviceType::Android => registry::BM_CLASS_ID_ANDROID_DEVICE,
-            DeviceType::Native => registry::BM_CLASS_ID_NATIVE_DEVICE,
-            DeviceType::Palm => registry::BM_CLASS_ID_PALM_DEVICE,
-            DeviceType::Server => registry::BM_CLASS_ID_SERVER_DEVICE,
-            _ => registry::BM_CLASS_ID_FLASH_DEVICE,
-        };
+        let dev_class_id = registry::class_id_for_device_type(self.device.device_type);
         out.write_short(1)?;
         out.write_bytes(&[b'@'])?;
         out.write_short(dev_class_id as i16)?;

@@ -593,8 +593,11 @@ impl Engine {
             log::warn!("make_ack_packet: no local device");
             return Vec::new();
         };
-        let address = local.address.clone().unwrap_or_default();
-        let ack = AckPacket::new(local, address);
+        let Some(peer) = self.state.registry.get(target).map(|r| r.core.clone()) else {
+            log::warn!("make_ack_packet: unknown target {target}");
+            return Vec::new();
+        };
+        let ack = AckPacket::new(peer, local.address.clone().unwrap_or_default());
         let msg = match self.build_object_bytes(Object::AckPacket(ack)) {
             Ok(m) => m,
             Err(e) => {
