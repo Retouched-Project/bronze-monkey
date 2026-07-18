@@ -54,6 +54,16 @@ fn take_logs<'py>(py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
     Ok(pythonize(py, &crate::logging::take_logs())?)
 }
 
+#[pyfunction]
+fn generate_device_id() -> String {
+    crate::identity::generate_device_id()
+}
+
+#[pyfunction]
+fn generate_app_id() -> String {
+    crate::identity::generate_app_id()
+}
+
 #[pyclass]
 pub struct BMEnginePy {
     inner: RwLock<Engine>,
@@ -978,6 +988,8 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(configure_logging, m)?)?;
     m.add_function(wrap_pyfunction!(set_log_level, m)?)?;
     m.add_function(wrap_pyfunction!(take_logs, m)?)?;
+    m.add_function(wrap_pyfunction!(generate_device_id, m)?)?;
+    m.add_function(wrap_pyfunction!(generate_app_id, m)?)?;
     m.add_function(wrap_pyfunction!(get_device_type_codes, m)?)?;
     m.add_function(wrap_pyfunction!(get_packet_type_codes, m)?)?;
     m.add_function(wrap_pyfunction!(parse_control_scheme_xml, m)?)?;

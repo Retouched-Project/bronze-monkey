@@ -75,6 +75,36 @@ pub unsafe extern "C" fn bm_version_info(out_ptr: *mut *mut u8, out_len: *mut us
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_generate_device_id(out_ptr: *mut *mut u8, out_len: *mut usize) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        write_buf(
+            crate::identity::generate_device_id().into_bytes(),
+            out_ptr,
+            out_len,
+        );
+        true
+    })
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_generate_app_id(out_ptr: *mut *mut u8, out_len: *mut usize) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        write_buf(
+            crate::identity::generate_app_id().into_bytes(),
+            out_ptr,
+            out_len,
+        );
+        true
+    })
+}
+
+#[unsafe(no_mangle)]
 pub extern "C" fn bm_engine_new() -> *mut Engine {
     catch_ptr(|| Box::into_raw(Box::new(Engine::new())))
 }

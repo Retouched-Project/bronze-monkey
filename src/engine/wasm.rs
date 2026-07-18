@@ -100,6 +100,16 @@ pub fn make_handshake_bytes() -> Vec<u8> {
 }
 
 #[wasm_bindgen]
+pub fn generate_device_id() -> String {
+    crate::identity::generate_device_id()
+}
+
+#[wasm_bindgen]
+pub fn generate_app_id() -> String {
+    crate::identity::generate_app_id()
+}
+
+#[wasm_bindgen]
 pub struct BmEngineWasm {
     inner: crate::engine::processing::Engine,
 }

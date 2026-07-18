@@ -5,6 +5,7 @@ pub mod codec;
 pub mod controls;
 pub mod devices;
 pub mod engine;
+pub mod identity;
 pub mod logging;
 pub mod policy;
 pub mod types;
