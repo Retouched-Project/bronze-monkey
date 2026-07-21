@@ -46,8 +46,8 @@ pub fn deserialize_packet(data: &[u8], pkt: &mut BMPacket) -> Result<()> {
     let mut framed = BMStream::view(data);
     let size = framed.read_unsigned_int()? as usize;
 
-    if size > 100 * 1024 * 1024 {
-        // cap at 100MB sanity check
+    if size > 5 * 1024 * 1024 {
+        // cap at 5MB sanity check
         return Err(format!("Packet size too large: {}", size).into());
     }
     let end_offset = 4usize.checked_add(size).ok_or("Packet size overflow")?;
