@@ -129,6 +129,7 @@ pub fn install(config: LogConfig) -> bool {
     RING.get_or_init(|| Mutex::new(Ring::new(config.capacity)));
     let installed = log::set_logger(&LOGGER).is_ok();
     log::set_max_level(config.level);
+    crate::log_library_loaded();
     installed
 }
 

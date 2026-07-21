@@ -978,7 +978,7 @@ impl SchemeAssemblerPy {
 #[pymodule]
 #[pyo3(name = "bronze_monkey")]
 fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    crate::log_library_loaded("pyo3");
+    crate::log_library_loaded();
     m.add_class::<BMEnginePy>()?;
     m.add_class::<SchemeAssemblerPy>()?;
     m.add_function(wrap_pyfunction!(handshake, m)?)?;

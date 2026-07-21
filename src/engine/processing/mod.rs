@@ -38,6 +38,7 @@ pub struct Engine {
 
 impl Engine {
     pub fn new() -> Self {
+        crate::log_library_loaded();
         Self {
             state: EngineState::new(),
             roles: ActiveRoles::default(),

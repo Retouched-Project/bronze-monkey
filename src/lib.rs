@@ -52,8 +52,18 @@ pub fn set_last_error(e: impl std::fmt::Display) {
     });
 }
 
-pub fn log_library_loaded(context: &str) {
-    log::info!("bronze-monkey library loaded ({context})");
+pub fn log_library_loaded() {
+    static ONCE: std::sync::Once = std::sync::Once::new();
+    ONCE.call_once(|| {
+        let version = crate::version::version_info();
+        log::info!(
+            target: "bronze_monkey",
+            "Bronze Monkey v{} initialized [BM SDK v{} | min v{}]",
+            version.library,
+            version.sdk,
+            version.sdk_minimum
+        );
+    });
 }
 
 pub fn base64_decode(input: &str) -> Result<Vec<u8>, base64::DecodeError> {
@@ -63,11 +73,7 @@ pub fn base64_decode(input: &str) -> Result<Vec<u8>, base64::DecodeError> {
 #[cfg(not(target_arch = "wasm32"))]
 #[unsafe(no_mangle)]
 pub extern "C" fn bm_library_init() -> bool {
-    catch_unwind(AssertUnwindSafe(|| {
-        log_library_loaded("ffi");
-        true
-    }))
-    .unwrap_or(false)
+    catch_unwind(AssertUnwindSafe(|| true)).unwrap_or(false)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
