@@ -455,23 +455,6 @@ pub unsafe extern "C" fn bm_scheme_assembler_reset(ptr: *mut SchemeAssembler) {
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn bm_safe_image_memory(
-    in_ptr: *const u8,
-    in_len: usize,
-    out_ptr: *mut *mut u8,
-    out_len: *mut usize,
-) -> bool {
-    catch_bool(|| {
-        if out_ptr.is_null() || out_len.is_null() || in_ptr.is_null() || in_len == 0 {
-            return false;
-        }
-        let src = unsafe { std::slice::from_raw_parts(in_ptr, in_len) };
-        write_buf(src.to_vec(), out_ptr, out_len);
-        true
-    })
-}
-
-#[unsafe(no_mangle)]
 pub extern "C" fn bm_log_configure(level: u8, capacity: usize) -> bool {
     catch_bool(|| {
         crate::logging::install(crate::logging::LogConfig {
