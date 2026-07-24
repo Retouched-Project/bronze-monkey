@@ -47,10 +47,18 @@ impl Engine {
     }
 
     pub fn process_incoming_udp(&mut self, raw: &[u8]) -> ProcessOutput {
-        let mut framed = Vec::with_capacity(4 + raw.len());
-        framed.extend_from_slice(&(raw.len() as u32).to_le_bytes());
-        framed.extend_from_slice(raw);
-        self.process_incoming(&framed)
+        let len = raw.len();
+        if 4 + len <= 1024 {
+            let mut buf = [0u8; 1024];
+            buf[0..4].copy_from_slice(&(len as u32).to_le_bytes());
+            buf[4..4 + len].copy_from_slice(raw);
+            self.process_incoming(&buf[..4 + len])
+        } else {
+            let mut framed = Vec::with_capacity(4 + len);
+            framed.extend_from_slice(&(len as u32).to_le_bytes());
+            framed.extend_from_slice(raw);
+            self.process_incoming(&framed)
+        }
     }
 
     fn handle_deserialized_packet(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
@@ -145,7 +153,7 @@ impl Engine {
                         }
                         Object::TouchSet(ts) => out.events.push(Event::Touch {
                             sender: pkt.device_id.clone(),
-                            touches: ts.touches.into_values().collect(),
+                            touches: ts.touches,
                         }),
                         Object::Acceleration(a) => out.events.push(Event::Accel {
                             sender: pkt.device_id.clone(),

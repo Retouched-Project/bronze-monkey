@@ -9,34 +9,34 @@ use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
 
 pub fn serialize_packet(packet: &BMPacket) -> Result<Vec<u8>> {
-    let mut body = BMStream::new();
+    let mut stream = BMStream::new();
+    stream.write_unsigned_int(0)?; // placeholder length prefix
 
-    body.write_utf("@")?; // object marker
-    body.write_short(registry::BM_CLASS_ID_PACKET as i16)?;
+    stream.write_utf("@")?; // object marker
+    stream.write_short(registry::BM_CLASS_ID_PACKET as i16)?;
 
-    body.write_int(packet.channel)?;
-    body.write_int(packet.sequence)?;
-    body.write_double(packet.timestamp)?;
-    body.write_double(packet.rtt)?;
-    body.write_int(packet.packet_type.code())?;
-    body.write_int(packet.device_type.code())?;
+    stream.write_int(packet.channel)?;
+    stream.write_int(packet.sequence)?;
+    stream.write_double(packet.timestamp)?;
+    stream.write_double(packet.rtt)?;
+    stream.write_int(packet.packet_type.code())?;
+    stream.write_int(packet.device_type.code())?;
 
-    body.write_utf(&packet.device_id)?;
-    body.write_utf(&packet.device_name)?;
+    stream.write_utf(&packet.device_id)?;
+    stream.write_utf(&packet.device_name)?;
 
     match &packet.message {
         Some(msg) => {
-            body.write_boolean(true)?;
-            body.write_bytes(msg)?;
+            stream.write_boolean(true)?;
+            stream.write_bytes(msg)?;
         }
-        None => body.write_boolean(false)?,
+        None => stream.write_boolean(false)?,
     }
 
-    let body = body.into_inner();
-    let mut framed = BMStream::new();
-    framed.write_unsigned_int(body.len() as u32)?;
-    framed.write_bytes(&body)?;
-    Ok(framed.into_inner())
+    let mut bytes = stream.into_inner();
+    let body_len = (bytes.len() - 4) as u32;
+    bytes[0..4].copy_from_slice(&body_len.to_le_bytes());
+    Ok(bytes)
 }
 
 pub fn deserialize_packet(data: &[u8], pkt: &mut BMPacket) -> Result<()> {

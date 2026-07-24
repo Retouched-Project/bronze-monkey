@@ -129,11 +129,7 @@ impl Engine {
         touches: Vec<Touch>,
         reliability: i32,
     ) -> Vec<Outgoing> {
-        let mut map = std::collections::HashMap::with_capacity(touches.len());
-        for t in touches {
-            map.insert(t.id, t);
-        }
-        let touch_set = TouchSet { touches: map };
+        let touch_set = TouchSet { touches };
         let msg = match self.build_object_bytes(Object::TouchSet(touch_set)) {
             Ok(m) => m,
             Err(e) => {
