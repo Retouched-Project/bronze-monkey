@@ -18,15 +18,13 @@ impl Engine {
         log::trace!("process_incoming payload len={}", payload.len());
 
         let mut out = ProcessOutput::new();
-        let payload_safe = payload.to_vec();
-
-        if payload_safe.is_empty() {
+        if payload.is_empty() {
             return out;
         }
 
-        if payload_safe.len() == 12 {
+        if payload.len() == 12 {
             if let Some(handshake) =
-                crate::codec::externals::handshake::Handshake::from_bytes(&payload_safe)
+                crate::codec::externals::handshake::Handshake::from_bytes(payload)
             {
                 out.events.push(Event::Handshake {
                     current: handshake.current.to_u32(),
@@ -36,9 +34,8 @@ impl Engine {
             }
         }
 
-        use crate::codec::externals::bm_packet::BMPacket;
-        let mut pkt = Box::new(BMPacket::default());
-        match deserialize_packet(&payload_safe, &mut pkt) {
+        let mut pkt = BMPacket::default();
+        match deserialize_packet(payload, &mut pkt) {
             Ok(_) => {
                 self.handle_deserialized_packet(&pkt, &mut out);
             }
