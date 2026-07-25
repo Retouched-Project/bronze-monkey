@@ -12,7 +12,7 @@ use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRegistry;
 use crate::engine::events::ProcessOutput;
 use crate::engine::state::EngineState;
-use crate::policy::{ActiveRoles, ControllerPolicy, GamePolicy, Role, ServerPolicy};
+use crate::policy::{ActiveRoles, ControllerPolicy, EndpointMode, GamePolicy, ServerPolicy};
 use crate::types::channel_type::ChannelType;
 use std::collections::HashMap;
 
@@ -62,13 +62,17 @@ impl Engine {
         self.roles
     }
 
-    pub fn set_role_enabled(&mut self, role: Role, enabled: bool) {
-        log::info!(
-            "role {:?} {}",
-            role,
-            if enabled { "enabled" } else { "disabled" }
-        );
-        self.roles.set(role, enabled);
+    pub fn configure_roles(&mut self, server: bool, endpoint: Option<EndpointMode>) {
+        log::info!("configure_roles server={server} endpoint={endpoint:?}");
+        self.roles = ActiveRoles { server, endpoint };
+    }
+
+    pub fn set_server_role(&mut self, enabled: bool) {
+        self.roles.server = enabled;
+    }
+
+    pub fn set_endpoint_mode(&mut self, mode: Option<EndpointMode>) {
+        self.roles.endpoint = mode;
     }
 
     pub(crate) fn resolve_handler(&self, method: &str) -> Option<RpcHandler> {
@@ -80,12 +84,12 @@ impl Engine {
                 return Some(handler);
             }
         }
-        if self.roles.game {
+        if self.roles.game() {
             if let Some(handler) = GamePolicy::claims(method) {
                 return Some(handler);
             }
         }
-        if self.roles.controller {
+        if self.roles.controller() {
             if let Some(handler) = ControllerPolicy::claims(method) {
                 return Some(handler);
             }

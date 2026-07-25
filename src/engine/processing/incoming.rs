@@ -97,7 +97,7 @@ impl Engine {
             return;
         };
 
-        if self.roles.game {
+        if self.roles.game() {
             if !self.state.acked_peers.contains(&id) {
                 let ack = self.make_ack_packet(&id);
                 if !ack.is_empty() {
@@ -263,7 +263,7 @@ impl Engine {
         log::debug!("rx invoke method={}", inv.method);
         let mut claimed = false;
 
-        if self.roles.controller {
+        if self.roles.controller() {
             if inv.method == methods::SET_RELIABILITY_FOR_TOUCH {
                 // Transport config: tracked internally, never surfaced to the consumer.
                 let touch = self.param_i32(&inv.params, 0);
@@ -281,7 +281,7 @@ impl Engine {
             claimed = true;
         }
 
-        if !claimed && self.roles.game && self.game_policy.button_handlers.contains(&inv.method) {
+        if !claimed && self.roles.game() && self.game_policy.button_handlers.contains(&inv.method) {
             if let Some(state) = self.param_string(&inv.params, 0) {
                 if state == methods::BUTTON_DOWN || state == methods::BUTTON_UP {
                     out.events.push(Event::Button {

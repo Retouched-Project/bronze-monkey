@@ -9,7 +9,7 @@ use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::Command;
-use crate::policy::Role;
+use crate::policy::EndpointMode;
 use crate::types::channel_type::ChannelType;
 use crate::types::control_mode::ControlMode;
 use crate::types::device_type::DeviceType;
@@ -168,15 +168,13 @@ impl BmEngineWasm {
         self.inner.server_policy.auto_approve_registration = value;
     }
 
-    pub fn set_role_enabled(&mut self, role_code: i32, enabled: bool) -> Result<(), JsError> {
-        let role = match role_code {
-            0 => Role::Server,
-            1 => Role::Game,
-            2 => Role::Controller,
-            _ => return Err(JsError::new("invalid role code")),
+    pub fn configure_roles(&mut self, server_enabled: bool, endpoint_mode: i32) {
+        let endpoint = match endpoint_mode {
+            1 => Some(EndpointMode::Game),
+            2 => Some(EndpointMode::Controller),
+            _ => None,
         };
-        self.inner.set_role_enabled(role, enabled);
-        Ok(())
+        self.inner.configure_roles(server_enabled, endpoint);
     }
 
     pub fn approve_registration(&mut self, device_id: &str) -> Result<JsValue, JsError> {
