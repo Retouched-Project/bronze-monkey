@@ -11,17 +11,8 @@ pub mod policy;
 pub mod types;
 pub mod version;
 
-#[deprecated(
-    since = "2.0.0",
-    note = "use `bronze_monkey::codec::externals` instead"
-)]
-pub use codec::externals;
-#[deprecated(since = "2.0.0", note = "use `bronze_monkey::codec::messages` instead")]
-pub use codec::messages;
-
-pub use codec::Result;
 pub use codec::Error;
-
+pub use codec::Result;
 pub use codec::bm_stream;
 #[cfg(feature = "pyo3")]
 pub use engine::python::*;
