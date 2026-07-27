@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_array::BMArray;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
-use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::Result;
 use crate::codec::messages::acceleration::Acceleration;
 use crate::codec::messages::ack_packet::AckPacket;
 use crate::codec::messages::bm_byte_chunk::BMByteChunk;
@@ -36,8 +37,7 @@ pub enum Object {
     Orientation(Orientation),
     DPadUpdate(DPadUpdate),
     BMInvoke(BMInvoke),
-    // Boxed to break the Object -> Value -> Object recursion (a parameter's
-    // value may itself be an object); every other variant holds its type directly.
+    // Boxed to break the Object -> Value -> Object recursion
     BMParameter(Box<BMParameter>),
 }
 
@@ -62,7 +62,7 @@ impl Object {
         }
     }
 
-    pub fn decode(input: &mut dyn DataInput) -> Result<Self> {
+    pub fn decode<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Self> {
         let marker_len = input.read_short()? as usize;
         if marker_len != 1 {
             let bytes = if marker_len > 0 {
@@ -99,14 +99,12 @@ impl Object {
             Orientation::CLASS_ID => Ok(Object::Orientation(Orientation::read_from(input)?)),
             DPadUpdate::CLASS_ID => Ok(Object::DPadUpdate(DPadUpdate::read_from(input)?)),
             BMInvoke::CLASS_ID => Ok(Object::BMInvoke(BMInvoke::read_from(input)?)),
-            BMParameter::CLASS_ID => Ok(Object::BMParameter(Box::new(BMParameter::read_from(
-                input,
-            )?))),
-            _ => Err(format!("unknown class id: {id_short}").into()),
+            BMParameter::CLASS_ID => Ok(Object::BMParameter(Box::new(BMParameter::read_from(input)?))),
+            other => Err(format!("unhandled object class_id={other}").into()),
         }
     }
 
-    pub fn encode(&self, out: &mut dyn DataOutput) -> Result<()> {
+    pub fn encode(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         out.write_short(self.class_id() as i16)?;
         match self {
             Object::BMArray(x) => x.write_to(out),
@@ -127,7 +125,7 @@ impl Object {
         }
     }
 
-    pub fn encode_with_marker(&self, out: &mut dyn DataOutput) -> Result<()> {
+    pub fn encode_with_marker(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         out.write_utf("@")?;
         self.encode(out)
     }

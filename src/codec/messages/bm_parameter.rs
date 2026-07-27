@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::registry;
-use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::Result;
 use crate::codec::messages::bm_encoding::{BMEncoding, Value};
 
 use serde::{Deserialize, Serialize};
@@ -23,13 +24,13 @@ impl BMParameter {
         Self { value }
     }
 
-    pub fn read_from(input: &mut dyn DataInput) -> Result<Self> {
+    pub fn read_from<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Self> {
         Ok(Self {
             value: BMEncoding::decode(input)?,
         })
     }
 
-    pub fn write_to(&self, out: &mut dyn DataOutput) -> Result<()> {
+    pub fn write_to(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         BMEncoding::encode(&self.value, out)
     }
 }

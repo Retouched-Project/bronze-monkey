@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::bm_stream::BMStream;
+use crate::codec::Result;
 use crate::devices::bm_address::BMAddress;
 use crate::types::device_type::DeviceType;
 use std::fmt::{Debug, Display, Formatter};
@@ -27,7 +28,7 @@ impl DeviceCore {
         }
     }
 
-    pub fn read_from(input: &mut dyn DataInput) -> Result<Self> {
+    pub fn read_from<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Self> {
         let type_int = input.read_int()?;
         let device_type = DeviceType::for_value(type_int)
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })?;
@@ -41,7 +42,7 @@ impl DeviceCore {
         })
     }
 
-    pub fn write_to(&self, out: &mut dyn DataOutput) -> Result<()> {
+    pub fn write_to(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         out.write_int(self.device_type.code())?;
         out.write_utf(&self.device_id)?;
         out.write_utf(&self.device_name)

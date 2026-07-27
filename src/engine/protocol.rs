@@ -4,7 +4,7 @@
 use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::externals::registry;
-use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::Result;
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
 

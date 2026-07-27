@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::registry;
-use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::Result;
 
 use serde::{Deserialize, Serialize};
 
@@ -19,13 +20,13 @@ impl DPadUpdate {
         Self { x, y }
     }
 
-    pub fn read_from(input: &mut dyn DataInput) -> Result<Self> {
+    pub fn read_from<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Self> {
         let x = input.read_short()?;
         let y = input.read_short()?;
         Ok(Self { x, y })
     }
 
-    pub fn write_to(&self, out: &mut dyn DataOutput) -> Result<()> {
+    pub fn write_to(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         out.write_short(self.x)?;
         out.write_short(self.y)
     }

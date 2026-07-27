@@ -10,7 +10,6 @@ use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::externals::bm_version::BMVersion;
 use crate::codec::externals::handshake::handshake_bytes;
 use crate::codec::externals::registry;
-use crate::codec::io::DataOutput;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_invoke::BMInvoke;
 use crate::codec::object::Object;

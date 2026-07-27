@@ -3,8 +3,9 @@
 
 use std::fmt;
 
+use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::registry;
-use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::Result;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 
@@ -27,7 +28,7 @@ impl AckPacket {
         }
     }
 
-    pub fn read_from(input: &mut dyn DataInput) -> Result<Self> {
+    pub fn read_from<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Self> {
         Self::skip_object_header(input)?;
         let device = DeviceCore::read_from(input)?;
 
@@ -40,14 +41,14 @@ impl AckPacket {
         })
     }
 
-    fn skip_object_header(input: &mut dyn DataInput) -> Result<()> {
+    fn skip_object_header<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<()> {
         let _ = input.read_short()?;
         let _ = input.read_bytes(1)?;
         let _ = input.read_short()?;
         Ok(())
     }
 
-    pub fn write_to(&self, out: &mut dyn DataOutput) -> Result<()> {
+    pub fn write_to(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         out.write_short(1)?;
         out.write_bytes(&[b'@'])?;
         out.write_short(registry::class_id_for_device_type(self.device.device_type) as i16)?;

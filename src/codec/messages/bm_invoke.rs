@@ -3,7 +3,7 @@
 
 use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::registry;
-use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::Result;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_parameter::BMParameter;
 use crate::codec::object::Object;
@@ -22,7 +22,7 @@ pub struct BMInvoke {
 impl BMInvoke {
     pub const CLASS_ID: u32 = registry::BM_CLASS_ID_INVOKE;
 
-    pub fn read_from(input: &mut dyn DataInput) -> Result<Self> {
+    pub fn read_from<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Self> {
         let id = input.read_int()?;
         let method = input.read_utf()?;
         let mut ret = input.read_utf()?;
@@ -50,7 +50,7 @@ impl BMInvoke {
         })
     }
 
-    pub fn write_to(&self, out: &mut dyn DataOutput) -> Result<()> {
+    pub fn write_to(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         out.write_int(self.id)?;
         out.write_utf(&self.method)?;
         out.write_utf(self.return_method.as_deref().unwrap_or(""))?;

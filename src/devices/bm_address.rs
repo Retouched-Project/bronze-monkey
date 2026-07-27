@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::registry;
-use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::Result;
 
 use serde::{Deserialize, Serialize};
 
@@ -25,7 +26,7 @@ impl BMAddress {
         }
     }
 
-    pub fn read_from(input: &mut dyn DataInput) -> Result<Self> {
+    pub fn read_from<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Self> {
         let address = input.read_utf()?;
         let unreliable_port = input.read_int()?;
         let reliable_port = input.read_int()?;
@@ -36,7 +37,7 @@ impl BMAddress {
         })
     }
 
-    pub fn write_to(&self, out: &mut dyn DataOutput) -> Result<()> {
+    pub fn write_to(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         out.write_utf(&self.address)?;
         out.write_int(self.unreliable_port)?;
         out.write_int(self.reliable_port)

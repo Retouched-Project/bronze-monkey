@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::bm_stream::BMStream;
+use crate::codec::Result;
 use crate::codec::object::Object;
 
 use serde::{Deserialize, Serialize};
@@ -22,7 +23,7 @@ pub enum Value {
 pub struct BMEncoding;
 
 impl BMEncoding {
-    pub fn decode(input: &mut dyn DataInput) -> Result<Value> {
+    pub fn decode<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Value> {
         let tag = input.read_utf()?;
         Ok(match tag.as_str() {
             "@" => Value::Object(Object::decode(input)?),
@@ -38,7 +39,7 @@ impl BMEncoding {
         })
     }
 
-    pub fn encode(value: &Value, out: &mut dyn DataOutput) -> Result<()> {
+    pub fn encode(value: &Value, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         match value {
             Value::Object(o) => {
                 out.write_utf("@")?;

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::registry;
-use crate::codec::io::{DataInput, DataOutput, Result};
+use crate::codec::Result;
 use crate::codec::messages::bm_encoding::{BMEncoding, Value};
 use std::fmt;
 
@@ -26,7 +27,7 @@ impl BMArray {
         self.items.iter()
     }
 
-    pub fn read_from(input: &mut dyn DataInput) -> Result<Self> {
+    pub fn read_from<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Self> {
         let len = input.read_short()? as i32;
         if len < 0 {
             return Err("negative length in BMArray".into());
@@ -39,7 +40,7 @@ impl BMArray {
         Ok(BMArray { items })
     }
 
-    pub fn write_to(&self, out: &mut dyn DataOutput) -> Result<()> {
+    pub fn write_to(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         if self.items.len() > i16::MAX as usize {
             return Err("BMArray too long".into());
         }

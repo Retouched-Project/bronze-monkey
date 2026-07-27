@@ -6,7 +6,7 @@ use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::externals::bm_reliability::BMReliability;
-use crate::codec::io::Result;
+use crate::codec::Result;
 use crate::codec::messages::acceleration::Acceleration;
 use crate::codec::messages::ack_packet::AckPacket;
 use crate::codec::messages::bm_byte_chunk::BMByteChunk;

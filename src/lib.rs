@@ -19,16 +19,8 @@ pub use codec::externals;
 #[deprecated(since = "2.0.0", note = "use `bronze_monkey::codec::messages` instead")]
 pub use codec::messages;
 
-#[deprecated(
-    since = "2.0.0",
-    note = "use `bronze_monkey::codec::io` / `bronze_monkey::codec::object` instead"
-)]
-pub mod io {
-    #[deprecated(since = "2.0.0", note = "use `bronze_monkey::codec::io` instead")]
-    pub use crate::codec::io;
-    #[deprecated(since = "2.0.0", note = "use `bronze_monkey::codec::object` instead")]
-    pub use crate::codec::object;
-}
+pub use codec::Result;
+pub use codec::Error;
 
 pub use codec::bm_stream;
 #[cfg(feature = "pyo3")]
@@ -66,7 +58,7 @@ pub fn log_library_loaded() {
     });
 }
 
-pub fn base64_decode(input: &str) -> Result<Vec<u8>, base64::DecodeError> {
+pub fn base64_decode(input: &str) -> std::result::Result<Vec<u8>, base64::DecodeError> {
     BASE64_STANDARD.decode(input)
 }
 
