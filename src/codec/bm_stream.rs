@@ -7,24 +7,28 @@ use std::io::{Cursor, Read, Write};
 
 pub struct BMStream<B = Vec<u8>> {
     cursor: Cursor<B>,
+    depth: usize,
 }
 
 impl BMStream<Vec<u8>> {
     pub fn new() -> Self {
         Self {
             cursor: Cursor::new(Vec::with_capacity(256)),
+            depth: 0,
         }
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             cursor: Cursor::new(Vec::with_capacity(capacity)),
+            depth: 0,
         }
     }
 
     pub fn with_bytes(bytes: Vec<u8>) -> Self {
         Self {
             cursor: Cursor::new(bytes),
+            depth: 0,
         }
     }
 
@@ -37,6 +41,7 @@ impl<'a> BMStream<&'a [u8]> {
     pub fn view(bytes: &'a [u8]) -> Self {
         Self {
             cursor: Cursor::new(bytes),
+            depth: 0,
         }
     }
 }
@@ -62,6 +67,22 @@ impl<B: AsRef<[u8]>> BMStream<B> {
             .as_ref()
             .len()
             .saturating_sub(self.position())
+    }
+
+    #[inline]
+    pub fn enter_nested(&mut self) -> Result<()> {
+        if self.depth >= 64 {
+            return Err("Maximum nesting depth exceeded".into());
+        }
+        self.depth += 1;
+        Ok(())
+    }
+
+    #[inline]
+    pub fn exit_nested(&mut self) {
+        if self.depth > 0 {
+            self.depth -= 1;
+        }
     }
 
     #[inline]
