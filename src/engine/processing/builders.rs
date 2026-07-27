@@ -2,11 +2,11 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 use super::Engine;
+use crate::codec::Result;
 use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::externals::bm_reliability::BMReliability;
-use crate::codec::Result;
 use crate::codec::messages::acceleration::Acceleration;
 use crate::codec::messages::ack_packet::AckPacket;
 use crate::codec::messages::bm_byte_chunk::BMByteChunk;
@@ -44,19 +44,12 @@ impl Engine {
                 total_size,
                 data: blob[start..start + len].to_vec(),
             };
-            let msg = match self.build_object_bytes(Object::BMByteChunk(chunk)) {
-                Ok(m) => m,
-                Err(e) => {
-                    log::error!("build chunk failed: {e}");
-                    return Vec::new();
-                }
-            };
-            out.extend(self.make_packet(
+            out.extend(self.make_object_packet(
                 target,
-                ChannelType::Bytes.value(),
-                Some(BMReliability::Reliable.code()),
+                ChannelType::Bytes,
+                BMReliability::Reliable.code(),
                 PacketType::Data,
-                Some(msg),
+                Object::BMByteChunk(chunk),
             ));
             start += len;
             if start >= blob.len() {
@@ -87,6 +80,51 @@ impl Engine {
         Ok(out.into_inner())
     }
 
+    pub(super) fn make_object_packet(
+        &mut self,
+        target: &str,
+        channel: ChannelType,
+        reliability: impl Into<Option<i32>>,
+        pkt_type: PacketType,
+        obj: Object,
+    ) -> Vec<Outgoing> {
+        match self.build_object_bytes(obj) {
+            Ok(msg) => self.make_packet(
+                target,
+                channel.value(),
+                reliability.into(),
+                pkt_type,
+                Some(msg),
+            ),
+            Err(e) => {
+                log::error!("build object packet failed: {e}");
+                Vec::new()
+            }
+        }
+    }
+
+    pub(super) fn make_invoke_packet(
+        &mut self,
+        target: &str,
+        method: &str,
+        return_method: Option<&str>,
+        params: Vec<Value>,
+    ) -> Vec<Outgoing> {
+        match self.build_invoke_payload(method, return_method, params) {
+            Ok(msg) => self.make_packet(
+                target,
+                ChannelType::Message.value(),
+                Some(BMReliability::Reliable.code()),
+                PacketType::Data,
+                Some(msg),
+            ),
+            Err(e) => {
+                log::error!("build invoke '{method}' failed: {e}");
+                Vec::new()
+            }
+        }
+    }
+
     pub fn make_button_invoke(
         &mut self,
         target: &str,
@@ -107,19 +145,12 @@ impl Engine {
     }
 
     pub fn make_dpad_update(&mut self, target: &str, x: i16, y: i16) -> Vec<Outgoing> {
-        let msg = match self.build_object_bytes(Object::DPadUpdate(DPadUpdate::new(x, y))) {
-            Ok(m) => m,
-            Err(e) => {
-                log::error!("build dpad failed: {e}");
-                return Vec::new();
-            }
-        };
-        self.make_packet(
+        self.make_object_packet(
             target,
-            ChannelType::DPad.value(),
-            Some(BMReliability::Reliable.code()),
+            ChannelType::DPad,
+            BMReliability::Reliable.code(),
             PacketType::Data,
-            Some(msg),
+            Object::DPadUpdate(DPadUpdate::new(x, y)),
         )
     }
 
@@ -129,20 +160,12 @@ impl Engine {
         touches: Vec<Touch>,
         reliability: i32,
     ) -> Vec<Outgoing> {
-        let touch_set = TouchSet { touches };
-        let msg = match self.build_object_bytes(Object::TouchSet(touch_set)) {
-            Ok(m) => m,
-            Err(e) => {
-                log::error!("build touch failed: {e}");
-                return Vec::new();
-            }
-        };
-        self.make_packet(
+        self.make_object_packet(
             target,
-            ChannelType::Touch.value(),
-            Some(reliability),
+            ChannelType::Touch,
+            reliability,
             PacketType::Data,
-            Some(msg),
+            Object::TouchSet(TouchSet { touches }),
         )
     }
 
@@ -154,19 +177,12 @@ impl Engine {
         z: f64,
         reliability: i32,
     ) -> Vec<Outgoing> {
-        let msg = match self.build_object_bytes(Object::Acceleration(Acceleration::new(x, y, z))) {
-            Ok(m) => m,
-            Err(e) => {
-                log::error!("build accel failed: {e}");
-                return Vec::new();
-            }
-        };
-        self.make_packet(
+        self.make_object_packet(
             target,
-            ChannelType::Acceleration.value(),
-            Some(reliability),
+            ChannelType::Acceleration,
+            reliability,
             PacketType::Data,
-            Some(msg),
+            Object::Acceleration(Acceleration::new(x, y, z)),
         )
     }
 
@@ -216,19 +232,12 @@ impl Engine {
         z: f32,
         reliability: i32,
     ) -> Vec<Outgoing> {
-        let msg = match self.build_object_bytes(Object::BMGyro(BMGyro::new(x, y, z))) {
-            Ok(m) => m,
-            Err(e) => {
-                log::error!("build gyro failed: {e}");
-                return Vec::new();
-            }
-        };
-        self.make_packet(
+        self.make_object_packet(
             target,
-            ChannelType::Gyro.value(),
-            Some(reliability),
+            ChannelType::Gyro,
+            reliability,
             PacketType::Data,
-            Some(msg),
+            Object::BMGyro(BMGyro::new(x, y, z)),
         )
     }
 
@@ -241,19 +250,12 @@ impl Engine {
         w: f32,
         reliability: i32,
     ) -> Vec<Outgoing> {
-        let msg = match self.build_object_bytes(Object::Orientation(Orientation::new(x, y, z, w))) {
-            Ok(m) => m,
-            Err(e) => {
-                log::error!("build orientation failed: {e}");
-                return Vec::new();
-            }
-        };
-        self.make_packet(
+        self.make_object_packet(
             target,
-            ChannelType::Orientation.value(),
-            Some(reliability),
+            ChannelType::Orientation,
+            reliability,
             PacketType::Data,
-            Some(msg),
+            Object::Orientation(Orientation::new(x, y, z, w)),
         )
     }
 
@@ -426,23 +428,11 @@ impl Engine {
         }
         let return_method = Self::return_method_or(return_method, methods::DEFAULT_RETURN_REGISTER);
         self.bind_continuation(return_method, Self::rpc_on_register_reply);
-        let msg = match self.build_invoke_payload(
+        self.make_invoke_packet(
+            target,
             methods::REGISTRY_REGISTER,
             Some(return_method),
             params,
-        ) {
-            Ok(m) => m,
-            Err(e) => {
-                log::error!("build register invoke failed: {e}");
-                return Vec::new();
-            }
-        };
-        self.make_packet(
-            target,
-            ChannelType::Message.value(),
-            Some(BMReliability::Reliable.code()),
-            PacketType::Data,
-            Some(msg),
         )
     }
 
@@ -453,23 +443,11 @@ impl Engine {
     ) -> Vec<Outgoing> {
         let return_method = Self::return_method_or(return_method, methods::DEFAULT_RETURN_LIST);
         self.bind_continuation(return_method, Self::rpc_on_list);
-        let msg = match self.build_invoke_payload(
+        self.make_invoke_packet(
+            target,
             methods::REGISTRY_LIST,
             Some(return_method),
             Vec::new(),
-        ) {
-            Ok(m) => m,
-            Err(e) => {
-                log::error!("build list invoke failed: {e}");
-                return Vec::new();
-            }
-        };
-        self.make_packet(
-            target,
-            ChannelType::Message.value(),
-            Some(BMReliability::Reliable.code()),
-            PacketType::Data,
-            Some(msg),
         )
     }
 
@@ -481,20 +459,7 @@ impl Engine {
     ) -> Vec<Outgoing> {
         let inner_obj = Value::Object(Object::BMInvoke(inner));
         let params = vec![Value::Object(Object::BMRegistryInfo(dest_info)), inner_obj];
-        let msg = match self.build_invoke_payload(methods::REGISTRY_RELAY, Some(""), params) {
-            Ok(m) => m,
-            Err(e) => {
-                log::error!("build relay invoke failed: {e}");
-                return Vec::new();
-            }
-        };
-        self.make_packet(
-            target,
-            ChannelType::Message.value(),
-            Some(BMReliability::Reliable.code()),
-            PacketType::Data,
-            Some(msg),
-        )
+        self.make_invoke_packet(target, methods::REGISTRY_RELAY, Some(""), params)
     }
 
     pub fn make_device_connect_requested(
@@ -533,20 +498,7 @@ impl Engine {
         return_method: Option<&str>,
         params: Vec<Value>,
     ) -> Vec<Outgoing> {
-        let msg = match self.build_invoke_payload(method, return_method, params) {
-            Ok(m) => m,
-            Err(e) => {
-                log::error!("build invoke failed: {e}");
-                return Vec::new();
-            }
-        };
-        self.make_packet(
-            target,
-            ChannelType::Message.value(),
-            Some(BMReliability::Reliable.code()),
-            PacketType::Data,
-            Some(msg),
-        )
+        self.make_invoke_packet(target, method, return_method, params)
     }
 
     pub fn make_message_invoke_oneway(
@@ -568,19 +520,12 @@ impl Engine {
             device_id: local.device_id,
             address,
         };
-        let msg = match self.build_object_bytes(Object::Ping(ping)) {
-            Ok(m) => m,
-            Err(e) => {
-                log::error!("build ping failed: {e}");
-                return Vec::new();
-            }
-        };
-        self.make_packet(
+        self.make_object_packet(
             target,
-            ChannelType::Broadcast.value(),
-            Some(BMReliability::Unreliable.code()),
+            ChannelType::Broadcast,
+            BMReliability::Unreliable.code(),
             PacketType::Ping,
-            Some(msg),
+            Object::Ping(ping),
         )
     }
 
@@ -594,19 +539,12 @@ impl Engine {
             return Vec::new();
         };
         let ack = AckPacket::new(peer, local.address.clone().unwrap_or_default());
-        let msg = match self.build_object_bytes(Object::AckPacket(ack)) {
-            Ok(m) => m,
-            Err(e) => {
-                log::error!("build ack failed: {e}");
-                return Vec::new();
-            }
-        };
-        self.make_packet(
+        self.make_object_packet(
             target,
-            ChannelType::Message.value(),
-            Some(BMReliability::Reliable.code()),
+            ChannelType::Message,
+            BMReliability::Reliable.code(),
             PacketType::Ack,
-            Some(msg),
+            Object::AckPacket(ack),
         )
     }
 
