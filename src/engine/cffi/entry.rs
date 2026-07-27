@@ -14,6 +14,16 @@ use crate::policy::EndpointMode;
 use super::{catch_bool, catch_i32, catch_ptr, catch_void};
 
 fn write_buf(buf: Vec<u8>, out_ptr: *mut *mut u8, out_len: *mut usize) {
+    if out_ptr.is_null() || out_len.is_null() {
+        return;
+    }
+    if buf.is_empty() {
+        unsafe {
+            *out_ptr = std::ptr::null_mut();
+            *out_len = 0;
+        }
+        return;
+    }
     let mut boxed = buf.into_boxed_slice();
     unsafe {
         *out_ptr = boxed.as_mut_ptr();
@@ -53,7 +63,8 @@ pub unsafe extern "C" fn bm_buffer_free(ptr: *mut u8, len: usize) {
             return;
         }
         unsafe {
-            let _ = Box::from_raw(std::slice::from_raw_parts_mut(ptr, len));
+            let slice_ptr = std::ptr::slice_from_raw_parts_mut(ptr, len);
+            let _ = Box::from_raw(slice_ptr);
         }
     });
 }
