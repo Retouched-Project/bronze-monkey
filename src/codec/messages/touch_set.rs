@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+use crate::codec::Result;
 use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::registry;
-use crate::codec::Result;
 pub(crate) use crate::codec::messages::touch::Touch;
 use serde::{Deserialize, Serialize};
 
@@ -24,12 +24,30 @@ impl TouchSet {
         Ok(Self { touches })
     }
 
+    /// Serializes touches by ascending order.
+    /// Avoids heap allocations when there are 16 or fewer touches.
+    /// Otherwise falls back to heap allocation.
     pub fn write_to(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         out.write_int(self.touches.len() as i32)?;
-        let mut sorted = self.touches.clone();
-        sorted.sort_by_key(|t| t.id);
-        for touch in &sorted {
-            touch.write_to(out)?;
+        if self.touches.is_empty() {
+            return Ok(());
+        }
+        if self.touches.len() <= 16 {
+            let mut stack_refs: [&Touch; 16] = [&self.touches[0]; 16];
+            for (i, touch) in self.touches.iter().enumerate() {
+                stack_refs[i] = touch;
+            }
+            let slice = &mut stack_refs[..self.touches.len()];
+            slice.sort_unstable_by_key(|t| t.id);
+            for touch in slice {
+                touch.write_to(out)?;
+            }
+        } else {
+            let mut refs: Vec<&Touch> = self.touches.iter().collect();
+            refs.sort_unstable_by_key(|t| t.id);
+            for touch in refs {
+                touch.write_to(out)?;
+            }
         }
         Ok(())
     }
