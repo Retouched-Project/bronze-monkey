@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+use crate::codec::Result;
 use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::externals::registry;
-use crate::codec::Result;
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
 
 pub fn serialize_packet(packet: &BMPacket) -> Result<Vec<u8>> {
-    let mut stream = BMStream::new();
+    let msg_len = packet.message.as_ref().map_or(0, |m| m.len());
+    let mut stream = BMStream::with_capacity(128 + msg_len);
     stream.write_unsigned_int(0)?; // placeholder length prefix
 
     stream.write_utf("@")?; // object marker

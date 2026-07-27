@@ -16,6 +16,12 @@ impl BMStream<Vec<u8>> {
         }
     }
 
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            cursor: Cursor::new(Vec::with_capacity(capacity)),
+        }
+    }
+
     pub fn with_bytes(bytes: Vec<u8>) -> Self {
         Self {
             cursor: Cursor::new(bytes),
