@@ -144,7 +144,6 @@ impl Engine {
                                 params: inv.params,
                             },
                             Some(pkt.device_id.clone()),
-                            channel,
                             out,
                         ),
                         Object::BMByteChunk(chunk) => {
@@ -257,7 +256,6 @@ impl Engine {
         &mut self,
         inv: ReceivedInvoke,
         sender_id: Option<String>,
-        channel: i32,
         out: &mut ProcessOutput,
     ) {
         log::debug!("rx invoke method={}", inv.method);
@@ -277,7 +275,13 @@ impl Engine {
         }
 
         if let Some(handler) = self.resolve_handler(&inv.method) {
-            handler(self, &inv, sender_id.as_deref(), channel, out);
+            let mut ctx = super::RpcContext {
+                engine: self,
+                inv: &inv,
+                sender_id: sender_id.as_deref(),
+                out,
+            };
+            handler(&mut ctx);
             claimed = true;
         }
 

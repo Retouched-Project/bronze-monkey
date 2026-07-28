@@ -1,25 +1,23 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use super::{Engine, ReceivedInvoke};
+use super::{Engine, ReceivedInvoke, RpcContext};
 use crate::codec::externals::bm_array::BMArray;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::object::Object;
-use crate::engine::events::{ControlConfig, Event, ProcessOutput};
+use crate::engine::events::{ControlConfig, Event};
 use crate::engine::methods;
 use crate::policy::server::PendingRegistration;
 use crate::types::control_mode::ControlMode;
 use crate::types::device_type::DeviceType;
 
 impl Engine {
-    pub(crate) fn rpc_registry_register(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_registry_register(ctx: &mut RpcContext) {
+        let sender_id = ctx.sender_id;
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         let infos = engine.collect_registry_infos(&inv.params);
         let domain = inv
             .params
@@ -130,13 +128,10 @@ impl Engine {
         }
     }
 
-    pub(crate) fn rpc_on_register_reply(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        _sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_on_register_reply(ctx: &mut RpcContext) {
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         let success = inv.params.iter().find_map(|p| {
             if let Value::Bool(b) = engine.unwrap_value(p) {
                 Some(*b)
@@ -149,13 +144,11 @@ impl Engine {
         }
     }
 
-    pub(crate) fn rpc_registry_list(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_registry_list(ctx: &mut RpcContext) {
+        let sender_id = ctx.sender_id;
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         // Server side: answer the list request via the caller's return method.
         let Some(target_id) = sender_id else {
             return;
@@ -190,24 +183,19 @@ impl Engine {
         ));
     }
 
-    pub(crate) fn rpc_on_list(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        _sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_on_list(ctx: &mut RpcContext) {
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         let infos = engine.collect_registry_infos(&inv.params);
         out.events.push(Event::HostList { infos });
     }
 
-    pub(crate) fn rpc_registry_relay(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_registry_relay(ctx: &mut RpcContext) {
+        let sender_id = ctx.sender_id;
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         let mut target_id = None;
         let mut relayed = None;
 
@@ -246,25 +234,19 @@ impl Engine {
         ));
     }
 
-    pub(crate) fn rpc_on_host_connected(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        _sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_on_host_connected(ctx: &mut RpcContext) {
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         for info in engine.collect_registry_infos(&inv.params) {
             out.events.push(Event::HostConnected { info });
         }
     }
 
-    pub(crate) fn rpc_host_slot_assigned(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        _sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_host_slot_assigned(ctx: &mut RpcContext) {
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         let local = engine.local_device_id();
         for info in engine.collect_registry_infos(&inv.params) {
             if info.device.device_id == local {
@@ -273,13 +255,11 @@ impl Engine {
         }
     }
 
-    pub(crate) fn rpc_registry_update(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_registry_update(ctx: &mut RpcContext) {
+        let sender_id = ctx.sender_id;
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         let infos = engine.collect_registry_infos(&inv.params);
         for info in &infos {
             out.events.push(Event::HostUpdated { info: info.clone() });
@@ -349,234 +329,143 @@ impl Engine {
         }
     }
 
-    pub(crate) fn rpc_host_updated(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        _sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_host_updated(ctx: &mut RpcContext) {
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         for info in engine.collect_registry_infos(&inv.params) {
             out.events.push(Event::HostUpdated { info });
         }
     }
 
-    pub(crate) fn rpc_on_host_disconnected(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        _sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_on_host_disconnected(ctx: &mut RpcContext) {
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         for info in engine.collect_registry_infos(&inv.params) {
             out.events.push(Event::HostDisconnected { info });
         }
     }
 
-    pub(crate) fn rpc_device_connect_requested(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        _sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_device_connect_requested(ctx: &mut RpcContext) {
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         for info in engine.collect_registry_infos(&inv.params) {
             out.events.push(Event::DeviceConnectRequested { info });
         }
     }
 
-    pub(crate) fn rpc_on_kill_event(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        _sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        let device_id = engine.param_string(&inv.params, 0).unwrap_or_default();
-        out.events.push(Event::DeviceKilled { device_id });
-    }
-
-    fn sender_string(sender_id: Option<&str>) -> String {
-        sender_id.unwrap_or_default().to_string()
-    }
-
-    pub(crate) fn rpc_connection_failed(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        _sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        let device_id = engine.param_string(&inv.params, 0).unwrap_or_default();
-        out.events.push(Event::ConnectionFailed { device_id });
-    }
-
-    pub(crate) fn rpc_vibrate(
-        _engine: &mut Engine,
-        _inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        out.events.push(Event::Vibrate {
-            sender: Self::sender_string(sender_id),
+    pub(crate) fn rpc_on_kill_event(ctx: &mut RpcContext) {
+        ctx.push_event(Event::DeviceKilled {
+            device_id: ctx.param_str(0),
         });
     }
 
-    pub(crate) fn rpc_bm_pause(
-        _engine: &mut Engine,
-        _inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        out.events.push(Event::Pause {
-            sender: Self::sender_string(sender_id),
+    pub(crate) fn rpc_connection_failed(ctx: &mut RpcContext) {
+        ctx.push_event(Event::ConnectionFailed {
+            device_id: ctx.param_str(0),
         });
     }
 
-    pub(crate) fn rpc_menu_event(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        let event = engine.param_string(&inv.params, 0).unwrap_or_default();
-        out.events.push(Event::MenuEvent {
-            sender: Self::sender_string(sender_id),
+    pub(crate) fn rpc_vibrate(ctx: &mut RpcContext) {
+        ctx.push_event(Event::Vibrate {
+            sender: ctx.sender(),
+        });
+    }
+
+    pub(crate) fn rpc_bm_pause(ctx: &mut RpcContext) {
+        ctx.push_event(Event::Pause {
+            sender: ctx.sender(),
+        });
+    }
+
+    pub(crate) fn rpc_menu_event(ctx: &mut RpcContext) {
+        let event = ctx.param_str(0);
+        ctx.push_event(Event::MenuEvent {
+            sender: ctx.sender(),
             event,
         });
     }
 
-    pub(crate) fn rpc_on_key_string(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        let key = engine.param_string(&inv.params, 0).unwrap_or_default();
-        out.events.push(Event::KeyString {
-            sender: Self::sender_string(sender_id),
+    pub(crate) fn rpc_on_key_string(ctx: &mut RpcContext) {
+        let key = ctx.param_str(0);
+        ctx.push_event(Event::KeyString {
+            sender: ctx.sender(),
             key,
         });
     }
 
-    pub(crate) fn rpc_on_navigation_string(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        let nav = engine.param_string(&inv.params, 0).unwrap_or_default();
-        out.events.push(Event::Navigation {
-            sender: Self::sender_string(sender_id),
+    pub(crate) fn rpc_on_navigation_string(ctx: &mut RpcContext) {
+        let nav = ctx.param_str(0);
+        ctx.push_event(Event::Navigation {
+            sender: ctx.sender(),
             nav,
         });
     }
 
-    pub(crate) fn rpc_set_capabilities(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        let mask = engine.param_i32(&inv.params, 0).unwrap_or(0);
-        out.events.push(Event::Capabilities {
-            sender: Self::sender_string(sender_id),
+    pub(crate) fn rpc_set_capabilities(ctx: &mut RpcContext) {
+        let mask = ctx.param_i32(0).unwrap_or(0);
+        ctx.push_event(Event::Capabilities {
+            sender: ctx.sender(),
             gyroscope: mask & 1 != 0,
             orientation: mask & 2 != 0,
         });
     }
 
-    pub(crate) fn rpc_request_xml(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        let height = engine.param_i32(&inv.params, 0).unwrap_or(0);
-        let width = engine.param_i32(&inv.params, 1).unwrap_or(0);
-        let requester = engine.param_string(&inv.params, 2).unwrap_or_default();
-        out.events.push(Event::ControlSchemeRequested {
-            sender: Self::sender_string(sender_id),
+    pub(crate) fn rpc_request_xml(ctx: &mut RpcContext) {
+        let height = ctx.param_i32(0).unwrap_or(0);
+        let width = ctx.param_i32(1).unwrap_or(0);
+        let requester = ctx.param_str(2);
+        ctx.push_event(Event::ControlSchemeRequested {
+            sender: ctx.sender(),
             width,
             height,
             requester,
         });
     }
 
-    pub(crate) fn rpc_on_control_scheme_parsed(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        let device_id = engine.param_string(&inv.params, 0).unwrap_or_default();
-        out.events.push(Event::ControlSchemeParsed {
-            sender: Self::sender_string(sender_id),
+    pub(crate) fn rpc_on_control_scheme_parsed(ctx: &mut RpcContext) {
+        let device_id = ctx.param_str(0);
+        ctx.push_event(Event::ControlSchemeParsed {
+            sender: ctx.sender(),
             device_id,
         });
     }
 
-    pub(crate) fn rpc_get_cookie(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        let name = engine.param_string(&inv.params, 0).unwrap_or_default();
-        out.events.push(Event::CookieRequested {
-            sender: Self::sender_string(sender_id),
+    pub(crate) fn rpc_get_cookie(ctx: &mut RpcContext) {
+        let name = ctx.param_str(0);
+        ctx.push_event(Event::CookieRequested {
+            sender: ctx.sender(),
             name,
         });
     }
 
-    pub(crate) fn rpc_set_cookie(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        let name = engine.param_string(&inv.params, 0).unwrap_or_default();
-        let value = engine.param_string(&inv.params, 1).unwrap_or_default();
-        out.events.push(Event::CookieStored {
-            sender: Self::sender_string(sender_id),
+    pub(crate) fn rpc_set_cookie(ctx: &mut RpcContext) {
+        let name = ctx.param_str(0);
+        let value = ctx.param_str(1);
+        ctx.push_event(Event::CookieStored {
+            sender: ctx.sender(),
             name,
             value,
         });
     }
 
-    pub(crate) fn rpc_got_cookie(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
-        let name = engine.param_string(&inv.params, 0).unwrap_or_default();
-        let value = engine.param_string(&inv.params, 1).unwrap_or_default();
-        out.events.push(Event::Cookie {
-            sender: Self::sender_string(sender_id),
+    pub(crate) fn rpc_got_cookie(ctx: &mut RpcContext) {
+        let name = ctx.param_str(0);
+        let value = ctx.param_str(1);
+        ctx.push_event(Event::Cookie {
+            sender: ctx.sender(),
             name,
             value,
         });
     }
 
-    pub(crate) fn rpc_registry_remove(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_registry_remove(ctx: &mut RpcContext) {
+        let sender_id = ctx.sender_id;
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         let device_id = engine
             .param_string(&inv.params, 0)
             .or_else(|| sender_id.map(|s| s.to_string()));
@@ -599,13 +488,11 @@ impl Engine {
         out.outgoings.extend(engine.drop_device(&device_id));
     }
 
-    pub(crate) fn rpc_registry_set_visible(
-        engine: &mut Engine,
-        inv: &ReceivedInvoke,
-        sender_id: Option<&str>,
-        _channel: i32,
-        out: &mut ProcessOutput,
-    ) {
+    pub(crate) fn rpc_registry_set_visible(ctx: &mut RpcContext) {
+        let sender_id = ctx.sender_id;
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
         let Some(target_id) = sender_id else {
             return;
         };

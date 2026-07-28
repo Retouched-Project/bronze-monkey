@@ -10,7 +10,7 @@ mod server_ops;
 use crate::codec::messages::bm_encoding::Value;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRegistry;
-use crate::engine::events::ProcessOutput;
+use crate::engine::events::{Event, ProcessOutput};
 use crate::engine::state::EngineState;
 use crate::policy::{ActiveRoles, ControllerPolicy, EndpointMode, GamePolicy, ServerPolicy};
 use crate::types::channel_type::ChannelType;
@@ -23,8 +23,34 @@ pub struct ReceivedInvoke {
     pub params: Vec<Value>,
 }
 
-pub(crate) type RpcHandler =
-    fn(&mut Engine, &ReceivedInvoke, Option<&str>, i32, &mut ProcessOutput);
+pub(crate) struct RpcContext<'a> {
+    pub engine: &'a mut Engine,
+    pub inv: &'a ReceivedInvoke,
+    pub sender_id: Option<&'a str>,
+    pub out: &'a mut ProcessOutput,
+}
+
+impl<'a> RpcContext<'a> {
+    pub fn sender(&self) -> String {
+        self.sender_id.unwrap_or_default().to_string()
+    }
+
+    pub fn param_str(&self, idx: usize) -> String {
+        self.engine
+            .param_string(&self.inv.params, idx)
+            .unwrap_or_default()
+    }
+
+    pub fn param_i32(&self, idx: usize) -> Option<i32> {
+        self.engine.param_i32(&self.inv.params, idx)
+    }
+
+    pub fn push_event(&mut self, event: Event) {
+        self.out.events.push(event);
+    }
+}
+
+pub(crate) type RpcHandler = fn(&mut RpcContext);
 
 #[derive(Debug, Default, Clone)]
 pub struct Engine {
