@@ -117,18 +117,22 @@ impl Engine {
     }
 
     fn handle_ack(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
-        let Some(mut rec) = self.device_record_from_packet(pkt) else {
+        let Some(rec) = self.device_record_from_packet(pkt) else {
             return;
         };
+        let mut udp_port = 0;
         if let Some(msg) = &pkt.message {
             let mut cur = BMStream::view(msg.as_slice());
             match Object::decode(&mut cur) {
-                Ok(Object::AckPacket(ack)) => rec.core.address = Some(ack.device_address),
+                Ok(Object::AckPacket(ack)) => udp_port = ack.device_address.unreliable_port,
                 Ok(_) => {}
                 Err(e) => log::debug!("ack decode failed: {e}"),
             }
         }
-        out.events.push(Event::PeerConnected { record: rec });
+        out.events.push(Event::PeerConnected {
+            record: rec,
+            udp_port,
+        });
     }
 
     fn handle_data(&mut self, pkt: &BMPacket, channel: i32, out: &mut ProcessOutput) {

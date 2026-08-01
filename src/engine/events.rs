@@ -52,6 +52,7 @@ pub enum Event {
     },
     PeerConnected {
         record: DeviceRecord,
+        udp_port: i32,
     },
     ConnectionFailed {
         device_id: String,
