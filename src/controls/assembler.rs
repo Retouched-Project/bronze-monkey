@@ -66,6 +66,13 @@ impl SchemeAssembler {
         for blob in pending {
             self.merge_into_base(&blob);
         }
+        // An initial scheme builds the consumer's cache from nothing, so every
+        // resource it ends up carrying counts as changed. Set after the replay
+        // so the last replayed update does not narrow it.
+        if let Some(base) = self.base.as_mut() {
+            let ids = base.resources.iter().map(|r| r.id).collect();
+            base.changed_resources = ids;
+        }
         SchemeOffer::Updated(SchemeUpdate {
             scheme: self.current().unwrap_or_default(),
             initial: true,
@@ -189,6 +196,49 @@ mod tests {
             a.offer("updateXML", UPDATE_XML),
             SchemeOffer::Consumed
         ));
+    }
+
+    // "AAECAw==" is four bytes; the exact pixels do not matter, only which ids
+    // arrive with data attached.
+    const TEST_XML_WITH_RESOURCES: &[u8] = br#"<BMApplicationScheme orientation="landscape" width="480" height="320"><Resource id="1"><data>AAECAw==</data></Resource><Resource id="2"><data>BAUGBw==</data></Resource><DisplayObject id="1" type="button"/></BMApplicationScheme>"#;
+    const UPDATE_XML_ONE_RESOURCE: &[u8] = br#"<BMApplicationScheme><Resource id="2"><data>CAkKCw==</data></Resource><DisplayObject id="1" type="button"/></BMApplicationScheme>"#;
+
+    #[test]
+    fn initial_scheme_reports_every_resource_as_changed() {
+        let mut a = SchemeAssembler::new();
+        let SchemeOffer::Updated(u) = a.offer("testXML", TEST_XML_WITH_RESOURCES) else {
+            panic!("expected Updated");
+        };
+        let s = decode(&u.scheme);
+        assert_eq!(s.changed_resources, vec![1, 2]);
+    }
+
+    #[test]
+    fn update_reports_only_the_resource_it_carried() {
+        let mut a = SchemeAssembler::new();
+        a.offer("testXML", TEST_XML_WITH_RESOURCES);
+        let SchemeOffer::Updated(u) = a.offer("updateXML", UPDATE_XML_ONE_RESOURCE) else {
+            panic!("expected Updated");
+        };
+        let s = decode(&u.scheme);
+        // Both resources are still carried, but only 2 needs decoding again.
+        assert_eq!(s.resources.len(), 2);
+        assert_eq!(s.changed_resources, vec![2]);
+        let r2 = s.resources.iter().find(|r| r.id == 2).unwrap();
+        assert_eq!(r2.bitmap, vec![0x08, 0x09, 0x0A, 0x0B]);
+    }
+
+    #[test]
+    fn replayed_updates_do_not_narrow_the_initial_changed_set() {
+        let mut a = SchemeAssembler::new();
+        // The update lands before the base, so it is buffered and replayed.
+        a.offer("updateXML", UPDATE_XML_ONE_RESOURCE);
+        let SchemeOffer::Updated(u) = a.offer("testXML", TEST_XML_WITH_RESOURCES) else {
+            panic!("expected Updated");
+        };
+        let s = decode(&u.scheme);
+        // Still a from-nothing build, so resource 1 has to be decoded too.
+        assert_eq!(s.changed_resources, vec![1, 2]);
     }
 
     #[test]

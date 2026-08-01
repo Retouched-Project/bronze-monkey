@@ -16,17 +16,25 @@ pub fn apply_update(base: &mut ControlScheme, update: ControlScheme) {
         resources,
         display_objects,
         options,
+        // Produced here, never carried in: a scheme from the parser has none.
+        changed_resources: _,
     } = update;
 
     // Resources: overlay by id. Keep base ids absent from the update; replace in
     // place when present; append new ids.
+    let mut changed = Vec::with_capacity(resources.len());
     for res in resources {
+        changed.push(res.id);
         if let Some(existing) = base.resources.iter_mut().find(|r| r.id == res.id) {
             *existing = res;
         } else {
             base.resources.push(res);
         }
     }
+
+    // The ids the update carried. Everything else in base.resources is byte for
+    // byte what the consumer already has.
+    base.changed_resources = changed;
 
     // Display objects: replace with the update's set (absent objects are dropped).
     base.display_objects = display_objects;
@@ -95,6 +103,7 @@ mod tests {
             resources: vec![res(1, 0xA), res(2, 0xB)],
             display_objects: vec![obj(10, "button"), obj(11, "image")],
             options: vec![],
+            changed_resources: vec![],
         };
         // A partial update: parser output has default scalars, no resources, layout only.
         let update = ControlScheme {
@@ -110,6 +119,52 @@ mod tests {
         assert!(base.accelerometer_enabled);
         // image #11 dropped.
         assert_eq!(base.display_objects, vec![obj(10, "button")]);
+    }
+
+    #[test]
+    fn changed_resources_reports_only_the_ids_the_update_carried() {
+        let mut base = ControlScheme {
+            resources: vec![res(1, 0xA), res(2, 0xB), res(3, 0xC)],
+            ..Default::default()
+        };
+        let update = ControlScheme {
+            // 2 replaced in place, 4 appended, 1 and 3 untouched.
+            resources: vec![res(2, 0xFF), res(4, 0xD)],
+            display_objects: vec![obj(1, "button")],
+            ..Default::default()
+        };
+        apply_update(&mut base, update);
+        assert_eq!(base.changed_resources, vec![2, 4]);
+    }
+
+    #[test]
+    fn layout_only_update_reports_nothing_changed() {
+        let mut base = ControlScheme {
+            resources: vec![res(1, 0xA)],
+            // A previous update left its ids behind; this one must clear them.
+            changed_resources: vec![1],
+            ..Default::default()
+        };
+        let update = ControlScheme {
+            display_objects: vec![obj(10, "button")],
+            ..Default::default()
+        };
+        apply_update(&mut base, update);
+        assert!(base.changed_resources.is_empty());
+        assert_eq!(base.resources, vec![res(1, 0xA)]);
+    }
+
+    #[test]
+    fn changed_resources_is_never_carried_in_from_the_update() {
+        let mut base = ControlScheme::default();
+        let update = ControlScheme {
+            // The parser never sets this, but a hand built scheme could.
+            changed_resources: vec![99],
+            display_objects: vec![obj(1, "button")],
+            ..Default::default()
+        };
+        apply_update(&mut base, update);
+        assert!(base.changed_resources.is_empty());
     }
 
     #[test]
