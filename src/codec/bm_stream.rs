@@ -5,6 +5,8 @@ use crate::codec::Result;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Cursor, Read, Write};
 
+pub(crate) const MAX_NESTING_DEPTH: usize = 64;
+
 pub struct BMStream<B = Vec<u8>> {
     cursor: Cursor<B>,
     depth: usize,
@@ -70,19 +72,14 @@ impl<B: AsRef<[u8]>> BMStream<B> {
     }
 
     #[inline]
-    pub fn enter_nested(&mut self) -> Result<()> {
-        if self.depth >= 64 {
+    pub(crate) fn nested<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
+        if self.depth >= MAX_NESTING_DEPTH {
             return Err("Maximum nesting depth exceeded".into());
         }
         self.depth += 1;
-        Ok(())
-    }
-
-    #[inline]
-    pub fn exit_nested(&mut self) {
-        if self.depth > 0 {
-            self.depth -= 1;
-        }
+        let res = f(self);
+        self.depth -= 1;
+        res
     }
 
     #[inline]

@@ -63,10 +63,7 @@ impl Object {
     }
 
     pub fn decode<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Self> {
-        input.enter_nested()?;
-        let res = Self::decode_inner(input);
-        input.exit_nested();
-        res
+        input.nested(Self::decode_inner)
     }
 
     fn decode_inner<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Self> {
@@ -138,5 +135,90 @@ impl Object {
     pub fn encode_with_marker(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         out.write_utf("@")?;
         self.encode(out)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::codec::bm_stream::MAX_NESTING_DEPTH;
+    use crate::codec::messages::bm_encoding::Value;
+    use crate::devices::device_core::DeviceCore;
+    use crate::types::device_type::DeviceType;
+
+    fn host(n: usize) -> Value {
+        let addr = BMAddress {
+            address: format!("192.168.1.{}", n % 256),
+            unreliable_port: 4000,
+            reliable_port: 4001,
+        };
+        let mut core = DeviceCore::new(format!("dev-{n}"), format!("Game {n}"), DeviceType::Flash);
+        core.address = Some(addr.clone());
+        Value::Object(Object::BMRegistryInfo(BMRegistryInfo {
+            slot_id: 0,
+            app_id: "abc123".to_string(),
+            current_players: None,
+            max_players: None,
+            device: core,
+            device_address: addr,
+        }))
+    }
+
+    // Arrays holding one array, `levels` of them, so decoding the outermost
+    // reaches exactly `levels` deep.
+    fn nest(levels: usize) -> Vec<u8> {
+        let mut obj = Object::BMArray(BMArray { items: Vec::new() });
+        for _ in 1..levels {
+            obj = Object::BMArray(BMArray {
+                items: vec![Value::Object(obj)],
+            });
+        }
+        let mut out = BMStream::new();
+        obj.encode_with_marker(&mut out).unwrap();
+        out.into_inner()
+    }
+
+    #[test]
+    fn nesting_at_the_limit_decodes() {
+        let bytes = nest(MAX_NESTING_DEPTH);
+        assert!(Object::decode(&mut BMStream::view(&bytes[..])).is_ok());
+    }
+
+    #[test]
+    fn nesting_past_the_limit_is_rejected() {
+        let bytes = nest(MAX_NESTING_DEPTH + 1);
+        let err = Object::decode(&mut BMStream::view(&bytes[..])).unwrap_err();
+        assert!(
+            err.to_string().contains("nesting depth"),
+            "rejected for the wrong reason: {err}"
+        );
+    }
+
+    #[test]
+    fn depth_is_released_between_siblings() {
+        // Many shallow objects side by side must not add up to the limit.
+        let items: Vec<Value> = (0..MAX_NESTING_DEPTH * 4).map(host).collect();
+        let obj = Object::BMArray(BMArray { items });
+        let mut out = BMStream::new();
+        obj.encode_with_marker(&mut out).unwrap();
+        let bytes = out.into_inner();
+        assert!(Object::decode(&mut BMStream::view(&bytes[..])).is_ok());
+    }
+
+    #[test]
+    fn host_list_of_100_round_trips() {
+        let items: Vec<Value> = (0..100).map(host).collect();
+        let obj = Object::BMArray(BMArray { items });
+
+        let mut out = BMStream::new();
+        obj.encode_with_marker(&mut out).unwrap();
+        let bytes = out.into_inner();
+
+        let mut input = BMStream::view(&bytes[..]);
+        let decoded = Object::decode(&mut input).unwrap();
+        match decoded {
+            Object::BMArray(a) => assert_eq!(a.items.len(), 100),
+            other => panic!("expected BMArray, got {other:?}"),
+        }
     }
 }
