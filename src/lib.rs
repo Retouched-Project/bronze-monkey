@@ -6,6 +6,7 @@ pub mod controls;
 pub mod devices;
 pub mod engine;
 pub mod identity;
+pub mod inspect;
 pub mod logging;
 pub mod policy;
 pub mod types;

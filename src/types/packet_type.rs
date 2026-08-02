@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(into = "i32", try_from = "i32")]
 pub enum PacketType {
     #[default]
     Data = 0,
@@ -29,3 +32,32 @@ impl PacketType {
         *self as i32
     }
 }
+
+impl From<PacketType> for i32 {
+    fn from(value: PacketType) -> Self {
+        value.code()
+    }
+}
+
+impl TryFrom<i32> for PacketType {
+    type Error = PacketTypeError;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        Self::from_i32(value).ok_or(PacketTypeError::OutOfRange(value))
+    }
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum PacketTypeError {
+    OutOfRange(i32),
+}
+
+impl std::fmt::Display for PacketTypeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PacketTypeError::OutOfRange(v) => write!(f, "PacketType out of range: {v}"),
+        }
+    }
+}
+
+impl std::error::Error for PacketTypeError {}

@@ -23,7 +23,9 @@
  The bytes are written in little-endian order.
 */
 
-#[derive(Clone, Copy, Debug, Default)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BMVersion {
     pub major: u8,
     pub minor: u8,
@@ -53,5 +55,4 @@ impl BMVersion {
             build,
         }
     }
-
 }
