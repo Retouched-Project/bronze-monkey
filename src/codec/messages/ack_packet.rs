@@ -3,9 +3,9 @@
 
 use std::fmt;
 
+use crate::codec::Result;
 use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::registry;
-use crate::codec::Result;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 

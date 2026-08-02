@@ -41,6 +41,14 @@ impl Handshake {
         }
     }
 
+    /// The two version fields on their own, without the length in front.
+    pub fn to_message(&self) -> [u8; 8] {
+        let mut buf = [0u8; 8];
+        buf[0..4].copy_from_slice(&self.current.to_u32().to_le_bytes());
+        buf[4..8].copy_from_slice(&self.minimum.to_u32().to_le_bytes());
+        buf
+    }
+
     pub fn to_bytes(&self) -> [u8; 12] {
         let mut buf = [0u8; 12];
         buf[0..4].copy_from_slice(&8u32.to_le_bytes());
@@ -57,8 +65,17 @@ impl Handshake {
         if size != 8 {
             return None;
         }
-        let current = BMVersion::from_u32(u32::from_le_bytes(bytes[4..8].try_into().ok()?));
-        let minimum = BMVersion::from_u32(u32::from_le_bytes(bytes[8..12].try_into().ok()?));
+        Self::from_message(&bytes[4..12])
+    }
+
+    /// Reads the two version fields on their own, with no length in front.
+    /// A real packet is far longer than this, so the length alone identifies it.
+    pub fn from_message(message: &[u8]) -> Option<Self> {
+        if message.len() != 8 {
+            return None;
+        }
+        let current = BMVersion::from_u32(u32::from_le_bytes(message[0..4].try_into().ok()?));
+        let minimum = BMVersion::from_u32(u32::from_le_bytes(message[4..8].try_into().ok()?));
         Some(Self { current, minimum })
     }
 }

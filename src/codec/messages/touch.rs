@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::codec::bm_stream::BMStream;
 use crate::codec::Result;
+use crate::codec::bm_stream::BMStream;
 use crate::types::touch_state::TouchState;
 
 use serde::{Deserialize, Serialize};

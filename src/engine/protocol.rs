@@ -5,14 +5,11 @@ use crate::codec::Result;
 use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::externals::registry;
+use crate::framing::{LENGTH_PREFIX_LEN, MAX_MESSAGE_LEN};
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
 
-pub fn serialize_packet(packet: &BMPacket) -> Result<Vec<u8>> {
-    let msg_len = packet.message.as_ref().map_or(0, |m| m.len());
-    let mut stream = BMStream::with_capacity(128 + msg_len);
-    stream.write_unsigned_int(0)?; // placeholder length prefix
-
+fn write_body(packet: &BMPacket, stream: &mut BMStream<Vec<u8>>) -> Result<()> {
     stream.write_utf("@")?; // object marker
     stream.write_short(registry::BM_CLASS_ID_PACKET as i16)?;
 
@@ -33,25 +30,45 @@ pub fn serialize_packet(packet: &BMPacket) -> Result<Vec<u8>> {
         }
         None => stream.write_boolean(false)?,
     }
+    Ok(())
+}
+
+/// Writes a packet as a message, with no length in front. This is what a
+/// datagram carries, and what a stream carries once framing is applied.
+pub fn serialize_message(packet: &BMPacket) -> Result<Vec<u8>> {
+    let msg_len = packet.message.as_ref().map_or(0, |m| m.len());
+    let mut stream = BMStream::with_capacity(128 + msg_len);
+    write_body(packet, &mut stream)?;
+    Ok(stream.into_inner())
+}
+
+/// Writes a packet with its length in front, ready for a stream transport.
+pub fn serialize_packet(packet: &BMPacket) -> Result<Vec<u8>> {
+    let msg_len = packet.message.as_ref().map_or(0, |m| m.len());
+    let mut stream = BMStream::with_capacity(LENGTH_PREFIX_LEN + 128 + msg_len);
+    // Reserved and filled in below, so the body is written only once.
+    stream.write_unsigned_int(0)?;
+    write_body(packet, &mut stream)?;
 
     let mut bytes = stream.into_inner();
-    let body_len = (bytes.len() - 4) as u32;
-    bytes[0..4].copy_from_slice(&body_len.to_le_bytes());
+    let body_len = (bytes.len() - LENGTH_PREFIX_LEN) as u32;
+    bytes[0..LENGTH_PREFIX_LEN].copy_from_slice(&body_len.to_le_bytes());
     Ok(bytes)
 }
 
+/// Reads a packet with its length in front, as a stream carries it.
 pub fn deserialize_packet(data: &[u8], pkt: &mut BMPacket) -> Result<()> {
-    if data.len() < 4 {
+    if data.len() < LENGTH_PREFIX_LEN {
         return Err("Buffer too small for length prefix".into());
     }
-    let mut framed = BMStream::view(data);
-    let size = framed.read_unsigned_int()? as usize;
+    let size = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
 
-    if size > 5 * 1024 * 1024 {
-        // cap at 5MB sanity check
+    if size > MAX_MESSAGE_LEN {
         return Err(format!("Packet size too large: {}", size).into());
     }
-    let end_offset = 4usize.checked_add(size).ok_or("Packet size overflow")?;
+    let end_offset = LENGTH_PREFIX_LEN
+        .checked_add(size)
+        .ok_or("Packet size overflow")?;
 
     if end_offset > data.len() {
         return Err(format!(
@@ -62,7 +79,17 @@ pub fn deserialize_packet(data: &[u8], pkt: &mut BMPacket) -> Result<()> {
         .into());
     }
 
-    let payload = &data[4..end_offset];
+    deserialize_message(&data[LENGTH_PREFIX_LEN..end_offset], pkt)
+}
+
+/// Reads a packet from a message with no length in front, as a datagram
+/// carries it and as the framer hands it over.
+pub fn deserialize_message(payload: &[u8], pkt: &mut BMPacket) -> Result<()> {
+    // A framed stream is already capped by the framer, but a datagram arrives
+    // here directly, so the limit is enforced on the message itself too.
+    if payload.len() > MAX_MESSAGE_LEN {
+        return Err(format!("Packet size too large: {}", payload.len()).into());
+    }
     let mut body = BMStream::view(payload);
 
     let marker = body.read_utf()?;
@@ -153,6 +180,22 @@ mod tests {
         let bytes = serialize_packet(&sample(None)).unwrap();
         let declared = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as usize;
         assert_eq!(declared, bytes.len() - 4);
+    }
+
+    #[test]
+    fn an_oversized_message_is_rejected() {
+        // The datagram path reaches deserialize_message without passing a
+        // framer, so the cap has to hold here on its own.
+        let huge = vec![0u8; crate::framing::MAX_MESSAGE_LEN + 1];
+        let mut decoded = BMPacket::default();
+        assert!(deserialize_message(&huge, &mut decoded).is_err());
+
+        let mut engine = crate::engine::processing::Engine::default();
+        let out = engine.process_incoming(&huge);
+        assert!(
+            out.events.is_empty(),
+            "an oversized message must not decode"
+        );
     }
 
     #[test]

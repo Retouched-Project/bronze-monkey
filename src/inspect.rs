@@ -16,7 +16,7 @@ use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::externals::bm_version::BMVersion;
 use crate::codec::externals::handshake::Handshake;
 use crate::codec::object::Object;
-use crate::engine::protocol::{deserialize_packet, serialize_packet};
+use crate::engine::protocol::{deserialize_message, serialize_message};
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
 
@@ -110,56 +110,29 @@ impl PacketView {
     }
 }
 
-/// Reads whatever arrived, deciding between a handshake and a packet the same
-/// way the engine does. This is the entry point for watching a connection.
-pub fn inspect(data: &[u8]) -> Result<WireView> {
-    if data.len() == 12
-        && let Some(hs) = Handshake::from_bytes(data)
-    {
+/// Reads a message into its described form, deciding between a handshake and a
+/// packet the same way the engine does. A datagram is already a message; a
+/// stream has to be run through a [`crate::framing::Framer`] first.
+pub fn inspect(message: &[u8]) -> Result<WireView> {
+    if let Some(hs) = Handshake::from_message(message) {
         return Ok(WireView::Handshake {
             current: hs.current,
             minimum: hs.minimum,
         });
     }
-    Ok(WireView::Packet(Box::new(inspect_packet(data)?)))
+    let mut pkt = BMPacket::default();
+    deserialize_message(message, &mut pkt)?;
+    Ok(WireView::Packet(Box::new(PacketView::from_packet(pkt)?)))
 }
 
-/// Serializes anything this module can describe.
+/// Serializes a described frame as a message, with no length in front.
 pub fn build(view: WireView) -> Result<Vec<u8>> {
     match view {
         WireView::Handshake { current, minimum } => {
-            Ok(Handshake::new(current, minimum).to_bytes().to_vec())
+            Ok(Handshake::new(current, minimum).to_message().to_vec())
         }
-        WireView::Packet(packet) => build_packet(*packet),
+        WireView::Packet(packet) => serialize_message(&packet.into_packet()?),
     }
-}
-
-/// Serializes a described packet, length prefix included, ready for a stream.
-pub fn build_packet(view: PacketView) -> Result<Vec<u8>> {
-    serialize_packet(&view.into_packet()?)
-}
-
-/// Serializes a described packet without the length prefix, as a datagram
-/// carries it.
-pub fn build_datagram(view: PacketView) -> Result<Vec<u8>> {
-    let mut bytes = build_packet(view)?;
-    bytes.drain(..4);
-    Ok(bytes)
-}
-
-/// Reads a length prefixed packet back into its described form.
-pub fn inspect_packet(data: &[u8]) -> Result<PacketView> {
-    let mut pkt = BMPacket::default();
-    deserialize_packet(data, &mut pkt)?;
-    PacketView::from_packet(pkt)
-}
-
-/// Reads a packet that arrived without a length prefix.
-pub fn inspect_datagram(data: &[u8]) -> Result<PacketView> {
-    let mut framed = Vec::with_capacity(4 + data.len());
-    framed.extend_from_slice(&(data.len() as u32).to_le_bytes());
-    framed.extend_from_slice(data);
-    inspect_packet(&framed)
 }
 
 #[cfg(test)]
@@ -211,8 +184,10 @@ mod tests {
     #[test]
     fn round_trips_through_the_wire() {
         let view = host_update();
-        let bytes = build_packet(view.clone()).unwrap();
-        let back = inspect_packet(&bytes).unwrap();
+        let bytes = build(WireView::Packet(Box::new(view.clone()))).unwrap();
+        let WireView::Packet(back) = inspect(&bytes).unwrap() else {
+            panic!("expected a packet");
+        };
 
         assert_eq!(back.sequence, view.sequence);
         assert_eq!(back.channel, view.channel);
@@ -236,38 +211,12 @@ mod tests {
     }
 
     #[test]
-    fn datagram_form_omits_the_length_prefix() {
-        let view = host_update();
-        let framed = build_packet(view.clone()).unwrap();
-        let bare = build_datagram(view).unwrap();
-
-        assert_eq!(bare.len(), framed.len() - 4);
-        assert_eq!(bare, framed[4..]);
-        assert_eq!(
-            inspect_datagram(&bare).unwrap().device_id,
-            inspect_packet(&framed).unwrap().device_id
-        );
-    }
-
-    #[test]
-    fn building_is_pure() {
-        // Same view in, same bytes out, however many times it is called.
-        let first = build_packet(host_update()).unwrap();
-        let second = build_packet(host_update()).unwrap();
-        assert_eq!(first, second);
-    }
-
-    #[test]
-    fn a_packet_with_no_message_round_trips() {
-        let view = PacketView {
-            channel: 0,
-            packet_type: PacketType::Ping,
-            device_id: "me".to_string(),
-            ..Default::default()
-        };
-        let back = inspect_packet(&build_packet(view).unwrap()).unwrap();
-        assert!(back.message.is_none());
-        assert_eq!(back.packet_type, PacketType::Ping);
+    fn a_built_message_survives_a_stream() {
+        // What build produces is what the framer yields back on the far side.
+        let message = build(WireView::Packet(Box::new(host_update()))).unwrap();
+        let mut framer = crate::framing::Framer::new();
+        let out = framer.feed(&crate::framing::frame(&message)).unwrap();
+        assert_eq!(out, vec![message]);
     }
 
     #[test]
@@ -289,9 +238,8 @@ mod tests {
     }
 
     #[test]
-    fn a_sensor_packet_round_trips_as_a_datagram() {
-        // Sensor objects ride inside a packet like any other message, and go
-        // out unreliable, so the datagram form is the one that matters.
+    fn a_sensor_packet_round_trips() {
+        // Sensor objects ride inside a packet like any other message.
         let view = PacketView {
             channel: ChannelType::Acceleration.value(),
             packet_type: PacketType::Data,
@@ -301,7 +249,10 @@ mod tests {
             ..Default::default()
         };
 
-        let back = inspect_datagram(&build_datagram(view).unwrap()).unwrap();
+        let bytes = build(WireView::Packet(Box::new(view))).unwrap();
+        let WireView::Packet(back) = inspect(&bytes).unwrap() else {
+            panic!("expected a packet");
+        };
         assert_eq!(back.channel, ChannelType::Acceleration.value());
         let Some(Object::Acceleration(a)) = back.message else {
             panic!("expected an Acceleration back");
@@ -311,9 +262,12 @@ mod tests {
 
     #[test]
     fn a_handshake_is_not_mistaken_for_a_packet() {
-        let bytes = Handshake::default_version().to_bytes();
-        // The old packet only entry point cannot describe it.
-        assert!(inspect_packet(&bytes).is_err());
+        let bytes = build(WireView::Handshake {
+            current: BMVersion::new(1, 7, 0),
+            minimum: BMVersion::new(0, 9, 0),
+        })
+        .unwrap();
+        assert_eq!(bytes.len(), 8, "a handshake message carries no length");
 
         let WireView::Handshake { current, minimum } = inspect(&bytes).unwrap() else {
             panic!("expected a handshake");
@@ -323,22 +277,27 @@ mod tests {
     }
 
     #[test]
-    fn handshake_round_trips_through_build() {
-        let view = WireView::Handshake {
-            current: BMVersion::new(1, 7, 0),
-            minimum: BMVersion::new(0, 9, 0),
-        };
-        let bytes = build(view).unwrap();
-        assert_eq!(bytes, Handshake::default_version().to_bytes());
+    fn building_is_pure() {
+        // Same view in, same bytes out, however many times it is called.
+        let first = build(WireView::Packet(Box::new(host_update()))).unwrap();
+        let second = build(WireView::Packet(Box::new(host_update()))).unwrap();
+        assert_eq!(first, second);
     }
 
     #[test]
-    fn inspect_still_reads_ordinary_packets() {
-        let bytes = build(WireView::Packet(Box::new(host_update()))).unwrap();
-        let WireView::Packet(view) = inspect(&bytes).unwrap() else {
+    fn a_packet_with_no_message_round_trips() {
+        let view = PacketView {
+            channel: 0,
+            packet_type: PacketType::Ping,
+            device_id: "me".to_string(),
+            ..Default::default()
+        };
+        let bytes = build(WireView::Packet(Box::new(view))).unwrap();
+        let WireView::Packet(back) = inspect(&bytes).unwrap() else {
             panic!("expected a packet");
         };
-        assert_eq!(view.device_id, "server");
+        assert!(back.message.is_none());
+        assert_eq!(back.packet_type, PacketType::Ping);
     }
 
     #[test]
@@ -349,8 +308,8 @@ mod tests {
             message: Some(vec![0x01, 0x00, 0x40, 0xff, 0x00]),
             ..Default::default()
         };
-        let bytes = serialize_packet(&pkt).unwrap();
+        let bytes = crate::engine::protocol::serialize_message(&pkt).unwrap();
 
-        assert!(inspect_packet(&bytes).is_err());
+        assert!(inspect(&bytes).is_err());
     }
 }

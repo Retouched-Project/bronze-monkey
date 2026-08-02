@@ -2,6 +2,7 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 use super::Engine;
+use crate::codec::externals::bm_reliability::BMReliability;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_invoke::BMInvoke;
 use crate::codec::object::Object;
@@ -28,6 +29,7 @@ impl Engine {
                     target_device_id: target,
                     channel,
                     reliability,
+                    prefers_datagram: reliability == BMReliability::Unreliable.code(),
                     payload,
                 }]
             }
@@ -318,5 +320,85 @@ impl Engine {
             Object::StringLiteral(_) => ChannelType::String.value(),
             _ => ChannelType::Message.value(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::codec::externals::bm_packet::BMPacket;
+    use crate::devices::device_core::DeviceCore;
+    use crate::engine::device_registry::DeviceRecord;
+    use crate::engine::protocol::{deserialize_message, deserialize_packet};
+    use crate::framing::{Framer, frame};
+    use crate::types::device_type::DeviceType;
+
+    fn engine_with_peer(peer: &str) -> Engine {
+        let mut eng = Engine::default();
+        eng.init_local_device(DeviceCore::new(
+            "local".to_string(),
+            "Local".to_string(),
+            DeviceType::Android,
+        ));
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new(peer.to_string(), "Game".to_string(), DeviceType::Flash),
+            None,
+            None,
+        ));
+        eng
+    }
+
+    #[test]
+    fn an_outgoing_carries_a_message_with_no_length_in_front() {
+        let mut eng = engine_with_peer("game1");
+        let out = eng.emit(Command::SendDPad {
+            target: "game1".to_string(),
+            x: 1,
+            y: 2,
+        });
+        assert_eq!(out.len(), 1);
+
+        // It reads back directly as a message.
+        let mut pkt = BMPacket::default();
+        deserialize_message(&out[0].payload, &mut pkt).expect("payload should be a message");
+        assert_eq!(pkt.device_id, "local");
+
+        // And not as a framed packet, which is what it used to be.
+        let mut framed = BMPacket::default();
+        assert!(deserialize_packet(&out[0].payload, &mut framed).is_err());
+    }
+
+    #[test]
+    fn a_framed_outgoing_survives_a_stream() {
+        let mut eng = engine_with_peer("game1");
+        let out = eng.emit(Command::SendDPad {
+            target: "game1".to_string(),
+            x: 3,
+            y: 4,
+        });
+
+        let mut framer = Framer::new();
+        let back = framer.feed(&frame(&out[0].payload)).unwrap();
+        assert_eq!(back, vec![out[0].payload.clone()]);
+    }
+
+    #[test]
+    fn sensor_traffic_prefers_a_datagram_and_control_traffic_does_not() {
+        let mut eng = engine_with_peer("game1");
+
+        let sensors = eng.emit(Command::SendAccel {
+            target: "game1".to_string(),
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        });
+        assert!(sensors[0].prefers_datagram, "sensors go unreliable");
+
+        let control = eng.emit(Command::SendButton {
+            target: "game1".to_string(),
+            handler: "a".to_string(),
+            pressed: true,
+        });
+        assert!(!control[0].prefers_datagram, "buttons go reliable");
     }
 }

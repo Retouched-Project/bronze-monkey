@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::codec::bm_stream::BMStream;
 use crate::codec::Result;
+use crate::codec::bm_stream::BMStream;
 use crate::devices::bm_address::BMAddress;
 use crate::types::device_type::DeviceType;
 use std::fmt::{Debug, Display, Formatter};

@@ -254,18 +254,6 @@ impl BmEngineWasm {
         }
     }
 
-    pub fn process_incoming_udp(&mut self, data: &[u8]) -> Result<JsValue, JsError> {
-        let result = catch_unwind(AssertUnwindSafe(|| self.inner.process_incoming_udp(data)));
-
-        match result {
-            Ok(out) => to_js(&out),
-            Err(_) => {
-                log::error!("panic in process_incoming_udp");
-                Err(JsError::new("Rust panic in process_incoming_udp"))
-            }
-        }
-    }
-
     pub fn emit(&mut self, command: JsValue) -> Result<JsValue, JsError> {
         let cmd: Command =
             serde_wasm_bindgen::from_value(command).map_err(|e| JsError::new(&e.to_string()))?;
@@ -303,17 +291,71 @@ pub fn build_wire(view: JsValue) -> Result<Vec<u8>, JsError> {
     crate::inspect::build(view).map_err(|e| JsError::new(&e.to_string()))
 }
 
-/// Reads a frame that arrived without a length prefix, as a datagram does.
+/// Reassembles messages from a stream that arrives in arbitrary pieces.
 #[wasm_bindgen]
-pub fn inspect_datagram(data: &[u8]) -> Result<JsValue, JsError> {
-    let view = crate::inspect::inspect_datagram(data).map_err(|e| JsError::new(&e.to_string()))?;
-    to_js(&view)
+pub struct FramerWasm {
+    inner: crate::framing::Framer,
 }
 
-/// Serializes a described packet without the length prefix.
 #[wasm_bindgen]
-pub fn build_datagram(view: JsValue) -> Result<Vec<u8>, JsError> {
-    let view: crate::inspect::PacketView =
-        serde_wasm_bindgen::from_value(view).map_err(|e| JsError::new(&e.to_string()))?;
-    crate::inspect::build_datagram(view).map_err(|e| JsError::new(&e.to_string()))
+impl FramerWasm {
+    /// Rejects messages longer than maxLen, or the library ceiling when it is
+    /// left out. A limit above that ceiling is clamped to it.
+    #[wasm_bindgen(constructor)]
+    pub fn new(max_len: Option<u32>) -> Self {
+        let max_len = max_len.map_or(crate::framing::MAX_MESSAGE_LEN, |n| n as usize);
+        Self {
+            inner: crate::framing::Framer::with_max_len(max_len),
+        }
+    }
+
+    /// The limit this framer was created with.
+    #[wasm_bindgen(getter, js_name = maxLen)]
+    pub fn max_len(&self) -> usize {
+        self.inner.max_len()
+    }
+
+    /// Adds bytes and returns every message they completed.
+    pub fn feed(&mut self, data: &[u8]) -> Result<js_sys::Array, JsError> {
+        let messages = self
+            .inner
+            .feed(data)
+            .map_err(|e| JsError::new(&e.to_string()))?;
+        let out = js_sys::Array::new_with_length(messages.len() as u32);
+        for (i, message) in messages.iter().enumerate() {
+            out.set(
+                i as u32,
+                js_sys::Uint8Array::from(message.as_slice()).into(),
+            );
+        }
+        Ok(out)
+    }
+
+    /// Drops anything half read, for when a connection restarts.
+    pub fn reset(&mut self) {
+        self.inner.reset();
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn pending(&self) -> usize {
+        self.inner.pending()
+    }
+}
+
+impl Default for FramerWasm {
+    fn default() -> Self {
+        Self::new(None)
+    }
+}
+
+/// The longest message the library will accept.
+#[wasm_bindgen]
+pub fn max_message_len() -> usize {
+    crate::framing::MAX_MESSAGE_LEN
+}
+
+/// Writes a message with the length prefix a stream transport needs.
+#[wasm_bindgen]
+pub fn frame(message: &[u8]) -> Vec<u8> {
+    crate::framing::frame(message)
 }

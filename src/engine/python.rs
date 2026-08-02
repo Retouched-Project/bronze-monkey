@@ -134,15 +134,6 @@ impl BMEnginePy {
         Ok(pythonize(py, &out)?)
     }
 
-    fn process_incoming_udp<'py>(
-        &self,
-        py: Python<'py>,
-        data: &[u8],
-    ) -> PyResult<Bound<'py, PyAny>> {
-        let out = self.inner.write().unwrap().process_incoming_udp(data);
-        Ok(pythonize(py, &out)?)
-    }
-
     fn emit<'py>(
         &self,
         py: Python<'py>,
@@ -455,21 +446,58 @@ fn build_wire<'py>(py: Python<'py>, view: Bound<'py, PyAny>) -> PyResult<Bound<'
     Ok(PyBytes::new(py, &bytes))
 }
 
-/// Reads a frame that arrived without a length prefix, as a datagram does.
-#[pyfunction]
-fn inspect_datagram<'py>(py: Python<'py>, data: &[u8]) -> PyResult<Bound<'py, PyAny>> {
-    let view = crate::inspect::inspect_datagram(data)
-        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
-    Ok(pythonize(py, &view)?)
+/// Reassembles messages from a stream that arrives in arbitrary pieces.
+#[pyclass]
+pub struct FramerPy {
+    inner: RwLock<crate::framing::Framer>,
 }
 
-/// Serializes a described packet without the length prefix.
+#[pymethods]
+impl FramerPy {
+    /// Rejects messages longer than max_len, or the library ceiling when it is
+    /// left out. A limit above that ceiling is clamped to it.
+    #[new]
+    #[pyo3(signature = (max_len=None))]
+    fn new(max_len: Option<usize>) -> Self {
+        let max_len = max_len.unwrap_or(crate::framing::MAX_MESSAGE_LEN);
+        Self {
+            inner: RwLock::new(crate::framing::Framer::with_max_len(max_len)),
+        }
+    }
+
+    /// The limit this framer was created with.
+    #[getter]
+    fn max_len(&self) -> usize {
+        self.inner.read().unwrap().max_len()
+    }
+
+    /// Adds bytes and returns every message they completed.
+    fn feed<'py>(&self, py: Python<'py>, data: &[u8]) -> PyResult<Bound<'py, PyList>> {
+        let messages = self
+            .inner
+            .write()
+            .unwrap()
+            .feed(data)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
+        let items: Vec<_> = messages.iter().map(|m| PyBytes::new(py, m)).collect();
+        PyList::new(py, items)
+    }
+
+    /// Drops anything half read, for when a connection restarts.
+    fn reset(&self) {
+        self.inner.write().unwrap().reset();
+    }
+
+    #[getter]
+    fn pending(&self) -> usize {
+        self.inner.read().unwrap().pending()
+    }
+}
+
+/// Writes a message with the length prefix a stream transport needs.
 #[pyfunction]
-fn build_datagram<'py>(py: Python<'py>, view: Bound<'py, PyAny>) -> PyResult<Bound<'py, PyBytes>> {
-    let view: crate::inspect::PacketView = depythonize(&view)?;
-    let bytes = crate::inspect::build_datagram(view)
-        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
-    Ok(PyBytes::new(py, &bytes))
+fn frame<'py>(py: Python<'py>, message: &[u8]) -> Bound<'py, PyBytes> {
+    PyBytes::new(py, &crate::framing::frame(message))
 }
 
 #[pymodule]
@@ -478,14 +506,14 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     crate::log_library_loaded();
     m.add_class::<BMEnginePy>()?;
     m.add_class::<SchemeAssemblerPy>()?;
+    m.add_class::<FramerPy>()?;
     m.add_function(wrap_pyfunction!(handshake, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_invoke_packet, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_device_packet, m)?)?;
     m.add_function(wrap_pyfunction!(deserialize_packet_dict, m)?)?;
     m.add_function(wrap_pyfunction!(inspect_wire, m)?)?;
     m.add_function(wrap_pyfunction!(build_wire, m)?)?;
-    m.add_function(wrap_pyfunction!(inspect_datagram, m)?)?;
-    m.add_function(wrap_pyfunction!(build_datagram, m)?)?;
+    m.add_function(wrap_pyfunction!(frame, m)?)?;
     m.add_function(wrap_pyfunction!(configure_logging, m)?)?;
     m.add_function(wrap_pyfunction!(set_log_level, m)?)?;
     m.add_function(wrap_pyfunction!(take_logs, m)?)?;
@@ -496,6 +524,7 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_control_scheme_xml, m)?)?;
     m.add_function(wrap_pyfunction!(version_info, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    m.add("MAX_MESSAGE_LEN", crate::framing::MAX_MESSAGE_LEN)?;
     m.add("DEVICE_TYPE_ANY", DeviceType::Any.code())?;
     m.add("DEVICE_TYPE_UNITY", DeviceType::Unity.code())?;
     m.add("DEVICE_TYPE_IPHONE", DeviceType::IPhone.code())?;

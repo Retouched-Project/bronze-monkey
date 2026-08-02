@@ -5,6 +5,7 @@ pub mod codec;
 pub mod controls;
 pub mod devices;
 pub mod engine;
+pub mod framing;
 pub mod identity;
 pub mod inspect;
 pub mod logging;

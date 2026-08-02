@@ -15,14 +15,9 @@ pub struct Outgoing {
     pub target_device_id: String,
     pub channel: i32,
     pub reliability: i32,
+    pub prefers_datagram: bool,
     #[serde(with = "serde_bytes")]
     pub payload: Vec<u8>,
-}
-
-impl Outgoing {
-    pub fn datagram_payload(&self) -> &[u8] {
-        self.payload.get(4..).unwrap_or(&[])
-    }
 }
 
 #[derive(Debug, Default, Clone, Serialize)]

@@ -23,6 +23,11 @@ fn catch_ptr<T, F: FnOnce() -> *mut T>(f: F) -> *mut T {
 }
 
 #[inline]
+fn catch_usize<F: FnOnce() -> usize>(f: F) -> usize {
+    catch_unwind(AssertUnwindSafe(f)).unwrap_or(0)
+}
+
+#[inline]
 fn catch_void<F: FnOnce()>(f: F) {
     let _ = catch_unwind(AssertUnwindSafe(f));
 }

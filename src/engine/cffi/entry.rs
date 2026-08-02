@@ -9,9 +9,10 @@ use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::Command;
 use crate::engine::processing::Engine;
+use crate::framing::Framer;
 use crate::policy::EndpointMode;
 
-use super::{catch_bool, catch_i32, catch_ptr, catch_void};
+use super::{catch_bool, catch_i32, catch_ptr, catch_usize, catch_void};
 
 fn write_buf(buf: Vec<u8>, out_ptr: *mut *mut u8, out_len: *mut usize) {
     if out_ptr.is_null() || out_len.is_null() {
@@ -188,32 +189,6 @@ pub unsafe extern "C" fn bm_engine_process_incoming(
             return false;
         };
         let out = engine.process_incoming(in_slice(payload, payload_len));
-        match rmp_serde::to_vec_named(&out) {
-            Ok(buf) => {
-                write_buf(buf, out_ptr, out_len);
-                true
-            }
-            Err(_) => false,
-        }
-    })
-}
-
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn bm_engine_process_incoming_udp(
-    ptr_engine: *mut Engine,
-    payload: *const u8,
-    payload_len: usize,
-    out_ptr: *mut *mut u8,
-    out_len: *mut usize,
-) -> bool {
-    catch_bool(|| {
-        if out_ptr.is_null() || out_len.is_null() {
-            return false;
-        }
-        let Some(engine) = engine_mut(ptr_engine) else {
-            return false;
-        };
-        let out = engine.process_incoming_udp(in_slice(payload, payload_len));
         match rmp_serde::to_vec_named(&out) {
             Ok(buf) => {
                 write_buf(buf, out_ptr, out_len);
@@ -565,9 +540,48 @@ pub unsafe extern "C" fn bm_build_wire(
     })
 }
 
-/// Reads a frame that arrived without a length prefix, as a datagram does.
+fn framer_mut<'a>(ptr: *mut Framer) -> Option<&'a mut Framer> {
+    if ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { &mut *ptr })
+    }
+}
+
+/// The longest message the library will accept, for callers that want to pass
+/// it back to bm_framer_new rather than choose a limit of their own.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn bm_inspect_datagram(
+pub extern "C" fn bm_max_message_len() -> usize {
+    crate::framing::MAX_MESSAGE_LEN
+}
+
+/// Creates a framer that rejects messages longer than max_len. A limit above
+/// the library ceiling is clamped to it.
+#[unsafe(no_mangle)]
+pub extern "C" fn bm_framer_new(max_len: usize) -> *mut Framer {
+    catch_ptr(|| Box::into_raw(Box::new(Framer::with_max_len(max_len))))
+}
+
+/// The limit this framer was created with.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_framer_max_len(ptr: *mut Framer) -> usize {
+    catch_usize(|| framer_mut(ptr).map_or(0, |f| f.max_len()))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_framer_free(ptr: *mut Framer) {
+    catch_void(|| {
+        if !ptr.is_null() {
+            drop(unsafe { Box::from_raw(ptr) });
+        }
+    })
+}
+
+/// Feeds stream bytes and writes back every completed message, msgpack encoded
+/// as an array of byte strings. Returns false when the stream is unusable.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_framer_feed(
+    ptr: *mut Framer,
     data_ptr: *const u8,
     data_len: usize,
     out_ptr: *mut *mut u8,
@@ -577,14 +591,17 @@ pub unsafe extern "C" fn bm_inspect_datagram(
         if out_ptr.is_null() || out_len.is_null() {
             return false;
         }
-        let view = match crate::inspect::inspect_datagram(in_slice(data_ptr, data_len)) {
-            Ok(v) => v,
+        let Some(framer) = framer_mut(ptr) else {
+            return false;
+        };
+        let messages = match framer.feed(in_slice(data_ptr, data_len)) {
+            Ok(m) => m,
             Err(e) => {
                 crate::set_last_error(e);
                 return false;
             }
         };
-        match rmp_serde::to_vec_named(&view) {
+        match rmp_serde::to_vec_named(&messages) {
             Ok(buf) => {
                 write_buf(buf, out_ptr, out_len);
                 true
@@ -597,11 +614,20 @@ pub unsafe extern "C" fn bm_inspect_datagram(
     })
 }
 
-/// Serializes a msgpack encoded PacketView without the length prefix.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn bm_build_datagram(
-    view_ptr: *const u8,
-    view_len: usize,
+pub unsafe extern "C" fn bm_framer_reset(ptr: *mut Framer) {
+    catch_void(|| {
+        if let Some(framer) = framer_mut(ptr) {
+            framer.reset();
+        }
+    })
+}
+
+/// Writes a message with the length prefix a stream transport needs.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_frame(
+    data_ptr: *const u8,
+    data_len: usize,
     out_ptr: *mut *mut u8,
     out_len: *mut usize,
 ) -> bool {
@@ -609,23 +635,11 @@ pub unsafe extern "C" fn bm_build_datagram(
         if out_ptr.is_null() || out_len.is_null() {
             return false;
         }
-        let view: crate::inspect::PacketView =
-            match rmp_serde::from_slice(in_slice(view_ptr, view_len)) {
-                Ok(v) => v,
-                Err(e) => {
-                    crate::set_last_error(e);
-                    return false;
-                }
-            };
-        match crate::inspect::build_datagram(view) {
-            Ok(buf) => {
-                write_buf(buf, out_ptr, out_len);
-                true
-            }
-            Err(e) => {
-                crate::set_last_error(e);
-                false
-            }
-        }
+        write_buf(
+            crate::framing::frame(in_slice(data_ptr, data_len)),
+            out_ptr,
+            out_len,
+        );
+        true
     })
 }

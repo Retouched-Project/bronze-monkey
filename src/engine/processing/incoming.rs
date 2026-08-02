@@ -10,32 +10,32 @@ use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::{Event, ProcessOutput};
 use crate::engine::methods;
-use crate::engine::protocol::deserialize_packet;
+use crate::engine::protocol::deserialize_message;
 use crate::types::packet_type::PacketType;
 
 impl Engine {
-    pub fn process_incoming(&mut self, payload: &[u8]) -> ProcessOutput {
-        log::trace!("process_incoming payload len={}", payload.len());
+    /// Handles one message. A datagram is already one; a stream has to be run
+    /// through a [`crate::framing::Framer`] first.
+    pub fn process_incoming(&mut self, message: &[u8]) -> ProcessOutput {
+        log::trace!("process_incoming message len={}", message.len());
 
         let mut out = ProcessOutput::new();
-        if payload.is_empty() {
+        if message.is_empty() {
             return out;
         }
 
-        if payload.len() == 12 {
-            if let Some(handshake) =
-                crate::codec::externals::handshake::Handshake::from_bytes(payload)
-            {
-                out.events.push(Event::Handshake {
-                    current: handshake.current.to_u32(),
-                    minimum: handshake.minimum.to_u32(),
-                });
-                return out;
-            }
+        if let Some(handshake) =
+            crate::codec::externals::handshake::Handshake::from_message(message)
+        {
+            out.events.push(Event::Handshake {
+                current: handshake.current.to_u32(),
+                minimum: handshake.minimum.to_u32(),
+            });
+            return out;
         }
 
         let mut pkt = BMPacket::default();
-        match deserialize_packet(payload, &mut pkt) {
+        match deserialize_message(message, &mut pkt) {
             Ok(_) => {
                 self.handle_deserialized_packet(&pkt, &mut out);
             }
@@ -44,21 +44,6 @@ impl Engine {
             }
         }
         out
-    }
-
-    pub fn process_incoming_udp(&mut self, raw: &[u8]) -> ProcessOutput {
-        let len = raw.len();
-        if 4 + len <= 1024 {
-            let mut buf = [0u8; 1024];
-            buf[0..4].copy_from_slice(&(len as u32).to_le_bytes());
-            buf[4..4 + len].copy_from_slice(raw);
-            self.process_incoming(&buf[..4 + len])
-        } else {
-            let mut framed = Vec::with_capacity(4 + len);
-            framed.extend_from_slice(&(len as u32).to_le_bytes());
-            framed.extend_from_slice(raw);
-            self.process_incoming(&framed)
-        }
     }
 
     fn handle_deserialized_packet(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {

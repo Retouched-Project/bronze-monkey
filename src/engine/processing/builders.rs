@@ -22,7 +22,7 @@ use crate::codec::object::Object;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::events::Outgoing;
 use crate::engine::methods;
-use crate::engine::protocol::serialize_packet;
+use crate::engine::protocol::serialize_message;
 use crate::types::channel_type::ChannelType;
 use crate::types::control_mode::ControlMode;
 use crate::types::packet_type::PacketType;
@@ -590,6 +590,7 @@ impl Engine {
                 target_device_id: target.to_string(),
                 channel,
                 reliability: rel,
+                prefers_datagram: rel == BMReliability::Unreliable.code(),
                 payload: bytes,
             }],
             Err(e) => {
@@ -622,7 +623,7 @@ impl Engine {
             0,
             0,
         );
-        serialize_packet(&pkt).map_err(|e| e.to_string())
+        serialize_message(&pkt).map_err(|e| e.to_string())
     }
 
     pub(super) fn default_reliability_for_channel(channel: i32) -> i32 {
