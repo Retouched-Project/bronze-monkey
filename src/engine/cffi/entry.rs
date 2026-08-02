@@ -497,3 +497,135 @@ pub unsafe extern "C" fn bm_log_take(out_ptr: *mut *mut u8, out_len: *mut usize)
         }
     })
 }
+
+/// Reads a frame into a msgpack encoded WireView. Engine free: it allocates no
+/// sequence numbers and needs no registered device, so it can run alongside a
+/// live session without disturbing it.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_inspect_wire(
+    data_ptr: *const u8,
+    data_len: usize,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        let view = match crate::inspect::inspect(in_slice(data_ptr, data_len)) {
+            Ok(v) => v,
+            Err(e) => {
+                crate::set_last_error(e);
+                return false;
+            }
+        };
+        match rmp_serde::to_vec_named(&view) {
+            Ok(buf) => {
+                write_buf(buf, out_ptr, out_len);
+                true
+            }
+            Err(e) => {
+                crate::set_last_error(e);
+                false
+            }
+        }
+    })
+}
+
+/// Serializes a msgpack encoded WireView into wire bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_build_wire(
+    view_ptr: *const u8,
+    view_len: usize,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        let view: crate::inspect::WireView =
+            match rmp_serde::from_slice(in_slice(view_ptr, view_len)) {
+                Ok(v) => v,
+                Err(e) => {
+                    crate::set_last_error(e);
+                    return false;
+                }
+            };
+        match crate::inspect::build(view) {
+            Ok(buf) => {
+                write_buf(buf, out_ptr, out_len);
+                true
+            }
+            Err(e) => {
+                crate::set_last_error(e);
+                false
+            }
+        }
+    })
+}
+
+/// Reads a frame that arrived without a length prefix, as a datagram does.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_inspect_datagram(
+    data_ptr: *const u8,
+    data_len: usize,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        let view = match crate::inspect::inspect_datagram(in_slice(data_ptr, data_len)) {
+            Ok(v) => v,
+            Err(e) => {
+                crate::set_last_error(e);
+                return false;
+            }
+        };
+        match rmp_serde::to_vec_named(&view) {
+            Ok(buf) => {
+                write_buf(buf, out_ptr, out_len);
+                true
+            }
+            Err(e) => {
+                crate::set_last_error(e);
+                false
+            }
+        }
+    })
+}
+
+/// Serializes a msgpack encoded PacketView without the length prefix.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_build_datagram(
+    view_ptr: *const u8,
+    view_len: usize,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        let view: crate::inspect::PacketView =
+            match rmp_serde::from_slice(in_slice(view_ptr, view_len)) {
+                Ok(v) => v,
+                Err(e) => {
+                    crate::set_last_error(e);
+                    return false;
+                }
+            };
+        match crate::inspect::build_datagram(view) {
+            Ok(buf) => {
+                write_buf(buf, out_ptr, out_len);
+                true
+            }
+            Err(e) => {
+                crate::set_last_error(e);
+                false
+            }
+        }
+    })
+}

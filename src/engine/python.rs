@@ -110,7 +110,10 @@ impl BMEnginePy {
             2 => Some(EndpointMode::Controller),
             _ => None,
         };
-        self.inner.write().unwrap().configure_roles(server_enabled, endpoint);
+        self.inner
+            .write()
+            .unwrap()
+            .configure_roles(server_enabled, endpoint);
     }
 
     fn drop_device<'py>(&self, py: Python<'py>, device_id: String) -> PyResult<Bound<'py, PyList>> {
@@ -972,6 +975,42 @@ impl SchemeAssemblerPy {
     }
 }
 
+/// Reads a frame into its described form. Engine free: it allocates no sequence
+/// numbers and needs no registered device, so it can run alongside a live
+/// session without disturbing it.
+#[pyfunction]
+fn inspect_wire<'py>(py: Python<'py>, data: &[u8]) -> PyResult<Bound<'py, PyAny>> {
+    let view = crate::inspect::inspect(data)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
+    Ok(pythonize(py, &view)?)
+}
+
+/// Serializes a described frame into wire bytes.
+#[pyfunction]
+fn build_wire<'py>(py: Python<'py>, view: Bound<'py, PyAny>) -> PyResult<Bound<'py, PyBytes>> {
+    let view: crate::inspect::WireView = depythonize(&view)?;
+    let bytes = crate::inspect::build(view)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
+    Ok(PyBytes::new(py, &bytes))
+}
+
+/// Reads a frame that arrived without a length prefix, as a datagram does.
+#[pyfunction]
+fn inspect_datagram<'py>(py: Python<'py>, data: &[u8]) -> PyResult<Bound<'py, PyAny>> {
+    let view = crate::inspect::inspect_datagram(data)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
+    Ok(pythonize(py, &view)?)
+}
+
+/// Serializes a described packet without the length prefix.
+#[pyfunction]
+fn build_datagram<'py>(py: Python<'py>, view: Bound<'py, PyAny>) -> PyResult<Bound<'py, PyBytes>> {
+    let view: crate::inspect::PacketView = depythonize(&view)?;
+    let bytes = crate::inspect::build_datagram(view)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
+    Ok(PyBytes::new(py, &bytes))
+}
+
 #[pymodule]
 #[pyo3(name = "bronze_monkey")]
 fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -982,6 +1021,10 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(serialize_invoke_packet, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_device_packet, m)?)?;
     m.add_function(wrap_pyfunction!(deserialize_packet_dict, m)?)?;
+    m.add_function(wrap_pyfunction!(inspect_wire, m)?)?;
+    m.add_function(wrap_pyfunction!(build_wire, m)?)?;
+    m.add_function(wrap_pyfunction!(inspect_datagram, m)?)?;
+    m.add_function(wrap_pyfunction!(build_datagram, m)?)?;
     m.add_function(wrap_pyfunction!(configure_logging, m)?)?;
     m.add_function(wrap_pyfunction!(set_log_level, m)?)?;
     m.add_function(wrap_pyfunction!(take_logs, m)?)?;

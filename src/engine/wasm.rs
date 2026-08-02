@@ -739,3 +739,35 @@ fn js_to_value(v: JsValue) -> Result<crate::codec::messages::bm_encoding::Value,
     }
     Err(JsError::new("unsupported JS value for BM encoding"))
 }
+
+/// Reads a frame into its described form. Engine free: it allocates no sequence
+/// numbers and needs no registered device, so it can run alongside a live
+/// session without disturbing it.
+#[wasm_bindgen]
+pub fn inspect_wire(data: &[u8]) -> Result<JsValue, JsError> {
+    let view = crate::inspect::inspect(data).map_err(|e| JsError::new(&e.to_string()))?;
+    to_js(&view)
+}
+
+/// Serializes a described frame into wire bytes.
+#[wasm_bindgen]
+pub fn build_wire(view: JsValue) -> Result<Vec<u8>, JsError> {
+    let view: crate::inspect::WireView =
+        serde_wasm_bindgen::from_value(view).map_err(|e| JsError::new(&e.to_string()))?;
+    crate::inspect::build(view).map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// Reads a frame that arrived without a length prefix, as a datagram does.
+#[wasm_bindgen]
+pub fn inspect_datagram(data: &[u8]) -> Result<JsValue, JsError> {
+    let view = crate::inspect::inspect_datagram(data).map_err(|e| JsError::new(&e.to_string()))?;
+    to_js(&view)
+}
+
+/// Serializes a described packet without the length prefix.
+#[wasm_bindgen]
+pub fn build_datagram(view: JsValue) -> Result<Vec<u8>, JsError> {
+    let view: crate::inspect::PacketView =
+        serde_wasm_bindgen::from_value(view).map_err(|e| JsError::new(&e.to_string()))?;
+    crate::inspect::build_datagram(view).map_err(|e| JsError::new(&e.to_string()))
+}

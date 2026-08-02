@@ -271,6 +271,24 @@ mod tests {
     }
 
     #[test]
+    fn msgpack_round_trips_the_view() {
+        // The C FFI hands these across as msgpack, with no compiler to catch a
+        // shape mismatch, so pin that the enum and its payload survive.
+        let view = WireView::Packet(Box::new(host_update()));
+        let packed = rmp_serde::to_vec_named(&view).unwrap();
+        let back: WireView = rmp_serde::from_slice(&packed).unwrap();
+        assert_eq!(build(back).unwrap(), build(view).unwrap());
+
+        let hs = WireView::Handshake {
+            current: BMVersion::new(1, 7, 0),
+            minimum: BMVersion::new(0, 9, 0),
+        };
+        let packed = rmp_serde::to_vec_named(&hs).unwrap();
+        let back: WireView = rmp_serde::from_slice(&packed).unwrap();
+        assert_eq!(build(back).unwrap(), build(hs).unwrap());
+    }
+
+    #[test]
     fn a_sensor_packet_round_trips_as_a_datagram() {
         // Sensor objects ride inside a packet like any other message, and go
         // out unreliable, so the datagram form is the one that matters.
