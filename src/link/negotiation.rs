@@ -22,6 +22,23 @@ pub enum LinkRole {
     Responder,
 }
 
+impl LinkRole {
+    pub fn code(self) -> i32 {
+        match self {
+            LinkRole::Initiator => 0,
+            LinkRole::Responder => 1,
+        }
+    }
+
+    pub fn from_code(v: i32) -> Option<Self> {
+        match v {
+            0 => Some(LinkRole::Initiator),
+            1 => Some(LinkRole::Responder),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum VersionCheck {
     Compatible,

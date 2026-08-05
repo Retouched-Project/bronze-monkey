@@ -10,6 +10,7 @@ use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::Command;
 use crate::engine::processing::Engine;
 use crate::link::framing::Framer;
+use crate::link::negotiation::{Handshaker, LinkRole};
 use crate::policy::EndpointMode;
 
 use super::{catch_bool, catch_i32, catch_ptr, catch_usize, catch_void};
@@ -641,5 +642,100 @@ pub unsafe extern "C" fn bm_frame(
             out_len,
         );
         true
+    })
+}
+
+fn handshaker_mut<'a>(ptr: *mut Handshaker) -> Option<&'a mut Handshaker> {
+    if ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { &mut *ptr })
+    }
+}
+
+/// Creates a version negotiator for one connection. role is 0 to speak first,
+/// 1 to wait and answer.
+#[unsafe(no_mangle)]
+pub extern "C" fn bm_handshaker_new(role: i32) -> *mut Handshaker {
+    catch_ptr(|| match LinkRole::from_code(role) {
+        Some(role) => Box::into_raw(Box::new(Handshaker::new(role))),
+        None => std::ptr::null_mut(),
+    })
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_handshaker_free(ptr: *mut Handshaker) {
+    catch_void(|| {
+        if !ptr.is_null() {
+            drop(unsafe { Box::from_raw(ptr) });
+        }
+    })
+}
+
+/// Writes what to send now that the connection is up. An empty result means
+/// there is nothing to send, which is the normal case for a responder.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_handshaker_on_connect(
+    ptr: *mut Handshaker,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        let Some(handshaker) = handshaker_mut(ptr) else {
+            return false;
+        };
+        write_buf(
+            handshaker.on_connect().unwrap_or_default(),
+            out_ptr,
+            out_len,
+        );
+        true
+    })
+}
+
+/// Classifies one message, writing back a msgpack encoded HandshakeOutcome.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_handshaker_on_message(
+    ptr: *mut Handshaker,
+    data_ptr: *const u8,
+    data_len: usize,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        let Some(handshaker) = handshaker_mut(ptr) else {
+            return false;
+        };
+        let outcome = handshaker.on_message(in_slice(data_ptr, data_len));
+        match rmp_serde::to_vec_named(&outcome) {
+            Ok(buf) => {
+                write_buf(buf, out_ptr, out_len);
+                true
+            }
+            Err(e) => {
+                crate::set_last_error(e);
+                false
+            }
+        }
+    })
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_handshaker_is_complete(ptr: *mut Handshaker) -> bool {
+    catch_bool(|| handshaker_mut(ptr).is_some_and(|h| h.is_complete()))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_handshaker_reset(ptr: *mut Handshaker) {
+    catch_void(|| {
+        if let Some(handshaker) = handshaker_mut(ptr) {
+            handshaker.reset();
+        }
     })
 }

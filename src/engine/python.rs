@@ -507,6 +507,7 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<BMEnginePy>()?;
     m.add_class::<SchemeAssemblerPy>()?;
     m.add_class::<FramerPy>()?;
+    m.add_class::<HandshakerPy>()?;
     m.add_function(wrap_pyfunction!(handshake, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_invoke_packet, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_device_packet, m)?)?;
@@ -820,4 +821,43 @@ fn now_ms_f64() -> f64 {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default();
     dur.as_millis() as f64
+}
+
+/// Tracks the version exchange for one connection.
+#[pyclass]
+pub struct HandshakerPy {
+    inner: RwLock<crate::link::negotiation::Handshaker>,
+}
+
+#[pymethods]
+impl HandshakerPy {
+    /// role is 0 to speak first, 1 to wait and answer.
+    #[new]
+    fn new(role: i32) -> PyResult<Self> {
+        let role = crate::link::negotiation::LinkRole::from_code(role)
+            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("unknown link role"))?;
+        Ok(Self {
+            inner: RwLock::new(crate::link::negotiation::Handshaker::new(role)),
+        })
+    }
+
+    /// What to send now the connection is up, empty when there is nothing.
+    fn on_connect<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
+        let bytes = self.inner.write().unwrap().on_connect().unwrap_or_default();
+        PyBytes::new(py, &bytes)
+    }
+
+    fn on_message<'py>(&self, py: Python<'py>, data: &[u8]) -> PyResult<Bound<'py, PyAny>> {
+        let outcome = self.inner.write().unwrap().on_message(data);
+        Ok(pythonize(py, &outcome)?)
+    }
+
+    #[getter]
+    fn is_complete(&self) -> bool {
+        self.inner.read().unwrap().is_complete()
+    }
+
+    fn reset(&self) {
+        self.inner.write().unwrap().reset();
+    }
 }

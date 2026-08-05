@@ -38,10 +38,6 @@ impl ProcessOutput {
 #[serde(tag = "type")]
 #[cfg_attr(target_arch = "wasm32", serde(rename_all_fields = "camelCase"))]
 pub enum Event {
-    Handshake {
-        current: u32,
-        minimum: u32,
-    },
     PeerSeen {
         record: DeviceRecord,
     },

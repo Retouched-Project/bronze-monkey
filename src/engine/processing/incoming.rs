@@ -24,16 +24,6 @@ impl Engine {
             return out;
         }
 
-        if let Some(handshake) =
-            crate::codec::externals::handshake::Handshake::from_message(message)
-        {
-            out.events.push(Event::Handshake {
-                current: handshake.current.to_u32(),
-                minimum: handshake.minimum.to_u32(),
-            });
-            return out;
-        }
-
         let mut pkt = BMPacket::default();
         match deserialize_message(message, &mut pkt) {
             Ok(_) => {

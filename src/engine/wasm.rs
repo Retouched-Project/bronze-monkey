@@ -359,3 +359,42 @@ pub fn max_message_len() -> usize {
 pub fn frame(message: &[u8]) -> Vec<u8> {
     crate::link::framing::frame(message)
 }
+
+/// Tracks the version exchange for one connection.
+#[wasm_bindgen]
+pub struct HandshakerWasm {
+    inner: crate::link::negotiation::Handshaker,
+}
+
+#[wasm_bindgen]
+impl HandshakerWasm {
+    /// role is 0 to speak first, 1 to wait and answer.
+    #[wasm_bindgen(constructor)]
+    pub fn new(role: i32) -> Result<HandshakerWasm, JsError> {
+        let role = crate::link::negotiation::LinkRole::from_code(role)
+            .ok_or_else(|| JsError::new("unknown link role"))?;
+        Ok(Self {
+            inner: crate::link::negotiation::Handshaker::new(role),
+        })
+    }
+
+    /// What to send now the connection is up, empty when there is nothing.
+    #[wasm_bindgen(js_name = onConnect)]
+    pub fn on_connect(&mut self) -> Vec<u8> {
+        self.inner.on_connect().unwrap_or_default()
+    }
+
+    #[wasm_bindgen(js_name = onMessage)]
+    pub fn on_message(&mut self, data: &[u8]) -> Result<JsValue, JsError> {
+        to_js(&self.inner.on_message(data))
+    }
+
+    #[wasm_bindgen(getter, js_name = isComplete)]
+    pub fn is_complete(&self) -> bool {
+        self.inner.is_complete()
+    }
+
+    pub fn reset(&mut self) {
+        self.inner.reset();
+    }
+}
