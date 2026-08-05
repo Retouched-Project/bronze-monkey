@@ -47,6 +47,8 @@ pub enum VersionCheck {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all_fields = "camelCase"))]
 pub enum HandshakeOutcome {
     Passthrough,
     Received {
