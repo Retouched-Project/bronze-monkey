@@ -330,7 +330,7 @@ mod tests {
     use crate::devices::device_core::DeviceCore;
     use crate::engine::device_registry::DeviceRecord;
     use crate::engine::protocol::{deserialize_message, deserialize_packet};
-    use crate::framing::{Framer, frame};
+    use crate::link::framing::{Framer, frame};
     use crate::types::device_type::DeviceType;
 
     fn engine_with_peer(peer: &str) -> Engine {

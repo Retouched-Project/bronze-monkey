@@ -294,7 +294,7 @@ pub fn build_wire(view: JsValue) -> Result<Vec<u8>, JsError> {
 /// Reassembles messages from a stream that arrives in arbitrary pieces.
 #[wasm_bindgen]
 pub struct FramerWasm {
-    inner: crate::framing::Framer,
+    inner: crate::link::framing::Framer,
 }
 
 #[wasm_bindgen]
@@ -303,9 +303,9 @@ impl FramerWasm {
     /// left out. A limit above that ceiling is clamped to it.
     #[wasm_bindgen(constructor)]
     pub fn new(max_len: Option<u32>) -> Self {
-        let max_len = max_len.map_or(crate::framing::MAX_MESSAGE_LEN, |n| n as usize);
+        let max_len = max_len.map_or(crate::link::framing::MAX_MESSAGE_LEN, |n| n as usize);
         Self {
-            inner: crate::framing::Framer::with_max_len(max_len),
+            inner: crate::link::framing::Framer::with_max_len(max_len),
         }
     }
 
@@ -351,11 +351,11 @@ impl Default for FramerWasm {
 /// The longest message the library will accept.
 #[wasm_bindgen]
 pub fn max_message_len() -> usize {
-    crate::framing::MAX_MESSAGE_LEN
+    crate::link::framing::MAX_MESSAGE_LEN
 }
 
 /// Writes a message with the length prefix a stream transport needs.
 #[wasm_bindgen]
 pub fn frame(message: &[u8]) -> Vec<u8> {
-    crate::framing::frame(message)
+    crate::link::framing::frame(message)
 }

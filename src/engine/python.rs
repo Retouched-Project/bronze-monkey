@@ -449,7 +449,7 @@ fn build_wire<'py>(py: Python<'py>, view: Bound<'py, PyAny>) -> PyResult<Bound<'
 /// Reassembles messages from a stream that arrives in arbitrary pieces.
 #[pyclass]
 pub struct FramerPy {
-    inner: RwLock<crate::framing::Framer>,
+    inner: RwLock<crate::link::framing::Framer>,
 }
 
 #[pymethods]
@@ -459,9 +459,9 @@ impl FramerPy {
     #[new]
     #[pyo3(signature = (max_len=None))]
     fn new(max_len: Option<usize>) -> Self {
-        let max_len = max_len.unwrap_or(crate::framing::MAX_MESSAGE_LEN);
+        let max_len = max_len.unwrap_or(crate::link::framing::MAX_MESSAGE_LEN);
         Self {
-            inner: RwLock::new(crate::framing::Framer::with_max_len(max_len)),
+            inner: RwLock::new(crate::link::framing::Framer::with_max_len(max_len)),
         }
     }
 
@@ -497,7 +497,7 @@ impl FramerPy {
 /// Writes a message with the length prefix a stream transport needs.
 #[pyfunction]
 fn frame<'py>(py: Python<'py>, message: &[u8]) -> Bound<'py, PyBytes> {
-    PyBytes::new(py, &crate::framing::frame(message))
+    PyBytes::new(py, &crate::link::framing::frame(message))
 }
 
 #[pymodule]
@@ -524,7 +524,7 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_control_scheme_xml, m)?)?;
     m.add_function(wrap_pyfunction!(version_info, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
-    m.add("MAX_MESSAGE_LEN", crate::framing::MAX_MESSAGE_LEN)?;
+    m.add("MAX_MESSAGE_LEN", crate::link::framing::MAX_MESSAGE_LEN)?;
     m.add("DEVICE_TYPE_ANY", DeviceType::Any.code())?;
     m.add("DEVICE_TYPE_UNITY", DeviceType::Unity.code())?;
     m.add("DEVICE_TYPE_IPHONE", DeviceType::IPhone.code())?;

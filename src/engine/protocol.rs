@@ -5,7 +5,7 @@ use crate::codec::Result;
 use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::externals::registry;
-use crate::framing::{LENGTH_PREFIX_LEN, MAX_MESSAGE_LEN};
+use crate::link::framing::{LENGTH_PREFIX_LEN, MAX_MESSAGE_LEN};
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
 
@@ -186,7 +186,7 @@ mod tests {
     fn an_oversized_message_is_rejected() {
         // The datagram path reaches deserialize_message without passing a
         // framer, so the cap has to hold here on its own.
-        let huge = vec![0u8; crate::framing::MAX_MESSAGE_LEN + 1];
+        let huge = vec![0u8; crate::link::framing::MAX_MESSAGE_LEN + 1];
         let mut decoded = BMPacket::default();
         assert!(deserialize_message(&huge, &mut decoded).is_err());
 

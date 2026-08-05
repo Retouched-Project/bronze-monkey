@@ -112,7 +112,7 @@ impl PacketView {
 
 /// Reads a message into its described form, deciding between a handshake and a
 /// packet the same way the engine does. A datagram is already a message; a
-/// stream has to be run through a [`crate::framing::Framer`] first.
+/// stream has to be run through a [`crate::link::framing::Framer`] first.
 pub fn inspect(message: &[u8]) -> Result<WireView> {
     if let Some(hs) = Handshake::from_message(message) {
         return Ok(WireView::Handshake {
@@ -214,8 +214,8 @@ mod tests {
     fn a_built_message_survives_a_stream() {
         // What build produces is what the framer yields back on the far side.
         let message = build(WireView::Packet(Box::new(host_update()))).unwrap();
-        let mut framer = crate::framing::Framer::new();
-        let out = framer.feed(&crate::framing::frame(&message)).unwrap();
+        let mut framer = crate::link::framing::Framer::new();
+        let out = framer.feed(&crate::link::framing::frame(&message)).unwrap();
         assert_eq!(out, vec![message]);
     }
 

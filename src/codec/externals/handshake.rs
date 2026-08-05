@@ -24,6 +24,7 @@ pub const MIN_MAJOR: u8 = 0;
 pub const MIN_MINOR: u8 = 9;
 pub const MIN_BUILD: u16 = 0;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Handshake {
     pub current: BMVersion,
     pub minimum: BMVersion,

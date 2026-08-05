@@ -15,7 +15,7 @@ use crate::types::packet_type::PacketType;
 
 impl Engine {
     /// Handles one message. A datagram is already one; a stream has to be run
-    /// through a [`crate::framing::Framer`] first.
+    /// through a [`crate::link::framing::Framer`] first.
     pub fn process_incoming(&mut self, message: &[u8]) -> ProcessOutput {
         log::trace!("process_incoming message len={}", message.len());
 

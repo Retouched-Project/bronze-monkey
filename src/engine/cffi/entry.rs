@@ -9,7 +9,7 @@ use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::Command;
 use crate::engine::processing::Engine;
-use crate::framing::Framer;
+use crate::link::framing::Framer;
 use crate::policy::EndpointMode;
 
 use super::{catch_bool, catch_i32, catch_ptr, catch_usize, catch_void};
@@ -552,7 +552,7 @@ fn framer_mut<'a>(ptr: *mut Framer) -> Option<&'a mut Framer> {
 /// it back to bm_framer_new rather than choose a limit of their own.
 #[unsafe(no_mangle)]
 pub extern "C" fn bm_max_message_len() -> usize {
-    crate::framing::MAX_MESSAGE_LEN
+    crate::link::framing::MAX_MESSAGE_LEN
 }
 
 /// Creates a framer that rejects messages longer than max_len. A limit above
@@ -636,7 +636,7 @@ pub unsafe extern "C" fn bm_frame(
             return false;
         }
         write_buf(
-            crate::framing::frame(in_slice(data_ptr, data_len)),
+            crate::link::framing::frame(in_slice(data_ptr, data_len)),
             out_ptr,
             out_len,
         );

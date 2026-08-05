@@ -3,11 +3,14 @@
 
 /*
  BMVersion packs the version fields into a 32-bit integer as follows:
- vInt = ((1 & 0xFF) << 24) | ((7 & 0xFF) << 16) | (0 & 0xFFFF)
+ vInt = ((major & 0xFF) << 24) | ((minor & 0xFF) << 16) | (build & 0xFFFF)
  The fields are:
  - Major: 8 bits (0-255)
  - Minor: 8 bits (0-255)
  - Build: 16 bits (0-65535)
+
+ The bytes are written in little-endian order, so the arrays below read back
+ to front.
 
  For example:
  Version 1.7.0 is represented as 0x01070000
@@ -19,8 +22,6 @@
  Minimum version 0.9.0 is represented as 0x00090000
  The resulting array is:
  [0x00, 0x00, 0x09, 0x00]
-
- The bytes are written in little-endian order.
 */
 
 use serde::{Deserialize, Serialize};
@@ -43,6 +44,11 @@ impl BMVersion {
 
     pub fn to_u32(&self) -> u32 {
         ((self.major as u32) << 24) | ((self.minor as u32) << 16) | (self.build as u32 & 0xFFFF)
+    }
+
+    pub fn is_at_least(&self, required: &BMVersion) -> bool {
+        self.major > required.major
+            || (self.major == required.major && self.minor >= required.minor)
     }
 
     pub fn from_u32(v: u32) -> Self {
