@@ -739,3 +739,25 @@ pub unsafe extern "C" fn bm_handshaker_reset(ptr: *mut Handshaker) {
         }
     })
 }
+
+/// Whether these bytes open a cross domain policy request.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_is_policy_request(data_ptr: *const u8, data_len: usize) -> bool {
+    catch_bool(|| crate::link::crossdomain::is_policy_request(in_slice(data_ptr, data_len)))
+}
+
+/// Writes the policy response to send back, NUL terminator included.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_policy_response(out_ptr: *mut *mut u8, out_len: *mut usize) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        write_buf(
+            crate::link::crossdomain::RESPONSE.to_vec(),
+            out_ptr,
+            out_len,
+        );
+        true
+    })
+}

@@ -500,6 +500,18 @@ fn frame<'py>(py: Python<'py>, message: &[u8]) -> Bound<'py, PyBytes> {
     PyBytes::new(py, &crate::link::framing::frame(message))
 }
 
+/// Whether these bytes open a cross domain policy request.
+#[pyfunction]
+fn is_policy_request(data: &[u8]) -> bool {
+    crate::link::crossdomain::is_policy_request(data)
+}
+
+/// The policy response to send back, NUL terminator included.
+#[pyfunction]
+fn policy_response<'py>(py: Python<'py>) -> Bound<'py, PyBytes> {
+    PyBytes::new(py, crate::link::crossdomain::RESPONSE)
+}
+
 #[pymodule]
 #[pyo3(name = "bronze_monkey")]
 fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -515,6 +527,8 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(inspect_wire, m)?)?;
     m.add_function(wrap_pyfunction!(build_wire, m)?)?;
     m.add_function(wrap_pyfunction!(frame, m)?)?;
+    m.add_function(wrap_pyfunction!(is_policy_request, m)?)?;
+    m.add_function(wrap_pyfunction!(policy_response, m)?)?;
     m.add_function(wrap_pyfunction!(configure_logging, m)?)?;
     m.add_function(wrap_pyfunction!(set_log_level, m)?)?;
     m.add_function(wrap_pyfunction!(take_logs, m)?)?;

@@ -8,6 +8,7 @@
 //! None of it can belong to the engine, which addresses peers by device id and
 //! so cannot speak until an identity exists.
 
+pub mod crossdomain;
 pub mod framing;
 pub mod negotiation;
 

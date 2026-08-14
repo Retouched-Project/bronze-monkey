@@ -398,3 +398,15 @@ impl HandshakerWasm {
         self.inner.reset();
     }
 }
+
+/// Whether these bytes open a cross domain policy request.
+#[wasm_bindgen(js_name = isPolicyRequest)]
+pub fn is_policy_request(data: &[u8]) -> bool {
+    crate::link::crossdomain::is_policy_request(data)
+}
+
+/// The policy response to send back, NUL terminator included.
+#[wasm_bindgen(js_name = policyResponse)]
+pub fn policy_response() -> Vec<u8> {
+    crate::link::crossdomain::RESPONSE.to_vec()
+}
