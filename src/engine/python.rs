@@ -512,6 +512,47 @@ fn policy_response<'py>(py: Python<'py>) -> Bound<'py, PyBytes> {
     PyBytes::new(py, crate::link::crossdomain::RESPONSE)
 }
 
+/// Watches the head of one connection for a policy request, for transports
+/// that hand over bytes rather than let them be peeked.
+#[pyclass]
+pub struct PolicySnifferPy {
+    inner: RwLock<crate::link::crossdomain::Sniffer>,
+}
+
+#[pymethods]
+impl PolicySnifferPy {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: RwLock::new(crate::link::crossdomain::Sniffer::new()),
+        }
+    }
+
+    /// Offers the next bytes off the wire.
+    fn feed<'py>(&self, py: Python<'py>, data: &[u8]) -> PyResult<Bound<'py, PyAny>> {
+        let sniff = self.inner.write().unwrap().feed(data);
+        Ok(pythonize(py, &sniff)?)
+    }
+
+    /// Whether the answer is still open. Once it is not, bytes can go straight
+    /// on and the sniffer can be skipped for the rest of the connection.
+    #[getter]
+    fn is_watching(&self) -> bool {
+        self.inner.read().unwrap().is_watching()
+    }
+
+    /// Whether the connection that just dropped was one we hung up on after
+    /// answering. Watches again either way.
+    fn hung_up(&self) -> bool {
+        self.inner.write().unwrap().hung_up()
+    }
+
+    /// Starts over, for a sniffer reused across connections.
+    fn reset(&self) {
+        self.inner.write().unwrap().reset();
+    }
+}
+
 #[pymodule]
 #[pyo3(name = "bronze_monkey")]
 fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -520,6 +561,7 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SchemeAssemblerPy>()?;
     m.add_class::<FramerPy>()?;
     m.add_class::<HandshakerPy>()?;
+    m.add_class::<PolicySnifferPy>()?;
     m.add_function(wrap_pyfunction!(handshake, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_invoke_packet, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_device_packet, m)?)?;

@@ -12,5 +12,6 @@ pub mod crossdomain;
 pub mod framing;
 pub mod negotiation;
 
+pub use crossdomain::{Sniff, Sniffer};
 pub use framing::{Framer, LENGTH_PREFIX_LEN, MAX_MESSAGE_LEN, frame};
 pub use negotiation::{HandshakeOutcome, Handshaker, LinkRole, VersionCheck};

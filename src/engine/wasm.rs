@@ -410,3 +410,50 @@ pub fn is_policy_request(data: &[u8]) -> bool {
 pub fn policy_response() -> Vec<u8> {
     crate::link::crossdomain::RESPONSE.to_vec()
 }
+
+/// Watches the head of one connection for a policy request, for transports
+/// that hand over bytes rather than let them be peeked.
+#[wasm_bindgen]
+pub struct PolicySnifferWasm {
+    inner: crate::link::crossdomain::Sniffer,
+}
+
+#[wasm_bindgen]
+impl PolicySnifferWasm {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {
+            inner: crate::link::crossdomain::Sniffer::new(),
+        }
+    }
+
+    /// Offers the next bytes off the wire.
+    pub fn feed(&mut self, data: &[u8]) -> Result<JsValue, JsError> {
+        to_js(&self.inner.feed(data))
+    }
+
+    /// Whether the answer is still open. Once it is not, bytes can go straight
+    /// on and the sniffer can be skipped for the rest of the connection.
+    #[wasm_bindgen(getter, js_name = isWatching)]
+    pub fn is_watching(&self) -> bool {
+        self.inner.is_watching()
+    }
+
+    /// Whether the connection that just dropped was one we hung up on after
+    /// answering. Watches again either way.
+    #[wasm_bindgen(js_name = hungUp)]
+    pub fn hung_up(&mut self) -> bool {
+        self.inner.hung_up()
+    }
+
+    /// Starts over, for a sniffer reused across connections.
+    pub fn reset(&mut self) {
+        self.inner.reset();
+    }
+}
+
+impl Default for PolicySnifferWasm {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -9,6 +9,7 @@ use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::Command;
 use crate::engine::processing::Engine;
+use crate::link::crossdomain::Sniffer;
 use crate::link::framing::Framer;
 use crate::link::negotiation::{Handshaker, LinkRole};
 use crate::policy::EndpointMode;
@@ -759,5 +760,81 @@ pub unsafe extern "C" fn bm_policy_response(out_ptr: *mut *mut u8, out_len: *mut
             out_len,
         );
         true
+    })
+}
+
+fn sniffer_mut<'a>(ptr: *mut Sniffer) -> Option<&'a mut Sniffer> {
+    if ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { &mut *ptr })
+    }
+}
+
+/// Creates a sniffer that watches the head of one connection for a policy
+/// request, for transports that hand over bytes rather than let them be peeked.
+#[unsafe(no_mangle)]
+pub extern "C" fn bm_policy_sniffer_new() -> *mut Sniffer {
+    catch_ptr(|| Box::into_raw(Box::new(Sniffer::new())))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_policy_sniffer_free(ptr: *mut Sniffer) {
+    catch_void(|| {
+        if !ptr.is_null() {
+            drop(unsafe { Box::from_raw(ptr) });
+        }
+    })
+}
+
+/// Offers the next bytes off the wire, writing back a msgpack encoded Sniff.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_policy_sniffer_feed(
+    ptr: *mut Sniffer,
+    data_ptr: *const u8,
+    data_len: usize,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        let Some(sniffer) = sniffer_mut(ptr) else {
+            return false;
+        };
+        let sniff = sniffer.feed(in_slice(data_ptr, data_len));
+        match rmp_serde::to_vec_named(&sniff) {
+            Ok(buf) => {
+                write_buf(buf, out_ptr, out_len);
+                true
+            }
+            Err(e) => {
+                crate::set_last_error(e);
+                false
+            }
+        }
+    })
+}
+
+/// Whether the answer is still open. Once it is not, bytes can go straight on.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_policy_sniffer_is_watching(ptr: *mut Sniffer) -> bool {
+    catch_bool(|| sniffer_mut(ptr).is_some_and(|s| s.is_watching()))
+}
+
+/// Whether the connection that just dropped was one we hung up on after
+/// answering. Watches again either way.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_policy_sniffer_hung_up(ptr: *mut Sniffer) -> bool {
+    catch_bool(|| sniffer_mut(ptr).is_some_and(|s| s.hung_up()))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_policy_sniffer_reset(ptr: *mut Sniffer) {
+    catch_void(|| {
+        if let Some(sniffer) = sniffer_mut(ptr) {
+            sniffer.reset();
+        }
     })
 }
