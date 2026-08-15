@@ -739,6 +739,57 @@ pub unsafe extern "C" fn bm_handshaker_reset(ptr: *mut Handshaker) {
     })
 }
 
+fn write_code_table(
+    table: std::collections::BTreeMap<&'static str, i32>,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> bool {
+    if out_ptr.is_null() || out_len.is_null() {
+        return false;
+    }
+    match rmp_serde::to_vec_named(&table) {
+        Ok(buf) => {
+            write_buf(buf, out_ptr, out_len);
+            true
+        }
+        Err(e) => {
+            crate::set_last_error(e);
+            false
+        }
+    }
+}
+
+/// Writes the device type codes as a msgpack map, for callers building a frame
+/// by hand. The engine surface never asks for one.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_device_type_codes(out_ptr: *mut *mut u8, out_len: *mut usize) -> bool {
+    catch_bool(|| {
+        write_code_table(
+            crate::types::device_type::DeviceType::ALL
+                .iter()
+                .map(|k| (k.label(), k.code()))
+                .collect(),
+            out_ptr,
+            out_len,
+        )
+    })
+}
+
+/// Writes the packet type codes as a msgpack map.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_packet_type_codes(out_ptr: *mut *mut u8, out_len: *mut usize) -> bool {
+    catch_bool(|| {
+        write_code_table(
+            crate::types::packet_type::PacketType::ALL
+                .iter()
+                .map(|k| (k.label(), k.code()))
+                .collect(),
+            out_ptr,
+            out_len,
+        )
+    })
+}
+
 /// Whether these bytes open a cross domain policy request.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn bm_is_policy_request(data_ptr: *const u8, data_len: usize) -> bool {

@@ -16,6 +16,27 @@ pub enum PacketType {
 }
 
 impl PacketType {
+    /// Every packet type, for callers that publish the whole table.
+    pub const ALL: [PacketType; 6] = [
+        PacketType::Data,
+        PacketType::Ping,
+        PacketType::Ack,
+        PacketType::Echo,
+        PacketType::Analysis,
+        PacketType::KeepAlive,
+    ];
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            PacketType::Data => "DATA",
+            PacketType::Ping => "PING",
+            PacketType::Ack => "ACK",
+            PacketType::Echo => "ECHO",
+            PacketType::Analysis => "ANALYSIS",
+            PacketType::KeepAlive => "KEEP_ALIVE",
+        }
+    }
+
     pub fn from_i32(v: i32) -> Option<Self> {
         match v {
             0 => Some(Self::Data),
@@ -61,3 +82,22 @@ impl std::fmt::Display for PacketTypeError {
 }
 
 impl std::error::Error for PacketTypeError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_table_lists_every_code_in_order() {
+        for (index, kind) in PacketType::ALL.iter().enumerate() {
+            assert_eq!(
+                kind.code(),
+                index as i32,
+                "{} is out of place",
+                kind.label()
+            );
+        }
+        // A variant added without updating ALL would leave this code reachable.
+        assert!(PacketType::from_i32(PacketType::ALL.len() as i32).is_none());
+    }
+}

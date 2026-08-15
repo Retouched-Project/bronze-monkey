@@ -396,6 +396,29 @@ impl HandshakerWasm {
     }
 }
 
+/// The device type codes, for callers building a frame by hand. The engine
+/// surface never asks for one.
+#[wasm_bindgen(js_name = deviceTypeCodes)]
+pub fn device_type_codes() -> Result<JsValue, JsError> {
+    let obj = js_sys::Object::new();
+    for kind in DeviceType::ALL {
+        js_sys::Reflect::set(&obj, &kind.label().into(), &kind.code().into())
+            .map_err(|_| JsError::new("could not build the device type table"))?;
+    }
+    Ok(obj.into())
+}
+
+/// The packet type codes, for callers building a frame by hand.
+#[wasm_bindgen(js_name = packetTypeCodes)]
+pub fn packet_type_codes() -> Result<JsValue, JsError> {
+    let obj = js_sys::Object::new();
+    for kind in crate::types::packet_type::PacketType::ALL {
+        js_sys::Reflect::set(&obj, &kind.label().into(), &kind.code().into())
+            .map_err(|_| JsError::new("could not build the packet type table"))?;
+    }
+    Ok(obj.into())
+}
+
 /// Whether these bytes open a cross domain policy request.
 #[wasm_bindgen(js_name = isPolicyRequest)]
 pub fn is_policy_request(data: &[u8]) -> bool {

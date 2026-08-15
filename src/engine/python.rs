@@ -346,26 +346,18 @@ fn deserialize_packet_dict<'py>(py: Python<'py>, data: &[u8]) -> PyResult<Bound<
 #[pyfunction]
 fn get_device_type_codes<'py>(py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
     let d = PyDict::new(py);
-    d.set_item("ANY", DeviceType::Any.code())?;
-    d.set_item("UNITY", DeviceType::Unity.code())?;
-    d.set_item("IPHONE", DeviceType::IPhone.code())?;
-    d.set_item("FLASH", DeviceType::Flash.code())?;
-    d.set_item("ANDROID", DeviceType::Android.code())?;
-    d.set_item("NATIVE", DeviceType::Native.code())?;
-    d.set_item("PALM", DeviceType::Palm.code())?;
-    d.set_item("SERVER", DeviceType::Server.code())?;
+    for kind in DeviceType::ALL {
+        d.set_item(kind.label(), kind.code())?;
+    }
     Ok(d)
 }
 
 #[pyfunction]
 fn get_packet_type_codes<'py>(py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
     let d = PyDict::new(py);
-    d.set_item("DATA", PacketType::Data.code())?;
-    d.set_item("PING", PacketType::Ping.code())?;
-    d.set_item("ACK", PacketType::Ack.code())?;
-    d.set_item("ECHO", PacketType::Echo.code())?;
-    d.set_item("ANALYSIS", PacketType::Analysis.code())?;
-    d.set_item("KEEP_ALIVE", PacketType::KeepAlive.code())?;
+    for kind in PacketType::ALL {
+        d.set_item(kind.label(), kind.code())?;
+    }
     Ok(d)
 }
 

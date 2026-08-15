@@ -47,6 +47,18 @@ impl std::fmt::Display for DeviceTypeError {
 impl std::error::Error for DeviceTypeError {}
 
 impl DeviceType {
+    /// Every device type, for callers that publish the whole table.
+    pub const ALL: [DeviceType; 8] = [
+        DeviceType::Any,
+        DeviceType::Unity,
+        DeviceType::IPhone,
+        DeviceType::Flash,
+        DeviceType::Android,
+        DeviceType::Native,
+        DeviceType::Palm,
+        DeviceType::Server,
+    ];
+
     pub fn code(self) -> i32 {
         match self {
             DeviceType::Any => 0,
@@ -91,5 +103,24 @@ impl DeviceType {
 impl std::fmt::Display for DeviceType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[DeviceType {}]", self.label())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_table_lists_every_code_in_order() {
+        for (index, kind) in DeviceType::ALL.iter().enumerate() {
+            assert_eq!(
+                kind.code(),
+                index as i32,
+                "{} is out of place",
+                kind.label()
+            );
+        }
+        // A variant added without updating ALL would leave this code reachable.
+        assert!(DeviceType::for_value(DeviceType::ALL.len() as i32).is_err());
     }
 }
