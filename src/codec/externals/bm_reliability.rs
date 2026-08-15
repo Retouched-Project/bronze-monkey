@@ -5,14 +5,16 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BMReliability {
     Unreliable = 0,
-    Reliable = 1,
+    ReliableUnordered = 1,
+    ReliableOrdered = 2,
 }
 
 impl BMReliability {
     pub fn from_i32(v: i32) -> Option<Self> {
         match v {
             0 => Some(Self::Unreliable),
-            1 => Some(Self::Reliable),
+            1 => Some(Self::ReliableUnordered),
+            2 => Some(Self::ReliableOrdered),
             _ => None,
         }
     }

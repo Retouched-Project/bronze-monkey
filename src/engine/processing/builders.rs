@@ -47,7 +47,7 @@ impl Engine {
             out.extend(self.make_object_packet(
                 target,
                 ChannelType::Bytes,
-                BMReliability::Reliable.code(),
+                BMReliability::ReliableUnordered.code(),
                 PacketType::Data,
                 Object::BMByteChunk(chunk),
             ));
@@ -114,7 +114,7 @@ impl Engine {
             Ok(msg) => self.make_packet(
                 target,
                 ChannelType::Message.value(),
-                Some(BMReliability::Reliable.code()),
+                Some(BMReliability::ReliableUnordered.code()),
                 PacketType::Data,
                 Some(msg),
             ),
@@ -148,7 +148,7 @@ impl Engine {
         self.make_object_packet(
             target,
             ChannelType::DPad,
-            BMReliability::Reliable.code(),
+            BMReliability::ReliableUnordered.code(),
             PacketType::Data,
             Object::DPadUpdate(DPadUpdate::new(x, y)),
         )
@@ -542,7 +542,7 @@ impl Engine {
         self.make_object_packet(
             target,
             ChannelType::Message,
-            BMReliability::Reliable.code(),
+            BMReliability::ReliableUnordered.code(),
             PacketType::Ack,
             Object::AckPacket(ack),
         )
@@ -633,10 +633,10 @@ impl Engine {
                 | ChannelType::Touch
                 | ChannelType::Gyro
                 | ChannelType::Orientation => BMReliability::Unreliable.code(),
-                _ => BMReliability::Reliable.code(),
+                _ => BMReliability::ReliableUnordered.code(),
             }
         } else {
-            BMReliability::Reliable.code()
+            BMReliability::ReliableUnordered.code()
         }
     }
 }
