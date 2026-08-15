@@ -12,17 +12,12 @@ use serde::Serialize;
 #[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct DeviceRecord {
     pub core: DeviceCore,
-    pub class_id: Option<u16>,
     pub info: Option<BMRegistryInfo>,
 }
 
 impl DeviceRecord {
-    pub fn new(core: DeviceCore, class_id: Option<u16>, info: Option<BMRegistryInfo>) -> Self {
-        Self {
-            core,
-            class_id,
-            info,
-        }
+    pub fn new(core: DeviceCore, info: Option<BMRegistryInfo>) -> Self {
+        Self { core, info }
     }
 
     pub fn device_id(&self) -> &str {

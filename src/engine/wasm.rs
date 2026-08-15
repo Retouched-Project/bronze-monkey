@@ -155,7 +155,7 @@ impl BmEngineWasm {
             unreliable_port,
             reliable_port,
         });
-        let record = DeviceRecord::new(core, None, None);
+        let record = DeviceRecord::new(core, None);
         self.inner.push_registry_update(record);
         Ok(())
     }
@@ -206,9 +206,6 @@ impl BmEngineWasm {
                 &record.core.device_type.code().into(),
             )
             .unwrap();
-            if let Some(class_id) = record.class_id {
-                js_sys::Reflect::set(&obj, &"classId".into(), &(class_id as i32).into()).unwrap();
-            }
             if let Some(addr) = &record.core.address {
                 let addr_obj = js_sys::Object::new();
                 js_sys::Reflect::set(&addr_obj, &"address".into(), &addr.address.clone().into())

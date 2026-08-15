@@ -91,7 +91,7 @@ impl EngineState {
                 info.max_players = existing.max_players;
             }
         }
-        let record = DeviceRecord::new(info.device.clone(), None, Some(info));
+        let record = DeviceRecord::new(info.device.clone(), Some(info));
         self.registry.upsert(record);
     }
 

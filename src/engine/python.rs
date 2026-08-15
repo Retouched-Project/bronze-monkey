@@ -172,7 +172,7 @@ impl BMEnginePy {
             unreliable_port,
             reliable_port,
         });
-        let record = DeviceRecord::new(core, None, None);
+        let record = DeviceRecord::new(core, None);
         eng.registry_mut().upsert(record);
     }
 
@@ -693,7 +693,6 @@ fn registry_info_to_py(py: Python<'_>, info: &BMRegistryInfo) -> PyResult<Py<PyA
 fn device_record_to_py(py: Python<'_>, rec: &DeviceRecord) -> PyResult<Py<PyAny>> {
     let d = PyDict::new(py);
     d.set_item("device", device_core_to_py(py, &rec.core)?)?;
-    d.set_item("class_id", rec.class_id.map(|c| c as i32))?;
     Ok(d.into())
 }
 

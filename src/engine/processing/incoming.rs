@@ -293,7 +293,7 @@ impl Engine {
             pkt.device_name.clone(),
             pkt.device_type,
         );
-        Some(DeviceRecord::new(core, None, None))
+        Some(DeviceRecord::new(core, None))
     }
 
     pub fn push_registry_update(&mut self, mut record: DeviceRecord) -> Option<Event> {

@@ -168,9 +168,7 @@ pub unsafe extern "C" fn bm_engine_register_device(
             Ok(c) => c,
             Err(_) => return false,
         };
-        engine
-            .registry_mut()
-            .upsert(DeviceRecord::new(core, None, None));
+        engine.registry_mut().upsert(DeviceRecord::new(core, None));
         true
     })
 }

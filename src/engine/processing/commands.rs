@@ -343,7 +343,6 @@ mod tests {
         eng.push_registry_update(DeviceRecord::new(
             DeviceCore::new(peer.to_string(), "Game".to_string(), DeviceType::Flash),
             None,
-            None,
         ));
         eng
     }
