@@ -153,14 +153,6 @@ impl Engine {
         let Some(target_id) = sender_id else {
             return;
         };
-        let viewer_type = engine
-            .state
-            .registry
-            .get(target_id)
-            .and_then(|r| r.info.as_ref())
-            .map(|r| r.device.device_type)
-            .unwrap_or(DeviceType::Server);
-
         let Some(reply) = Self::reply_method(inv.return_method.as_deref()) else {
             log::warn!(
                 "registry.list from '{target_id}' omitted a return method, not replying with host list"
@@ -170,7 +162,7 @@ impl Engine {
 
         let list_infos = engine
             .state
-            .registry_infos_for_viewer(viewer_type, &engine.server_policy.hidden_hosts);
+            .visible_host_infos(&engine.server_policy.hidden_hosts);
         let mut arr = BMArray::default();
         for r in list_infos {
             arr.push(Value::Object(Object::BMRegistryInfo(r)));

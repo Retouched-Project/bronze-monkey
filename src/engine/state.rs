@@ -95,32 +95,85 @@ impl EngineState {
         self.registry.upsert(record);
     }
 
-    pub(crate) fn registry_infos_for_viewer(
-        &self,
-        viewer_type: DeviceType,
-        hidden_hosts: &HashSet<String>,
-    ) -> Vec<BMRegistryInfo> {
-        let viewer_is_game = matches!(
-            viewer_type,
-            DeviceType::Flash | DeviceType::Unity | DeviceType::Native
-        );
+    /// The hosts a registry list answers with, whoever asked. A list carries
+    /// hosts and nothing else.
+    ///
+    /// A host that has hidden itself is left out for everyone, including
+    /// itself.
+    pub(crate) fn visible_host_infos(&self, hidden_hosts: &HashSet<String>) -> Vec<BMRegistryInfo> {
         let mut out = Vec::new();
         for rec in self.registry.snapshot() {
             let Some(info) = rec.info else {
                 continue;
             };
-            let is_game = matches!(
+            let is_host = matches!(
                 info.device.device_type,
                 DeviceType::Flash | DeviceType::Unity | DeviceType::Native
             );
-            if viewer_is_game {
-                if !is_game && info.device.device_type != DeviceType::Server {
-                    out.push(info);
-                }
-            } else if is_game && !hidden_hosts.contains(&info.device.device_id) {
+            if is_host && !hidden_hosts.contains(&info.device.device_id) {
                 out.push(info);
             }
         }
         out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::devices::bm_address::BMAddress;
+
+    fn registered(id: &str, kind: DeviceType) -> DeviceRecord {
+        let device = DeviceCore::new(id.to_string(), id.to_string(), kind);
+        let info = BMRegistryInfo {
+            slot_id: 0,
+            app_id: "app".to_string(),
+            current_players: None,
+            max_players: None,
+            device: device.clone(),
+            device_address: BMAddress::new("10.0.0.2".to_string(), 9080, 9081),
+        };
+        DeviceRecord::new(device, Some(info))
+    }
+
+    fn ids(infos: &[BMRegistryInfo]) -> Vec<&str> {
+        infos.iter().map(|i| i.device.device_id.as_str()).collect()
+    }
+
+    #[test]
+    fn a_list_carries_hosts_and_leaves_controllers_out() {
+        let mut state = EngineState::new();
+        state
+            .registry
+            .upsert(registered("flash", DeviceType::Flash));
+        state
+            .registry
+            .upsert(registered("unity", DeviceType::Unity));
+        state
+            .registry
+            .upsert(registered("native", DeviceType::Native));
+        state
+            .registry
+            .upsert(registered("phone", DeviceType::Android));
+        state.registry.upsert(registered("reg", DeviceType::Server));
+
+        let infos = state.visible_host_infos(&HashSet::new());
+        let mut listed = ids(&infos);
+        listed.sort();
+        assert_eq!(listed, ["flash", "native", "unity"]);
+    }
+
+    #[test]
+    fn a_hidden_host_is_left_out() {
+        let mut state = EngineState::new();
+        state
+            .registry
+            .upsert(registered("shown", DeviceType::Unity));
+        state
+            .registry
+            .upsert(registered("hidden", DeviceType::Unity));
+        let hidden = HashSet::from(["hidden".to_string()]);
+
+        assert_eq!(ids(&state.visible_host_infos(&hidden)), ["shown"]);
     }
 }
