@@ -272,16 +272,7 @@ fn serialize_device_packet<'py>(
     packet_type_code: i32,
 ) -> PyResult<Bound<'py, PyBytes>> {
     let device_type = DeviceType::for_value(device_type_code).unwrap_or(DeviceType::Server);
-    let class_id = match device_type {
-        DeviceType::Flash => registry::BM_CLASS_ID_FLASH_DEVICE,
-        DeviceType::Unity => registry::BM_CLASS_ID_UNITY_DEVICE,
-        DeviceType::IPhone => registry::BM_CLASS_ID_IPHONE_DEVICE,
-        DeviceType::Android => registry::BM_CLASS_ID_ANDROID_DEVICE,
-        DeviceType::Native => registry::BM_CLASS_ID_NATIVE_DEVICE,
-        DeviceType::Palm => registry::BM_CLASS_ID_PALM_DEVICE,
-        DeviceType::Server => registry::BM_CLASS_ID_SERVER_DEVICE,
-        _ => registry::BM_CLASS_ID_FLASH_DEVICE,
-    };
+    let class_id = registry::class_id_for_device_type(device_type);
 
     let core = DeviceCore::new(device_id.clone(), device_name.clone(), device_type);
     let mut out = BMStream::new();

@@ -31,16 +31,26 @@ pub const BM_CLASS_ID_PALM_DEVICE: u32 = 16;
 pub const BM_CLASS_ID_SERVER_DEVICE: u32 = 17;
 pub const BM_CLASS_ID_FLASH_DEVICE: u32 = 18;
 
+/// The class id to write in front of a device of this type.
+///
+/// A device carries its type in its own body, so the class id beside it tags
+/// the serialization class rather than repeating the type, and a reader takes
+/// the type from the body.
+///
+/// No class exists for a device of no particular type, so [`DeviceType::Any`]
+/// borrows the Palm one. Not every reader knows every class, and a reader that
+/// meets one it does not know gives up on the whole message rather than the one
+/// field, so the choice is whichever class the most readers accept. Palm is
+/// among those, and no live platform claims it.
 pub fn class_id_for_device_type(dt: DeviceType) -> u32 {
     match dt {
         DeviceType::Flash => BM_CLASS_ID_FLASH_DEVICE,
+        DeviceType::Palm | DeviceType::Any => BM_CLASS_ID_PALM_DEVICE,
         DeviceType::Unity => BM_CLASS_ID_UNITY_DEVICE,
         DeviceType::IPhone => BM_CLASS_ID_IPHONE_DEVICE,
         DeviceType::Android => BM_CLASS_ID_ANDROID_DEVICE,
         DeviceType::Native => BM_CLASS_ID_NATIVE_DEVICE,
-        DeviceType::Palm => BM_CLASS_ID_PALM_DEVICE,
         DeviceType::Server => BM_CLASS_ID_SERVER_DEVICE,
-        _ => BM_CLASS_ID_FLASH_DEVICE,
     }
 }
 
@@ -120,4 +130,52 @@ pub unsafe extern "C" fn bm_registry_name(id: u32, out: *mut c_char, out_len: us
         *out.add(n) = 0;
     }
     n
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_device_type_is_written_with_a_device_class() {
+        let device_classes = [
+            BM_CLASS_ID_IPHONE_DEVICE,
+            BM_CLASS_ID_UNITY_DEVICE,
+            BM_CLASS_ID_ANDROID_DEVICE,
+            BM_CLASS_ID_NATIVE_DEVICE,
+            BM_CLASS_ID_PALM_DEVICE,
+            BM_CLASS_ID_SERVER_DEVICE,
+            BM_CLASS_ID_FLASH_DEVICE,
+        ];
+        for kind in DeviceType::ALL {
+            let id = class_id_for_device_type(kind);
+            assert!(
+                device_classes.contains(&id),
+                "{} was written with class {id}, which is not a device",
+                kind.label()
+            );
+        }
+    }
+
+    #[test]
+    fn a_device_of_no_particular_type_borrows_the_palm_class() {
+        assert_eq!(
+            class_id_for_device_type(DeviceType::Any),
+            BM_CLASS_ID_PALM_DEVICE
+        );
+    }
+
+    /// Three device classes are missing from at least one reader in the wild,
+    /// and meeting an unknown class costs that reader the whole message. A type
+    /// we cannot name exactly must not be written with one of those.
+    #[test]
+    fn an_unnamed_device_type_is_written_with_a_widely_known_class() {
+        let known_everywhere = [
+            BM_CLASS_ID_IPHONE_DEVICE,
+            BM_CLASS_ID_UNITY_DEVICE,
+            BM_CLASS_ID_ANDROID_DEVICE,
+            BM_CLASS_ID_PALM_DEVICE,
+        ];
+        assert!(known_everywhere.contains(&class_id_for_device_type(DeviceType::Any)));
+    }
 }
