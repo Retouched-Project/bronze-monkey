@@ -261,10 +261,12 @@ pub unsafe extern "C" fn bm_engine_configure_roles(
         let Some(engine) = engine_mut(ptr_engine) else {
             return false;
         };
-        let endpoint = match endpoint_mode {
-            1 => Some(EndpointMode::Game),
-            2 => Some(EndpointMode::Controller),
-            _ => None,
+        let endpoint = match EndpointMode::from_code(endpoint_mode) {
+            Ok(endpoint) => endpoint,
+            Err(e) => {
+                crate::set_last_error(e);
+                return false;
+            }
         };
         engine.configure_roles(server_enabled, endpoint);
         true

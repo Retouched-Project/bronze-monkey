@@ -119,16 +119,14 @@ impl BMEnginePy {
         Ok(())
     }
 
-    fn configure_roles(&self, server_enabled: bool, endpoint_mode: i32) {
-        let endpoint = match endpoint_mode {
-            1 => Some(EndpointMode::Game),
-            2 => Some(EndpointMode::Controller),
-            _ => None,
-        };
+    fn configure_roles(&self, server_enabled: bool, endpoint_mode: i32) -> PyResult<()> {
+        let endpoint = EndpointMode::from_code(endpoint_mode)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
         self.inner
             .write()
             .unwrap()
             .configure_roles(server_enabled, endpoint);
+        Ok(())
     }
 
     fn drop_device<'py>(&self, py: Python<'py>, device_id: String) -> PyResult<Bound<'py, PyList>> {

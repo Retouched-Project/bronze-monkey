@@ -17,6 +17,41 @@ pub enum EndpointMode {
     Controller,
 }
 
+impl EndpointMode {
+    pub const NONE_CODE: i32 = 0;
+
+    pub fn code(self) -> i32 {
+        match self {
+            EndpointMode::Game => 1,
+            EndpointMode::Controller => 2,
+        }
+    }
+
+    pub fn from_code(v: i32) -> Result<Option<Self>, EndpointModeError> {
+        match v {
+            Self::NONE_CODE => Ok(None),
+            1 => Ok(Some(EndpointMode::Game)),
+            2 => Ok(Some(EndpointMode::Controller)),
+            _ => Err(EndpointModeError::OutOfRange(v)),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum EndpointModeError {
+    OutOfRange(i32),
+}
+
+impl std::fmt::Display for EndpointModeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EndpointModeError::OutOfRange(v) => write!(f, "EndpointMode out of range: {v}"),
+        }
+    }
+}
+
+impl std::error::Error for EndpointModeError {}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct ActiveRoles {
     pub server: bool,
@@ -55,5 +90,33 @@ impl ActiveRoles {
 
     pub fn controller(&self) -> bool {
         self.endpoint == Some(EndpointMode::Controller)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn each_endpoint_role_survives_a_round_trip() {
+        for mode in [EndpointMode::Game, EndpointMode::Controller] {
+            assert_eq!(EndpointMode::from_code(mode.code()), Ok(Some(mode)));
+        }
+    }
+
+    #[test]
+    fn taking_no_endpoint_role_has_a_code_of_its_own() {
+        assert_eq!(EndpointMode::from_code(EndpointMode::NONE_CODE), Ok(None));
+    }
+
+    #[test]
+    fn an_unreadable_code_is_refused_rather_than_dropped() {
+        for code in [-1, 3, 99] {
+            assert_eq!(
+                EndpointMode::from_code(code),
+                Err(EndpointModeError::OutOfRange(code)),
+                "{code} should not have been accepted"
+            );
+        }
     }
 }
