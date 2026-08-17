@@ -61,6 +61,17 @@ fn generate_app_id() -> String {
     crate::identity::generate_app_id()
 }
 
+fn device_type_from_code(code: i32) -> PyResult<DeviceType> {
+    DeviceType::for_value(code)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))
+}
+
+fn packet_type_from_code(code: i32) -> PyResult<PacketType> {
+    PacketType::from_i32(code).ok_or_else(|| {
+        PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("unknown packet type: {code}"))
+    })
+}
+
 #[pyclass]
 pub struct BMEnginePy {
     inner: RwLock<Engine>,
@@ -75,11 +86,16 @@ impl BMEnginePy {
         }
     }
 
-    fn init_local_device(&self, device_id: String, device_name: String, device_type: i32) {
+    fn init_local_device(
+        &self,
+        device_id: String,
+        device_name: String,
+        device_type: i32,
+    ) -> PyResult<()> {
+        let dt = device_type_from_code(device_type)?;
         let mut eng = self.inner.write().unwrap();
-        let dt = DeviceType::for_value(device_type).unwrap_or(DeviceType::Server);
-        let core = DeviceCore::new(device_id, device_name, dt);
-        eng.init_local_device(core);
+        eng.init_local_device(DeviceCore::new(device_id, device_name, dt));
+        Ok(())
     }
 
     fn init_local_device_with_address(
@@ -90,9 +106,9 @@ impl BMEnginePy {
         address: String,
         unreliable_port: i32,
         reliable_port: i32,
-    ) {
+    ) -> PyResult<()> {
+        let dt = device_type_from_code(device_type)?;
         let mut eng = self.inner.write().unwrap();
-        let dt = DeviceType::for_value(device_type).unwrap_or(DeviceType::Server);
         let mut core = DeviceCore::new(device_id, device_name, dt);
         core.address = Some(BMAddress {
             address,
@@ -100,6 +116,7 @@ impl BMEnginePy {
             reliable_port,
         });
         eng.init_local_device(core);
+        Ok(())
     }
 
     fn configure_roles(&self, server_enabled: bool, endpoint_mode: i32) {
@@ -163,17 +180,17 @@ impl BMEnginePy {
         address: String,
         unreliable_port: i32,
         reliable_port: i32,
-    ) {
+    ) -> PyResult<()> {
+        let dt = device_type_from_code(device_type)?;
         let mut eng = self.inner.write().unwrap();
-        let dt = DeviceType::for_value(device_type).unwrap_or(DeviceType::Server);
         let mut core = DeviceCore::new(device_id, device_name, dt);
         core.address = Some(BMAddress {
             address,
             unreliable_port,
             reliable_port,
         });
-        let record = DeviceRecord::new(core, None);
-        eng.registry_mut().upsert(record);
+        eng.registry_mut().upsert(DeviceRecord::new(core, None));
+        Ok(())
     }
 
     fn set_auto_approve_registration(&self, value: bool) {
@@ -246,8 +263,8 @@ fn serialize_invoke_packet<'py>(
         channel,
         timestamp: now_ms_f64(),
         rtt: 0.0,
-        packet_type: PacketType::from_i32(packet_type_code).unwrap_or(PacketType::Data),
-        device_type: DeviceType::for_value(device_type_code).unwrap_or(DeviceType::Server),
+        packet_type: packet_type_from_code(packet_type_code)?,
+        device_type: device_type_from_code(device_type_code)?,
         device_name,
         device_id,
         message: Some(message_bytes),
@@ -271,7 +288,7 @@ fn serialize_device_packet<'py>(
     channel: i32,
     packet_type_code: i32,
 ) -> PyResult<Bound<'py, PyBytes>> {
-    let device_type = DeviceType::for_value(device_type_code).unwrap_or(DeviceType::Server);
+    let device_type = device_type_from_code(device_type_code)?;
     let class_id = registry::class_id_for_device_type(device_type);
 
     let core = DeviceCore::new(device_id.clone(), device_name.clone(), device_type);
@@ -290,7 +307,7 @@ fn serialize_device_packet<'py>(
         channel,
         timestamp: now_ms_f64(),
         rtt: 0.0,
-        packet_type: PacketType::from_i32(packet_type_code).unwrap_or(PacketType::Data),
+        packet_type: packet_type_from_code(packet_type_code)?,
         device_type,
         device_name,
         device_id,
@@ -828,7 +845,7 @@ fn dict_to_registry_info(d: &Bound<'_, PyDict>) -> PyResult<BMRegistryInfo> {
     let dev_id = opt_string(dev_dict.get_item("id")?)?.unwrap_or_default();
     let dev_name = opt_string(dev_dict.get_item("name")?)?.unwrap_or_default();
     let dev_type_code = opt_i32(dev_dict.get_item("device_type")?)?.unwrap_or(0);
-    let dev_type = DeviceType::for_value(dev_type_code).unwrap_or(DeviceType::Server);
+    let dev_type = device_type_from_code(dev_type_code)?;
 
     let addr_any = d
         .get_item("device_address")?
