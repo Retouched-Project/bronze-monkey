@@ -12,19 +12,19 @@ pub use game::GamePolicy;
 pub use server::ServerPolicy;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen)]
+#[cfg_attr(feature = "pyo3", pyo3::pyclass(eq, eq_int, from_py_object))]
+#[repr(i32)]
 pub enum EndpointMode {
-    Game,
-    Controller,
+    Game = 1,
+    Controller = 2,
 }
 
 impl EndpointMode {
     pub const NONE_CODE: i32 = 0;
 
     pub fn code(self) -> i32 {
-        match self {
-            EndpointMode::Game => 1,
-            EndpointMode::Controller => 2,
-        }
+        self as i32
     }
 
     pub fn from_code(v: i32) -> Result<Option<Self>, EndpointModeError> {

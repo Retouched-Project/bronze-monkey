@@ -164,15 +164,8 @@ impl BmEngineWasm {
         self.inner.server_policy.auto_approve_registration = value;
     }
 
-    pub fn configure_roles(
-        &mut self,
-        server_enabled: bool,
-        endpoint_mode: i32,
-    ) -> Result<(), JsError> {
-        let endpoint =
-            EndpointMode::from_code(endpoint_mode).map_err(|e| JsError::new(&e.to_string()))?;
-        self.inner.configure_roles(server_enabled, endpoint);
-        Ok(())
+    pub fn configure_roles(&mut self, server_enabled: bool, endpoint_mode: Option<EndpointMode>) {
+        self.inner.configure_roles(server_enabled, endpoint_mode);
     }
 
     pub fn approve_registration(&mut self, device_id: &str) -> Result<JsValue, JsError> {

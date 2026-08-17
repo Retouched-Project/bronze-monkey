@@ -119,14 +119,12 @@ impl BMEnginePy {
         Ok(())
     }
 
-    fn configure_roles(&self, server_enabled: bool, endpoint_mode: i32) -> PyResult<()> {
-        let endpoint = EndpointMode::from_code(endpoint_mode)
-            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
+    #[pyo3(signature = (server_enabled, endpoint_mode=None))]
+    fn configure_roles(&self, server_enabled: bool, endpoint_mode: Option<EndpointMode>) {
         self.inner
             .write()
             .unwrap()
-            .configure_roles(server_enabled, endpoint);
-        Ok(())
+            .configure_roles(server_enabled, endpoint_mode);
     }
 
     fn drop_device<'py>(&self, py: Python<'py>, device_id: String) -> PyResult<Bound<'py, PyList>> {
@@ -560,6 +558,7 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<FramerPy>()?;
     m.add_class::<HandshakerPy>()?;
     m.add_class::<PolicySnifferPy>()?;
+    m.add_class::<EndpointMode>()?;
     m.add_function(wrap_pyfunction!(handshake, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_invoke_packet, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_device_packet, m)?)?;
