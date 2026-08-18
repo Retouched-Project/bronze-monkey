@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+use crate::config::EngineConfig;
 use crate::controls::assembler::SchemeAssembler;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::Command;
-use crate::policy::EndpointMode;
 use crate::types::device_type::DeviceType;
 use console_error_panic_hook;
 use js_sys;
@@ -160,31 +160,13 @@ impl BmEngineWasm {
         Ok(())
     }
 
-    pub fn set_auto_approve_registration(&mut self, value: bool) {
-        self.inner.server_policy.auto_approve_registration = value;
-    }
-
-    pub fn configure_roles(&mut self, server_enabled: bool, endpoint_mode: Option<EndpointMode>) {
-        self.inner.configure_roles(server_enabled, endpoint_mode);
-    }
-
-    /// Hands the engine what this controller is, and lets it open sessions.
-    #[wasm_bindgen(js_name = openSessionsAutomatically)]
-    pub fn open_sessions_automatically(
-        &mut self,
-        gyroscope: bool,
-        orientation: bool,
-        width: i32,
-        height: i32,
-    ) {
+    /// Everything this engine is told about itself, all at once.
+    pub fn configure(&mut self, config: JsValue) -> Result<(), JsError> {
+        let config: EngineConfig =
+            serde_wasm_bindgen::from_value(config).map_err(|e| JsError::new(&e.to_string()))?;
         self.inner
-            .open_sessions_automatically(gyroscope, orientation, width, height);
-    }
-
-    /// Leaves session openings to the caller.
-    #[wasm_bindgen(js_name = openSessionsManually)]
-    pub fn open_sessions_manually(&mut self) {
-        self.inner.open_sessions_manually();
+            .configure(config)
+            .map_err(|e| JsError::new(&e.to_string()))
     }
 
     pub fn approve_registration(&mut self, device_id: &str) -> Result<JsValue, JsError> {
@@ -371,6 +353,22 @@ pub fn frame(message: &[u8]) -> Vec<u8> {
     crate::link::framing::frame(message)
 }
 
+fn version_from(
+    parts: Option<Vec<u16>>,
+) -> Result<Option<crate::codec::externals::bm_version::BMVersion>, JsError> {
+    let Some(parts) = parts else {
+        return Ok(None);
+    };
+    if parts.len() != 3 {
+        return Err(JsError::new("a version is a major, a minor and a build"));
+    }
+    Ok(Some(crate::codec::externals::bm_version::BMVersion::new(
+        parts[0] as u8,
+        parts[1] as u8,
+        parts[2],
+    )))
+}
+
 /// Tracks the version exchange for one connection.
 #[wasm_bindgen]
 pub struct HandshakerWasm {
@@ -380,13 +378,24 @@ pub struct HandshakerWasm {
 #[wasm_bindgen]
 impl HandshakerWasm {
     /// role is 0 to speak first, 1 to wait and answer.
+    /// The versions default to the library's own; pass a pair to stand in as a
+    /// different build.
     #[wasm_bindgen(constructor)]
-    pub fn new(role: i32) -> Result<HandshakerWasm, JsError> {
+    pub fn new(
+        role: i32,
+        current: Option<Vec<u16>>,
+        minimum: Option<Vec<u16>>,
+    ) -> Result<HandshakerWasm, JsError> {
         let role = crate::link::negotiation::LinkRole::from_code(role)
             .ok_or_else(|| JsError::new("unknown link role"))?;
-        Ok(Self {
-            inner: crate::link::negotiation::Handshaker::new(role),
-        })
+        let inner = match (version_from(current)?, version_from(minimum)?) {
+            (Some(current), Some(minimum)) => crate::link::negotiation::Handshaker::with_version(
+                role,
+                crate::codec::externals::handshake::Handshake::new(current, minimum),
+            ),
+            _ => crate::link::negotiation::Handshaker::new(role),
+        };
+        Ok(Self { inner })
     }
 
     /// What to send now the connection is up, empty when there is nothing.

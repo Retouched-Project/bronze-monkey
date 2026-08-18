@@ -681,6 +681,7 @@ impl Engine {
 
 #[cfg(test)]
 mod session_tests {
+    use crate::config::EngineConfig;
     use crate::devices::device_core::DeviceCore;
     use crate::engine::device_registry::DeviceRecord;
     use crate::engine::methods;
@@ -696,7 +697,12 @@ mod session_tests {
             "Local".to_string(),
             DeviceType::Android,
         ));
-        eng.configure_roles(false, Some(EndpointMode::Controller));
+        eng.configure(EngineConfig {
+            endpoint: Some(EndpointMode::Controller),
+            opens_sessions: false,
+            ..Default::default()
+        })
+        .unwrap();
         eng.push_registry_update(DeviceRecord::new(
             DeviceCore::new(game.to_string(), "Game".to_string(), DeviceType::Unity),
             None,
@@ -723,7 +729,15 @@ mod session_tests {
     #[test]
     fn a_session_opens_with_capabilities_before_the_scheme_request() {
         let mut eng = controller_with_game("game1");
-        eng.open_sessions_automatically(true, false, 1080, 2151);
+        eng.configure(EngineConfig {
+            endpoint: Some(EndpointMode::Controller),
+            opens_sessions: true,
+            gyroscope: true,
+            screen_width: 1080,
+            screen_height: 2151,
+            ..Default::default()
+        })
+        .unwrap();
         let out = eng.make_session_opening("game1");
         let sent = methods_of(&out);
         assert_eq!(
@@ -739,9 +753,27 @@ mod session_tests {
     #[test]
     fn a_screen_is_reported_upright_however_it_was_measured() {
         let mut upright = controller_with_game("game1");
-        upright.open_sessions_automatically(false, false, 1080, 2151);
+        upright
+            .configure(EngineConfig {
+                endpoint: Some(EndpointMode::Controller),
+                opens_sessions: true,
+                gyroscope: false,
+                screen_width: 1080,
+                screen_height: 2151,
+                ..Default::default()
+            })
+            .unwrap();
         let mut sideways = controller_with_game("game1");
-        sideways.open_sessions_automatically(false, false, 2151, 1080);
+        sideways
+            .configure(EngineConfig {
+                endpoint: Some(EndpointMode::Controller),
+                opens_sessions: true,
+                gyroscope: false,
+                screen_width: 2151,
+                screen_height: 1080,
+                ..Default::default()
+            })
+            .unwrap();
 
         let a = upright.make_session_opening("game1");
         let b = sideways.make_session_opening("game1");
@@ -757,7 +789,12 @@ mod session_tests {
             "Game".to_string(),
             DeviceType::Unity,
         ));
-        eng.configure_roles(false, Some(EndpointMode::Game));
+        eng.configure(EngineConfig {
+            endpoint: Some(EndpointMode::Game),
+            opens_sessions: false,
+            ..Default::default()
+        })
+        .unwrap();
         eng.push_registry_update(DeviceRecord::new(
             DeviceCore::new(
                 "local".to_string(),
@@ -772,7 +809,15 @@ mod session_tests {
     #[test]
     fn a_configured_controller_opens_the_session_itself() {
         let mut eng = controller_with_game("game1");
-        eng.open_sessions_automatically(true, false, 1080, 2151);
+        eng.configure(EngineConfig {
+            endpoint: Some(EndpointMode::Controller),
+            opens_sessions: true,
+            gyroscope: true,
+            screen_width: 1080,
+            screen_height: 2151,
+            ..Default::default()
+        })
+        .unwrap();
         let out = eng.process_incoming(&ack_from("game1"));
         assert_eq!(
             methods_of(&out.outgoings),
@@ -797,13 +842,35 @@ mod session_tests {
     #[test]
     fn a_controller_can_take_its_sessions_back() {
         let mut eng = controller_with_game("game1");
-        eng.open_sessions_automatically(true, false, 1080, 2151);
-        eng.open_sessions_manually();
+        eng.configure(EngineConfig {
+            endpoint: Some(EndpointMode::Controller),
+            opens_sessions: true,
+            gyroscope: true,
+            screen_width: 1080,
+            screen_height: 2151,
+            ..Default::default()
+        })
+        .unwrap();
+        eng.configure(EngineConfig {
+            endpoint: Some(EndpointMode::Controller),
+            opens_sessions: false,
+            gyroscope: true,
+            screen_width: 1080,
+            screen_height: 2151,
+            ..Default::default()
+        })
+        .unwrap();
         let out = eng.process_incoming(&ack_from("game1"));
         assert!(out.outgoings.is_empty());
         // The values it handed over are still there to send by hand.
-        assert!(eng.session_inputs().viewport.is_some());
-        assert!(!methods_of(&eng.make_session_opening("game1")).is_empty());
+        assert_eq!(
+            methods_of(&eng.make_session_opening("game1")),
+            [
+                methods::GET_PORTAL_ID,
+                methods::SET_CAPABILITIES,
+                methods::REQUEST_XML
+            ]
+        );
     }
 
     #[test]

@@ -18,7 +18,7 @@ pub(crate) struct PendingRegistration {
 
 #[derive(Debug, Clone)]
 pub struct ServerPolicy {
-    pub auto_approve_registration: bool,
+    pub(crate) auto_approve_registration: bool,
     pub(crate) pending_registrations: HashMap<String, PendingRegistration>,
     pub(crate) hidden_hosts: HashSet<String>,
 }

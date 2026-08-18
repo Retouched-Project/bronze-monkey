@@ -3,6 +3,7 @@
 
 use prost::Message;
 
+use crate::config::EngineConfig;
 use crate::controls::assembler::{SchemeAssembler, SchemeOffer};
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::device_core::DeviceCore;
@@ -12,7 +13,6 @@ use crate::engine::processing::Engine;
 use crate::link::crossdomain::Sniffer;
 use crate::link::framing::Framer;
 use crate::link::negotiation::{Handshaker, LinkRole};
-use crate::policy::EndpointMode;
 
 use super::{catch_bool, catch_i32, catch_ptr, catch_usize, catch_void};
 
@@ -251,74 +251,10 @@ pub unsafe extern "C" fn bm_engine_registry(
     })
 }
 
-/// Hands the engine what this controller is, and lets it open sessions.
+/// Applies a msgpack encoded EngineConfig: everything this engine is told about
+/// itself, all at once.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn bm_engine_open_sessions_automatically(
-    ptr_engine: *mut Engine,
-    gyroscope: bool,
-    orientation: bool,
-    width: i32,
-    height: i32,
-) -> bool {
-    catch_bool(|| {
-        let Some(engine) = engine_mut(ptr_engine) else {
-            return false;
-        };
-        engine.open_sessions_automatically(gyroscope, orientation, width, height);
-        true
-    })
-}
-
-/// Leaves session openings to the caller.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn bm_engine_open_sessions_manually(ptr_engine: *mut Engine) -> bool {
-    catch_bool(|| {
-        let Some(engine) = engine_mut(ptr_engine) else {
-            return false;
-        };
-        engine.open_sessions_manually();
-        true
-    })
-}
-
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn bm_engine_configure_roles(
-    ptr_engine: *mut Engine,
-    server_enabled: bool,
-    endpoint_mode: i32,
-) -> bool {
-    catch_bool(|| {
-        let Some(engine) = engine_mut(ptr_engine) else {
-            return false;
-        };
-        let endpoint = match EndpointMode::from_code(endpoint_mode) {
-            Ok(endpoint) => endpoint,
-            Err(e) => {
-                crate::set_last_error(e);
-                return false;
-            }
-        };
-        engine.configure_roles(server_enabled, endpoint);
-        true
-    })
-}
-
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn bm_engine_set_auto_approve_registration(
-    ptr_engine: *mut Engine,
-    value: bool,
-) -> bool {
-    catch_bool(|| {
-        let Some(engine) = engine_mut(ptr_engine) else {
-            return false;
-        };
-        engine.server_policy.auto_approve_registration = value;
-        true
-    })
-}
-
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn bm_engine_register_button_handlers(
+pub unsafe extern "C" fn bm_engine_configure(
     ptr_engine: *mut Engine,
     mp_ptr: *const u8,
     mp_len: usize,
@@ -327,12 +263,20 @@ pub unsafe extern "C" fn bm_engine_register_button_handlers(
         let Some(engine) = engine_mut(ptr_engine) else {
             return false;
         };
-        let handlers: Vec<String> = match rmp_serde::from_slice(in_slice(mp_ptr, mp_len)) {
-            Ok(h) => h,
-            Err(_) => return false,
+        let config: EngineConfig = match rmp_serde::from_slice(in_slice(mp_ptr, mp_len)) {
+            Ok(c) => c,
+            Err(e) => {
+                crate::set_last_error(e);
+                return false;
+            }
         };
-        engine.register_button_handlers(handlers);
-        true
+        match engine.configure(config) {
+            Ok(()) => true,
+            Err(e) => {
+                crate::set_last_error(e);
+                false
+            }
+        }
     })
 }
 
@@ -690,6 +634,38 @@ fn handshaker_mut<'a>(ptr: *mut Handshaker) -> Option<&'a mut Handshaker> {
 pub extern "C" fn bm_handshaker_new(role: i32) -> *mut Handshaker {
     catch_ptr(|| match LinkRole::from_code(role) {
         Some(role) => Box::into_raw(Box::new(Handshaker::new(role))),
+        None => std::ptr::null_mut(),
+    })
+}
+
+/// Creates one that announces versions other than the library's own, for a
+/// caller standing in as a different build.
+#[unsafe(no_mangle)]
+pub extern "C" fn bm_handshaker_new_with_version(
+    role: i32,
+    current_major: u8,
+    current_minor: u8,
+    current_build: u16,
+    minimum_major: u8,
+    minimum_minor: u8,
+    minimum_build: u16,
+) -> *mut Handshaker {
+    catch_ptr(|| match LinkRole::from_code(role) {
+        Some(role) => {
+            let local = crate::codec::externals::handshake::Handshake::new(
+                crate::codec::externals::bm_version::BMVersion::new(
+                    current_major,
+                    current_minor,
+                    current_build,
+                ),
+                crate::codec::externals::bm_version::BMVersion::new(
+                    minimum_major,
+                    minimum_minor,
+                    minimum_build,
+                ),
+            );
+            Box::into_raw(Box::new(Handshaker::with_version(role, local)))
+        }
         None => std::ptr::null_mut(),
     })
 }

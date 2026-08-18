@@ -8,13 +8,12 @@ mod rpc;
 mod server_ops;
 
 use crate::codec::messages::bm_encoding::Value;
+use crate::config::{ConfigError, EngineConfig};
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRegistry;
 use crate::engine::events::{Event, ProcessOutput};
 use crate::engine::state::EngineState;
-use crate::policy::{
-    ActiveRoles, ControllerPolicy, EndpointMode, GamePolicy, ServerPolicy, SessionInputs, Viewport,
-};
+use crate::policy::{ActiveRoles, ControllerPolicy, GamePolicy, ServerPolicy, SessionInputs};
 use crate::types::channel_type::ChannelType;
 use std::collections::HashMap;
 
@@ -90,50 +89,28 @@ impl Engine {
         self.roles
     }
 
-    pub fn configure_roles(&mut self, server: bool, endpoint: Option<EndpointMode>) {
-        log::info!("configure_roles server={server} endpoint={endpoint:?}");
-        self.roles = ActiveRoles { server, endpoint };
-    }
-
-    /// Hands the engine what this controller is, and lets it open sessions.
-    ///
-    /// The engine speaks when a game acknowledges the connection, saying what a
-    /// game needs in the order it needs to hear it. Call this once the device is
-    /// known, and again whenever any of it changes.
-    pub fn open_sessions_automatically(
-        &mut self,
-        gyroscope: bool,
-        orientation: bool,
-        width: i32,
-        height: i32,
-    ) {
-        self.controller_policy.session = SessionInputs {
-            automatic: true,
-            gyroscope,
-            orientation,
-            viewport: Some(Viewport::new(width, height)),
+    /// Everything this engine is told about itself. Pass the whole of it
+    /// whenever any of it changes; roles move, and a screen can be learned late.
+    pub fn configure(&mut self, config: EngineConfig) -> Result<(), ConfigError> {
+        config.check()?;
+        log::info!(
+            "configure server={} endpoint={:?} opens_sessions={}",
+            config.server,
+            config.endpoint,
+            config.opens_sessions
+        );
+        self.roles = ActiveRoles {
+            server: config.server,
+            endpoint: config.endpoint,
         };
-    }
-
-    /// Leaves session openings to the caller, which is where they start.
-    ///
-    /// Send them with [`Engine::make_session_opening`], or a piece at a time
-    /// with the builders behind it. Anything already handed over is kept, so
-    /// this can be called later to take the sessions back.
-    pub fn open_sessions_manually(&mut self) {
-        self.controller_policy.session.automatic = false;
-    }
-
-    pub fn session_inputs(&self) -> SessionInputs {
-        self.controller_policy.session
-    }
-
-    pub fn set_server_role(&mut self, enabled: bool) {
-        self.roles.server = enabled;
-    }
-
-    pub fn set_endpoint_mode(&mut self, mode: Option<EndpointMode>) {
-        self.roles.endpoint = mode;
+        self.server_policy.auto_approve_registration = config.approves_registrations;
+        self.controller_policy.session = SessionInputs {
+            automatic: config.opens_sessions,
+            gyroscope: config.gyroscope,
+            orientation: config.orientation,
+            viewport: config.viewport(),
+        };
+        Ok(())
     }
 
     pub(crate) fn resolve_handler(&self, method: &str) -> Option<RpcHandler> {

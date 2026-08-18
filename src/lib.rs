@@ -2,6 +2,7 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 pub mod codec;
+pub mod config;
 pub mod controls;
 pub mod devices;
 pub mod engine;

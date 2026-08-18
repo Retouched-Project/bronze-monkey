@@ -13,6 +13,7 @@ use crate::codec::externals::registry;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_invoke::BMInvoke;
 use crate::codec::object::Object;
+use crate::config::EngineConfig;
 use crate::controls::assembler::SchemeAssembler;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
@@ -119,33 +120,14 @@ impl BMEnginePy {
         Ok(())
     }
 
-    #[pyo3(signature = (server_enabled, endpoint_mode=None))]
-    fn configure_roles(&self, server_enabled: bool, endpoint_mode: Option<EndpointMode>) {
+    /// Everything this engine is told about itself, all at once.
+    fn configure(&self, config: Bound<'_, PyAny>) -> PyResult<()> {
+        let config: EngineConfig = depythonize(&config)?;
         self.inner
             .write()
             .unwrap()
-            .configure_roles(server_enabled, endpoint_mode);
-    }
-
-    /// Hands the engine what this controller is, and lets it open sessions.
-    fn open_sessions_automatically(
-        &self,
-        gyroscope: bool,
-        orientation: bool,
-        width: i32,
-        height: i32,
-    ) {
-        self.inner.write().unwrap().open_sessions_automatically(
-            gyroscope,
-            orientation,
-            width,
-            height,
-        );
-    }
-
-    /// Leaves session openings to the caller.
-    fn open_sessions_manually(&self) {
-        self.inner.write().unwrap().open_sessions_manually();
+            .configure(config)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))
     }
 
     fn drop_device<'py>(&self, py: Python<'py>, device_id: String) -> PyResult<Bound<'py, PyList>> {
@@ -208,11 +190,6 @@ impl BMEnginePy {
         });
         eng.registry_mut().upsert(DeviceRecord::new(core, None));
         Ok(())
-    }
-
-    fn set_auto_approve_registration(&self, value: bool) {
-        let mut eng = self.inner.write().unwrap();
-        eng.server_policy.auto_approve_registration = value;
     }
 
     fn approve_registration<'py>(
@@ -904,13 +881,29 @@ pub struct HandshakerPy {
 
 #[pymethods]
 impl HandshakerPy {
-    /// role is 0 to speak first, 1 to wait and answer.
+    /// role is 0 to speak first, 1 to wait and answer. The versions default to
+    /// the library's own; pass a pair to stand in as a different build.
     #[new]
-    fn new(role: i32) -> PyResult<Self> {
+    #[pyo3(signature = (role, current=None, minimum=None))]
+    fn new(
+        role: i32,
+        current: Option<(u8, u8, u16)>,
+        minimum: Option<(u8, u8, u16)>,
+    ) -> PyResult<Self> {
         let role = crate::link::negotiation::LinkRole::from_code(role)
             .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("unknown link role"))?;
+        let inner = match (current, minimum) {
+            (Some(c), Some(m)) => crate::link::negotiation::Handshaker::with_version(
+                role,
+                crate::codec::externals::handshake::Handshake::new(
+                    BMVersion::new(c.0, c.1, c.2),
+                    BMVersion::new(m.0, m.1, m.2),
+                ),
+            ),
+            _ => crate::link::negotiation::Handshaker::new(role),
+        };
         Ok(Self {
-            inner: RwLock::new(crate::link::negotiation::Handshaker::new(role)),
+            inner: RwLock::new(inner),
         })
     }
 
