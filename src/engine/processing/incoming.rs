@@ -108,6 +108,14 @@ impl Engine {
             record: rec,
             udp_port,
         });
+
+        // The ack is a game saying it is ready to be talked to, and it arrives
+        // after the version exchange, so this is the first safe moment to open
+        // the session.
+        if self.roles.controller() && self.controller_policy.session.automatic {
+            let target = pkt.device_id.clone();
+            out.outgoings.extend(self.make_session_opening(&target));
+        }
     }
 
     fn handle_data(&mut self, pkt: &BMPacket, channel: i32, out: &mut ProcessOutput) {

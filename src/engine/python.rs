@@ -127,6 +127,27 @@ impl BMEnginePy {
             .configure_roles(server_enabled, endpoint_mode);
     }
 
+    /// Hands the engine what this controller is, and lets it open sessions.
+    fn open_sessions_automatically(
+        &self,
+        gyroscope: bool,
+        orientation: bool,
+        width: i32,
+        height: i32,
+    ) {
+        self.inner.write().unwrap().open_sessions_automatically(
+            gyroscope,
+            orientation,
+            width,
+            height,
+        );
+    }
+
+    /// Leaves session openings to the caller.
+    fn open_sessions_manually(&self) {
+        self.inner.write().unwrap().open_sessions_manually();
+    }
+
     fn drop_device<'py>(&self, py: Python<'py>, device_id: String) -> PyResult<Bound<'py, PyList>> {
         let actions = self.inner.write().unwrap().drop_device(&device_id);
         outgoings_to_py(py, actions)

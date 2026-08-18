@@ -251,6 +251,36 @@ pub unsafe extern "C" fn bm_engine_registry(
     })
 }
 
+/// Hands the engine what this controller is, and lets it open sessions.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_engine_open_sessions_automatically(
+    ptr_engine: *mut Engine,
+    gyroscope: bool,
+    orientation: bool,
+    width: i32,
+    height: i32,
+) -> bool {
+    catch_bool(|| {
+        let Some(engine) = engine_mut(ptr_engine) else {
+            return false;
+        };
+        engine.open_sessions_automatically(gyroscope, orientation, width, height);
+        true
+    })
+}
+
+/// Leaves session openings to the caller.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_engine_open_sessions_manually(ptr_engine: *mut Engine) -> bool {
+    catch_bool(|| {
+        let Some(engine) = engine_mut(ptr_engine) else {
+            return false;
+        };
+        engine.open_sessions_manually();
+        true
+    })
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn bm_engine_configure_roles(
     ptr_engine: *mut Engine,

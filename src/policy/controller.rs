@@ -16,9 +16,41 @@ pub struct InputReliability {
     pub sensors: Option<i32>,
 }
 
+/// The screen a game is asked to lay a control scheme out for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Viewport {
+    pub height: i32,
+    pub width: i32,
+}
+
+impl Viewport {
+    /// A screen is reported the way it is held upright, whichever way round it
+    /// happened to be measured, so the longer side is always the height.
+    pub fn new(width: i32, height: i32) -> Self {
+        Self {
+            height: width.max(height),
+            width: width.min(height),
+        }
+    }
+}
+
+/// What a controller tells a game about itself when a session opens, and
+/// whether the engine says it. Held rather than sent on demand, so the order a
+/// game needs is never the caller's problem.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct SessionInputs {
+    /// Whether the engine opens sessions itself. Off until asked, so an engine
+    /// never speaks for a caller that did not ask it to.
+    pub automatic: bool,
+    pub gyroscope: bool,
+    pub orientation: bool,
+    pub viewport: Option<Viewport>,
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct ControllerPolicy {
     pub(crate) input_reliability: InputReliability,
+    pub(crate) session: SessionInputs,
 }
 
 impl ControllerPolicy {

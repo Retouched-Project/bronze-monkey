@@ -186,6 +186,44 @@ impl Engine {
         )
     }
 
+    /// Asks a game what a controller should return to once it is done. A game
+    /// that stands on its own answers with nothing.
+    pub fn make_get_portal_id(&mut self, target: &str) -> Vec<Outgoing> {
+        self.make_message_invoke(
+            target,
+            methods::GET_PORTAL_ID,
+            Some(methods::ON_PORTAL_ID),
+            Vec::new(),
+        )
+    }
+
+    /// Everything a controller says as a session opens, in the order a game
+    /// needs to hear it. Capabilities come before the scheme request because a
+    /// game can choose what to send from them, so a game asked first would answer
+    /// from stale knowledge.
+    pub fn make_session_opening(&mut self, target: &str) -> Vec<Outgoing> {
+        let session = self.controller_policy.session;
+        let mut out = self.make_get_portal_id(target);
+
+        let mask = (session.gyroscope as u64) | ((session.orientation as u64) << 1);
+        out.extend(self.make_set_capabilities(target, mask));
+
+        if let Some(viewport) = session.viewport {
+            let requester = self
+                .state
+                .local_device
+                .as_ref()
+                .map(|d| d.device_id.clone())
+                .unwrap_or_default();
+            out.extend(self.make_request_xml(target, viewport.width, viewport.height, &requester));
+        } else {
+            log::warn!(
+                "session opening for '{target}': no viewport configured, not requesting a scheme"
+            );
+        }
+        out
+    }
+
     pub fn make_request_xml(
         &mut self,
         target: &str,
@@ -638,5 +676,141 @@ impl Engine {
         } else {
             BMReliability::ReliableUnordered.code()
         }
+    }
+}
+
+#[cfg(test)]
+mod session_tests {
+    use crate::devices::device_core::DeviceCore;
+    use crate::engine::device_registry::DeviceRecord;
+    use crate::engine::methods;
+    use crate::engine::processing::Engine;
+    use crate::engine::protocol::deserialize_message;
+    use crate::policy::EndpointMode;
+    use crate::types::device_type::DeviceType;
+
+    fn controller_with_game(game: &str) -> Engine {
+        let mut eng = Engine::default();
+        eng.init_local_device(DeviceCore::new(
+            "local".to_string(),
+            "Local".to_string(),
+            DeviceType::Android,
+        ));
+        eng.configure_roles(false, Some(EndpointMode::Controller));
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new(game.to_string(), "Game".to_string(), DeviceType::Unity),
+            None,
+        ));
+        eng
+    }
+
+    fn methods_of(outgoings: &[crate::engine::events::Outgoing]) -> Vec<String> {
+        outgoings
+            .iter()
+            .filter_map(|o| {
+                let mut pkt = crate::codec::externals::bm_packet::BMPacket::default();
+                deserialize_message(&o.payload, &mut pkt).ok()?;
+                let msg = pkt.message?;
+                let mut cur = crate::codec::bm_stream::BMStream::view(msg.as_slice());
+                match crate::codec::object::Object::decode(&mut cur).ok()? {
+                    crate::codec::object::Object::BMInvoke(inv) => Some(inv.method),
+                    _ => None,
+                }
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_session_opens_with_capabilities_before_the_scheme_request() {
+        let mut eng = controller_with_game("game1");
+        eng.open_sessions_automatically(true, false, 1080, 2151);
+        let out = eng.make_session_opening("game1");
+        let sent = methods_of(&out);
+        assert_eq!(
+            sent,
+            [
+                methods::GET_PORTAL_ID,
+                methods::SET_CAPABILITIES,
+                methods::REQUEST_XML
+            ]
+        );
+    }
+
+    #[test]
+    fn a_screen_is_reported_upright_however_it_was_measured() {
+        let mut upright = controller_with_game("game1");
+        upright.open_sessions_automatically(false, false, 1080, 2151);
+        let mut sideways = controller_with_game("game1");
+        sideways.open_sessions_automatically(false, false, 2151, 1080);
+
+        let a = upright.make_session_opening("game1");
+        let b = sideways.make_session_opening("game1");
+        assert_eq!(a.last().unwrap().payload, b.last().unwrap().payload);
+    }
+
+    /// Building a fake ack the way a game sends one, so the automatic path can
+    /// be exercised without a socket.
+    fn ack_from(game: &str) -> Vec<u8> {
+        let mut eng = Engine::default();
+        eng.init_local_device(DeviceCore::new(
+            game.to_string(),
+            "Game".to_string(),
+            DeviceType::Unity,
+        ));
+        eng.configure_roles(false, Some(EndpointMode::Game));
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new(
+                "local".to_string(),
+                "Local".to_string(),
+                DeviceType::Android,
+            ),
+            None,
+        ));
+        eng.make_ack_packet("local").remove(0).payload
+    }
+
+    #[test]
+    fn a_configured_controller_opens_the_session_itself() {
+        let mut eng = controller_with_game("game1");
+        eng.open_sessions_automatically(true, false, 1080, 2151);
+        let out = eng.process_incoming(&ack_from("game1"));
+        assert_eq!(
+            methods_of(&out.outgoings),
+            [
+                methods::GET_PORTAL_ID,
+                methods::SET_CAPABILITIES,
+                methods::REQUEST_XML
+            ]
+        );
+    }
+
+    #[test]
+    fn a_controller_that_asked_for_nothing_is_left_to_open_its_own() {
+        let mut eng = controller_with_game("game1");
+        let out = eng.process_incoming(&ack_from("game1"));
+        assert!(
+            out.outgoings.is_empty(),
+            "the engine spoke for a caller that never asked it to"
+        );
+    }
+
+    #[test]
+    fn a_controller_can_take_its_sessions_back() {
+        let mut eng = controller_with_game("game1");
+        eng.open_sessions_automatically(true, false, 1080, 2151);
+        eng.open_sessions_manually();
+        let out = eng.process_incoming(&ack_from("game1"));
+        assert!(out.outgoings.is_empty());
+        // The values it handed over are still there to send by hand.
+        assert!(eng.session_inputs().viewport.is_some());
+        assert!(!methods_of(&eng.make_session_opening("game1")).is_empty());
+    }
+
+    #[test]
+    fn a_session_without_a_screen_asks_for_no_scheme() {
+        let mut eng = controller_with_game("game1");
+        let out = eng.make_session_opening("game1");
+        let sent = methods_of(&out);
+        assert_eq!(sent, [methods::GET_PORTAL_ID, methods::SET_CAPABILITIES]);
     }
 }

@@ -32,6 +32,7 @@ pub const SET_ORIENTATION_INTERVAL: &str = "setOrientationInterval";
 pub const SET_RELIABILITY_FOR_TOUCH: &str = "setReliabilityForTouch";
 pub const SET_CONTROL_MODE: &str = "SetControlMode";
 pub const WAIT_FOR_NEW_HOST: &str = "WaitForNewHost";
+pub const GET_PORTAL_ID: &str = "GetPortalId";
 pub const ON_PORTAL_ID: &str = "onPortalId";
 
 pub const REQUEST_XML: &str = "RequestXML";

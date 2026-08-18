@@ -28,6 +28,7 @@ impl GamePolicy {
             methods::DEVICE_CONNECT_REQUESTED => Engine::rpc_device_connect_requested,
             methods::ON_KILL_EVENT => Engine::rpc_on_kill_event,
             methods::SET_CAPABILITIES => Engine::rpc_set_capabilities,
+            methods::GET_PORTAL_ID => Engine::rpc_get_portal_id,
             methods::REQUEST_XML => Engine::rpc_request_xml,
             methods::ON_KEY_STRING => Engine::rpc_on_key_string,
             methods::ON_NAVIGATION_STRING => Engine::rpc_on_navigation_string,

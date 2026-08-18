@@ -7,7 +7,7 @@ pub mod controller;
 pub mod game;
 pub mod server;
 
-pub use controller::{ControllerPolicy, InputReliability};
+pub use controller::{ControllerPolicy, InputReliability, SessionInputs, Viewport};
 pub use game::GamePolicy;
 pub use server::ServerPolicy;
 

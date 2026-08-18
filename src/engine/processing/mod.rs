@@ -12,7 +12,9 @@ use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRegistry;
 use crate::engine::events::{Event, ProcessOutput};
 use crate::engine::state::EngineState;
-use crate::policy::{ActiveRoles, ControllerPolicy, EndpointMode, GamePolicy, ServerPolicy};
+use crate::policy::{
+    ActiveRoles, ControllerPolicy, EndpointMode, GamePolicy, ServerPolicy, SessionInputs, Viewport,
+};
 use crate::types::channel_type::ChannelType;
 use std::collections::HashMap;
 
@@ -91,6 +93,39 @@ impl Engine {
     pub fn configure_roles(&mut self, server: bool, endpoint: Option<EndpointMode>) {
         log::info!("configure_roles server={server} endpoint={endpoint:?}");
         self.roles = ActiveRoles { server, endpoint };
+    }
+
+    /// Hands the engine what this controller is, and lets it open sessions.
+    ///
+    /// The engine speaks when a game acknowledges the connection, saying what a
+    /// game needs in the order it needs to hear it. Call this once the device is
+    /// known, and again whenever any of it changes.
+    pub fn open_sessions_automatically(
+        &mut self,
+        gyroscope: bool,
+        orientation: bool,
+        width: i32,
+        height: i32,
+    ) {
+        self.controller_policy.session = SessionInputs {
+            automatic: true,
+            gyroscope,
+            orientation,
+            viewport: Some(Viewport::new(width, height)),
+        };
+    }
+
+    /// Leaves session openings to the caller, which is where they start.
+    ///
+    /// Send them with [`Engine::make_session_opening`], or a piece at a time
+    /// with the builders behind it. Anything already handed over is kept, so
+    /// this can be called later to take the sessions back.
+    pub fn open_sessions_manually(&mut self) {
+        self.controller_policy.session.automatic = false;
+    }
+
+    pub fn session_inputs(&self) -> SessionInputs {
+        self.controller_policy.session
     }
 
     pub fn set_server_role(&mut self, enabled: bool) {

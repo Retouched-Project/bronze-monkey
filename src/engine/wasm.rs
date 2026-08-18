@@ -168,6 +168,25 @@ impl BmEngineWasm {
         self.inner.configure_roles(server_enabled, endpoint_mode);
     }
 
+    /// Hands the engine what this controller is, and lets it open sessions.
+    #[wasm_bindgen(js_name = openSessionsAutomatically)]
+    pub fn open_sessions_automatically(
+        &mut self,
+        gyroscope: bool,
+        orientation: bool,
+        width: i32,
+        height: i32,
+    ) {
+        self.inner
+            .open_sessions_automatically(gyroscope, orientation, width, height);
+    }
+
+    /// Leaves session openings to the caller.
+    #[wasm_bindgen(js_name = openSessionsManually)]
+    pub fn open_sessions_manually(&mut self) {
+        self.inner.open_sessions_manually();
+    }
+
     pub fn approve_registration(&mut self, device_id: &str) -> Result<JsValue, JsError> {
         let outgoings = self.inner.approve_registration(device_id);
         to_js(&outgoings)

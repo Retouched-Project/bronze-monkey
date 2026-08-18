@@ -405,6 +405,28 @@ impl Engine {
         });
     }
 
+    /// A controller asks this on every connection so it knows where to send the
+    /// player back to. A game that was not launched from anywhere answers with
+    /// nothing, which is the answer for every game that stands on its own.
+    pub(crate) fn rpc_get_portal_id(ctx: &mut RpcContext) {
+        let sender_id = ctx.sender_id;
+        let RpcContext {
+            engine, inv, out, ..
+        } = ctx;
+        let Some(target_id) = sender_id else {
+            return;
+        };
+        let Some(reply) = Self::reply_method(inv.return_method.as_deref()) else {
+            return;
+        };
+        out.outgoings.extend(engine.make_message_invoke(
+            target_id,
+            reply,
+            None,
+            vec![Value::String(String::new())],
+        ));
+    }
+
     pub(crate) fn rpc_request_xml(ctx: &mut RpcContext) {
         let height = ctx.param_i32(0).unwrap_or(0);
         let width = ctx.param_i32(1).unwrap_or(0);
