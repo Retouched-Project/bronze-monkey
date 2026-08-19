@@ -7,7 +7,6 @@ use crate::codec::object::Object;
 use crate::engine::events::Outgoing;
 use crate::engine::methods;
 use crate::policy::server::PendingRegistration;
-use crate::types::device_type::DeviceType;
 
 impl Engine {
     pub fn approve_registration(&mut self, device_id: &str) -> Vec<Outgoing> {
@@ -21,11 +20,7 @@ impl Engine {
             return out;
         };
 
-        let is_game = matches!(
-            info.device.device_type,
-            DeviceType::Flash | DeviceType::Unity | DeviceType::Native
-        );
-        if is_game {
+        if info.device.device_type.is_game() {
             let dev_id = info.device.device_id.clone();
             if let Some(existing) = self
                 .state
@@ -51,7 +46,7 @@ impl Engine {
             );
         }
 
-        if is_game {
+        if info.device.device_type.is_game() {
             let info_val = Value::Object(Object::BMRegistryInfo(info.clone()));
 
             out.extend(self.make_message_invoke(
@@ -67,15 +62,7 @@ impl Engine {
                 .snapshot()
                 .into_iter()
                 .filter_map(|r| r.info)
-                .filter(|r| {
-                    !matches!(
-                        r.device.device_type,
-                        DeviceType::Flash
-                            | DeviceType::Unity
-                            | DeviceType::Native
-                            | DeviceType::Server
-                    )
-                })
+                .filter(|r| r.device.device_type.is_controller())
                 .filter(|r| r.device.device_id != target_id)
                 .map(|r| r.device.device_id)
                 .collect();
@@ -123,11 +110,7 @@ impl Engine {
 
                 // If a game disconnected, broadcast onHostDisconnected to all controllers
                 // so they can remove it from their host list
-                let is_game = matches!(
-                    info.device.device_type,
-                    DeviceType::Flash | DeviceType::Unity | DeviceType::Native
-                );
-                if is_game && self.roles.server {
+                if info.device.device_type.is_game() && self.roles.server {
                     let info_val = Value::Object(Object::BMRegistryInfo(info));
                     let viewer_ids: Vec<String> = self
                         .state
@@ -135,15 +118,7 @@ impl Engine {
                         .snapshot()
                         .into_iter()
                         .filter_map(|r| r.info)
-                        .filter(|r| {
-                            !matches!(
-                                r.device.device_type,
-                                DeviceType::Flash
-                                    | DeviceType::Unity
-                                    | DeviceType::Native
-                                    | DeviceType::Server
-                            )
-                        })
+                        .filter(|r| r.device.device_type.is_controller())
                         .map(|r| r.device.device_id)
                         .collect();
                     for vid in viewer_ids {
@@ -158,5 +133,65 @@ impl Engine {
             }
         }
         out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+    use crate::config::EngineConfig;
+    use crate::devices::bm_address::BMAddress;
+    use crate::devices::device_core::DeviceCore;
+    use crate::types::device_type::DeviceType;
+
+    fn registry_server() -> Engine {
+        let mut eng = Engine::default();
+        eng.init_local_device(DeviceCore::new(
+            "reg".to_string(),
+            "Registry".to_string(),
+            DeviceType::Server,
+        ));
+        eng.configure(EngineConfig {
+            server: true,
+            ..Default::default()
+        })
+        .expect("a server needs nothing else configured");
+        eng
+    }
+
+    fn joined(eng: &mut Engine, id: &str, kind: DeviceType) {
+        let device = DeviceCore::new(id.to_string(), id.to_string(), kind);
+        eng.state.upsert_registry_info(BMRegistryInfo {
+            slot_id: 0,
+            app_id: "app".to_string(),
+            current_players: None,
+            max_players: None,
+            device,
+            device_address: BMAddress::new("10.0.0.2".to_string(), 9080, 9081),
+        });
+    }
+
+    #[test]
+    fn a_departing_host_is_announced_to_controllers_only() {
+        let mut eng = registry_server();
+        joined(&mut eng, "game", DeviceType::Unity);
+        joined(&mut eng, "phone", DeviceType::Android);
+        joined(&mut eng, "tablet", DeviceType::Palm);
+        joined(&mut eng, "other", DeviceType::Flash);
+        joined(&mut eng, "unknown", DeviceType::Any);
+
+        let told: Vec<String> = eng
+            .drop_device("game")
+            .into_iter()
+            .map(|o| o.target_device_id)
+            .collect();
+
+        // A device that never named its type is not a controller, so it is not
+        // owed a host list update, and a second game is not either.
+        assert!(told.contains(&"phone".to_string()));
+        assert!(told.contains(&"tablet".to_string()));
+        assert!(!told.contains(&"unknown".to_string()));
+        assert!(!told.contains(&"other".to_string()));
     }
 }

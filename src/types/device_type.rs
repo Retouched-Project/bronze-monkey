@@ -86,6 +86,20 @@ impl DeviceType {
         })
     }
 
+    pub fn is_game(self) -> bool {
+        matches!(
+            self,
+            DeviceType::Unity | DeviceType::Flash | DeviceType::Native
+        )
+    }
+
+    pub fn is_controller(self) -> bool {
+        matches!(
+            self,
+            DeviceType::Android | DeviceType::IPhone | DeviceType::Palm
+        )
+    }
+
     pub fn label(self) -> &'static str {
         match self {
             DeviceType::Any => "ANY",
@@ -122,5 +136,24 @@ mod tests {
         }
         // A variant added without updating ALL would leave this code reachable.
         assert!(DeviceType::for_value(DeviceType::ALL.len() as i32).is_err());
+    }
+
+    #[test]
+    fn a_device_hosts_or_drives_a_session_but_never_both() {
+        for kind in DeviceType::ALL {
+            assert!(
+                !(kind.is_game() && kind.is_controller()),
+                "{} claims both roles",
+                kind.label()
+            );
+        }
+    }
+
+    #[test]
+    fn a_device_of_unknown_or_serving_type_claims_neither_role() {
+        for kind in [DeviceType::Any, DeviceType::Server] {
+            assert!(!kind.is_game(), "{} should not host", kind.label());
+            assert!(!kind.is_controller(), "{} should not drive", kind.label());
+        }
     }
 }

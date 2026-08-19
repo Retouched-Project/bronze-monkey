@@ -10,7 +10,6 @@ use crate::engine::events::{ControlConfig, Event};
 use crate::engine::methods;
 use crate::policy::server::PendingRegistration;
 use crate::types::control_mode::ControlMode;
-use crate::types::device_type::DeviceType;
 
 impl Engine {
     pub(crate) fn rpc_registry_register(ctx: &mut RpcContext) {
@@ -37,11 +36,7 @@ impl Engine {
         };
 
         if engine.server_policy.auto_approve_registration {
-            let is_game = matches!(
-                info.device.device_type,
-                DeviceType::Flash | DeviceType::Unity | DeviceType::Native
-            );
-            if is_game {
+            if info.device.device_type.is_game() {
                 let dev_id = info.device.device_id.clone();
                 if let Some(existing) = engine
                     .state
@@ -77,7 +72,7 @@ impl Engine {
                 success: true,
             });
 
-            if is_game {
+            if info.device.device_type.is_game() {
                 let info_val = Value::Object(Object::BMRegistryInfo(info.clone()));
 
                 out.outgoings.extend(engine.make_message_invoke(
@@ -93,15 +88,7 @@ impl Engine {
                     .snapshot()
                     .into_iter()
                     .filter_map(|r| r.info)
-                    .filter(|r| {
-                        !matches!(
-                            r.device.device_type,
-                            DeviceType::Flash
-                                | DeviceType::Unity
-                                | DeviceType::Native
-                                | DeviceType::Server
-                        )
-                    })
+                    .filter(|r| r.device.device_type.is_controller())
                     .filter(|r| r.device.device_id != target_id)
                     .map(|r| r.device.device_id)
                     .collect();
@@ -267,21 +254,13 @@ impl Engine {
             .snapshot()
             .into_iter()
             .filter_map(|r| r.info)
-            .filter(|r| {
-                !matches!(
-                    r.device.device_type,
-                    DeviceType::Flash | DeviceType::Unity | DeviceType::Native
-                )
-            })
+            .filter(|r| !r.device.device_type.is_game())
             .map(|r| r.device.device_id)
             .collect();
 
         for info in infos.into_iter() {
             engine.state.upsert_registry_info(info.clone());
-            if !matches!(
-                info.device.device_type,
-                DeviceType::Flash | DeviceType::Unity | DeviceType::Native
-            ) {
+            if !info.device.device_type.is_game() {
                 continue;
             }
             if engine
@@ -529,11 +508,7 @@ impl Engine {
                 .get(&device_id)
                 .and_then(|r| r.info.clone())
             {
-                let is_game = matches!(
-                    info.device.device_type,
-                    DeviceType::Flash | DeviceType::Unity | DeviceType::Native
-                );
-                if is_game {
+                if info.device.device_type.is_game() {
                     let method = if visible {
                         methods::ON_HOST_CONNECTED
                     } else {
@@ -546,15 +521,7 @@ impl Engine {
                         .snapshot()
                         .into_iter()
                         .filter_map(|r| r.info)
-                        .filter(|r| {
-                            !matches!(
-                                r.device.device_type,
-                                DeviceType::Flash
-                                    | DeviceType::Unity
-                                    | DeviceType::Native
-                                    | DeviceType::Server
-                            )
-                        })
+                        .filter(|r| r.device.device_type.is_controller())
                         .map(|r| r.device.device_id)
                         .collect();
                     for vid in viewer_ids {

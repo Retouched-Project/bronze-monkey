@@ -4,7 +4,6 @@
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::{DeviceRecord, DeviceRegistry};
-use crate::types::device_type::DeviceType;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Default, Clone)]
@@ -106,11 +105,7 @@ impl EngineState {
             let Some(info) = rec.info else {
                 continue;
             };
-            let is_host = matches!(
-                info.device.device_type,
-                DeviceType::Flash | DeviceType::Unity | DeviceType::Native
-            );
-            if is_host && !hidden_hosts.contains(&info.device.device_id) {
+            if info.device.device_type.is_game() && !hidden_hosts.contains(&info.device.device_id) {
                 out.push(info);
             }
         }
@@ -122,6 +117,7 @@ impl EngineState {
 mod tests {
     use super::*;
     use crate::devices::bm_address::BMAddress;
+    use crate::types::device_type::DeviceType;
 
     fn registered(id: &str, kind: DeviceType) -> DeviceRecord {
         let device = DeviceCore::new(id.to_string(), id.to_string(), kind);
