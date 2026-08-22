@@ -635,6 +635,43 @@ impl Engine {
         }
     }
 
+    /// Answers a ping with what the ping carried.
+    ///
+    /// An echo returns the sequence, moment and message it was given, and goes
+    /// back the way it came.
+    pub(crate) fn make_echo(
+        &mut self,
+        target: &str,
+        ping: &BMPacket,
+        datagram: bool,
+    ) -> Vec<Outgoing> {
+        let Some(rec) = self.state.registry.get(target).cloned() else {
+            log::warn!("cannot echo to unknown device: {target}");
+            return Vec::new();
+        };
+        let reliability = if datagram {
+            BMReliability::Unreliable.code()
+        } else {
+            Self::default_reliability_for_channel(ping.channel)
+        };
+
+        let sender = self.state.local_device.as_ref().unwrap_or(&rec.core);
+        match self.build_packet_bytes(
+            sender,
+            ping.channel,
+            ping.sequence,
+            ping.timestamp,
+            PacketType::Echo.code(),
+            ping.message.clone(),
+        ) {
+            Ok(bytes) => vec![self.dispatch(target.to_string(), ping.channel, reliability, bytes)],
+            Err(e) => {
+                log::error!("echo build failed: {e}");
+                Vec::new()
+            }
+        }
+    }
+
     /// Shapes a message for the path it takes to this peer.
     ///
     /// A datagram is chosen when the message goes unreliably and the caller
@@ -818,6 +855,21 @@ mod session_tests {
         );
     }
 
+    /// What an invoke asks for, without the packet around it. A packet carries
+    /// the moment it was built, so two of them are never byte for byte alike.
+    fn invoke_of(outgoing: &crate::engine::events::Outgoing) -> String {
+        let mut pkt = crate::codec::externals::bm_packet::BMPacket::default();
+        deserialize_message(outgoing.message(), &mut pkt).expect("an outgoing holds a message");
+        let msg = pkt.message.expect("and the message holds an object");
+        let mut cur = crate::codec::bm_stream::BMStream::view(msg.as_slice());
+        match crate::codec::object::Object::decode(&mut cur).expect("which decodes") {
+            crate::codec::object::Object::BMInvoke(inv) => {
+                format!("{} {:?}", inv.method, inv.params)
+            }
+            other => panic!("expected an invoke, got {other:?}"),
+        }
+    }
+
     #[test]
     fn a_screen_is_reported_upright_however_it_was_measured() {
         let mut upright = controller_with_game("game1");
@@ -845,7 +897,11 @@ mod session_tests {
 
         let a = upright.make_session_opening("game1");
         let b = sideways.make_session_opening("game1");
-        assert_eq!(a.last().unwrap().payload, b.last().unwrap().payload);
+        assert_eq!(
+            invoke_of(a.last().unwrap()),
+            invoke_of(b.last().unwrap()),
+            "a screen is the same screen whichever way it was measured"
+        );
     }
 
     /// Building a fake ack the way a game sends one, so the automatic path can

@@ -61,7 +61,7 @@ impl Engine {
         log::trace!("rx packet type={pkt_type:?} channel={channel}");
 
         match pkt_type {
-            PacketType::Ping => self.handle_ping(pkt, channel, sender_id, out),
+            PacketType::Ping => self.handle_ping(pkt, sender_id, arrival, out),
             PacketType::Ack => self.handle_ack(pkt, out),
             PacketType::Data => self.handle_data(pkt, channel, out),
             PacketType::Echo => {} // echo is a round-trip of a sent ping, do nothing
@@ -72,8 +72,8 @@ impl Engine {
     fn handle_ping(
         &mut self,
         pkt: &BMPacket,
-        channel: i32,
         sender_id: Option<String>,
+        arrival: &Arrival,
         out: &mut ProcessOutput,
     ) {
         let Some(id) = sender_id else {
@@ -89,13 +89,8 @@ impl Engine {
                 }
             }
         } else {
-            out.outgoings.extend(self.make_packet(
-                &id,
-                channel,
-                Some(Self::default_reliability_for_channel(channel)),
-                PacketType::Echo,
-                pkt.message.clone(),
-            ));
+            out.outgoings
+                .extend(self.make_echo(&id, pkt, arrival.datagram));
         }
     }
 
@@ -380,8 +375,9 @@ impl Engine {
             }
         }
 
-        self.state.registry.upsert(record.clone());
-        self.roles.server.then(|| Event::PeerSeen { record })
+        let seen = self.roles.server.then(|| record.clone());
+        self.state.registry.upsert(record);
+        seen.map(|record| Event::PeerSeen { record })
     }
 }
 
@@ -390,6 +386,7 @@ mod tests {
     use super::*;
     use crate::codec::externals::bm_registry_info::BMRegistryInfo;
     use crate::config::EngineConfig;
+    use crate::engine::events::Via;
     use crate::policy::EndpointMode;
     use crate::types::device_type::DeviceType;
 
@@ -453,6 +450,66 @@ mod tests {
             .remove(0)
             .message()
             .to_vec()
+    }
+
+    /// A ping carries a peer's address so the other side can reach it, and one
+    /// that came unreliably is asking whether that path works in reverse.
+    fn ping_from(peer: &str) -> Vec<u8> {
+        let mut eng = Engine::default();
+        eng.init_local_device(DeviceCore::new(
+            peer.to_string(),
+            "Game".to_string(),
+            DeviceType::Unity,
+        ));
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new("me".to_string(), "Me".to_string(), DeviceType::Android),
+            None,
+        ));
+        eng.make_ping_packet("me").remove(0).message().to_vec()
+    }
+
+    #[test]
+    fn an_echo_goes_back_the_way_the_ping_came() {
+        let mut eng = controller_knowing("game");
+        eng.configure(EngineConfig {
+            endpoint: Some(EndpointMode::Controller),
+            opens_sessions: false,
+            datagrams: true,
+            ..Default::default()
+        })
+        .unwrap();
+        eng.process_incoming(&game_acking("game", 9049), &Arrival::default());
+
+        let ping = ping_from("game");
+        let mut sent = BMPacket::default();
+        deserialize_message(&ping, &mut sent).expect("a ping is a message");
+
+        let over_stream = eng.process_incoming(&ping, &Arrival::default());
+        assert_eq!(over_stream.outgoings.len(), 1);
+        assert_eq!(over_stream.outgoings[0].via, Via::Stream);
+
+        // An echo returns what the ping carried.
+        let mut echoed = BMPacket::default();
+        deserialize_message(over_stream.outgoings[0].message(), &mut echoed)
+            .expect("and so is an echo");
+        assert_eq!(echoed.packet_type, PacketType::Echo);
+        assert_eq!(echoed.sequence, sent.sequence);
+        assert_eq!(echoed.timestamp, sent.timestamp);
+        assert_eq!(echoed.channel, sent.channel);
+        assert_eq!(echoed.message, sent.message);
+
+        let over_datagram = eng.process_incoming(
+            &ping,
+            &Arrival {
+                datagram: true,
+                ..Default::default()
+            },
+        );
+        assert_eq!(over_datagram.outgoings.len(), 1);
+        assert!(
+            over_datagram.outgoings[0].via.is_datagram(),
+            "answering a datagram over the stream tells the sender nothing"
+        );
     }
 
     #[test]
