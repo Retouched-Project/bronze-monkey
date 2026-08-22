@@ -103,14 +103,11 @@ impl EngineState {
         }
 
         // A registry lists what a host said about itself, which a host is free
-        // to get wrong. What we have observed of reaching it outranks that, so
-        // a claim only fills what nothing has told us yet. The claim itself is
-        // kept intact on the info, and goes back out on the wire unaltered.
-        let mut address = known_address.unwrap_or_default();
-        address.fill_gaps_from(&info.device_address);
-
+        // to get wrong, so none of it reaches the record of how to talk to that
+        // host. The claim stays on the info, intact and ready to go back out on
+        // the wire, for a caller that wants to read it.
         let mut core = info.device.clone();
-        core.address = Some(address);
+        core.address = known_address;
 
         let record = DeviceRecord::new(core, Some(info));
         self.registry.upsert(record);

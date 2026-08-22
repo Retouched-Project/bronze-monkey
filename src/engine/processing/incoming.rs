@@ -547,10 +547,10 @@ mod tests {
         );
     }
 
-    /// The host list carries what a host registered with, which is older than
-    /// the port it named in its ack.
+    /// A host list says what a host claims about itself. None of it reaches the
+    /// record of how to reach that host, which holds only what was observed.
     #[test]
-    fn a_host_list_entry_does_not_undo_an_ack() {
+    fn a_host_list_entry_never_reaches_the_observed_address() {
         let mut eng = controller_knowing("game");
         eng.process_incoming(&game_acking("game", 9049), &Arrival::default());
 
@@ -568,12 +568,20 @@ mod tests {
         let address = address_of(&eng, "game").expect("the host is still known");
         assert_eq!(
             address.unreliable_port, 9049,
-            "the ack knows this, a list does not"
+            "the ack named this, a list only claims"
         );
-        assert_eq!(
-            address.reliable_port, 8088,
-            "and the list still fills a gap"
+        assert_eq!(address.reliable_port, 0, "nothing observed a reliable port");
+        assert_ne!(
+            address.address, "10.0.0.9",
+            "a claimed host is not a host we found the peer at"
         );
+
+        // What the host claimed is still there for a caller that wants it.
+        let claimed = eng
+            .registry_info_of("game")
+            .expect("the claim is kept whole");
+        assert_eq!(claimed.device_address.address, "10.0.0.9");
+        assert_eq!(claimed.device_address.reliable_port, 8088);
     }
 
     #[test]
