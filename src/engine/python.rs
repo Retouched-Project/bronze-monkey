@@ -130,8 +130,8 @@ impl BMEnginePy {
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))
     }
 
-    fn drop_device<'py>(&self, py: Python<'py>, device_id: String) -> PyResult<Bound<'py, PyList>> {
-        let actions = self.inner.write().unwrap().drop_device(&device_id);
+    fn peer_gone<'py>(&self, py: Python<'py>, device_id: String) -> PyResult<Bound<'py, PyList>> {
+        let actions = self.inner.write().unwrap().peer_gone(&device_id);
         outgoings_to_py(py, actions)
     }
 

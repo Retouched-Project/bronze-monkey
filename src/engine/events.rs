@@ -88,6 +88,9 @@ pub enum Event {
         record: DeviceRecord,
         udp_port: i32,
     },
+    PeerGone {
+        device_id: String,
+    },
     ConnectionFailed {
         device_id: String,
     },
@@ -290,7 +293,7 @@ pub enum Command {
     DenyRegistration {
         device_id: String,
     },
-    DropDevice {
+    PeerGone {
         device_id: String,
     },
     Register {

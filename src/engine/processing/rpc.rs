@@ -483,7 +483,8 @@ impl Engine {
                 vec![Value::Bool(true)],
             ));
         }
-        out.outgoings.extend(engine.drop_device(&device_id));
+        out.outgoings.extend(engine.peer_gone(&device_id));
+        out.events.push(Event::PeerGone { device_id });
     }
 
     pub(crate) fn rpc_registry_set_visible(ctx: &mut RpcContext) {

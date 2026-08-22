@@ -73,7 +73,7 @@ impl Engine {
             }
             Command::ApproveRegistration { device_id } => self.approve_registration(&device_id),
             Command::DenyRegistration { device_id } => self.deny_registration(&device_id),
-            Command::DropDevice { device_id } => self.drop_device(&device_id),
+            Command::PeerGone { device_id } => self.peer_gone(&device_id),
             Command::Register {
                 target,
                 info,
