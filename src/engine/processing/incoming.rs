@@ -6,9 +6,10 @@ use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::messages::bm_byte_chunk::BMByteChunk;
 use crate::codec::object::Object;
+use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
-use crate::engine::events::{Event, ProcessOutput};
+use crate::engine::events::{Arrival, Event, ProcessOutput};
 use crate::engine::methods;
 use crate::engine::protocol::deserialize_message;
 use crate::types::packet_type::PacketType;
@@ -16,7 +17,10 @@ use crate::types::packet_type::PacketType;
 impl Engine {
     /// Handles one message. A datagram is already one; a stream has to be run
     /// through a [`crate::link::framing::Framer`] first.
-    pub fn process_incoming(&mut self, message: &[u8]) -> ProcessOutput {
+    ///
+    /// `arrival` is whatever the transport knows about where the bytes came
+    /// from. A transport that knows nothing passes `Arrival::default()`.
+    pub fn process_incoming(&mut self, message: &[u8], arrival: &Arrival) -> ProcessOutput {
         log::trace!("process_incoming message len={}", message.len());
 
         let mut out = ProcessOutput::new();
@@ -27,7 +31,7 @@ impl Engine {
         let mut pkt = BMPacket::default();
         match deserialize_message(message, &mut pkt) {
             Ok(_) => {
-                self.handle_deserialized_packet(&pkt, &mut out);
+                self.handle_deserialized_packet(&pkt, arrival, &mut out);
             }
             Err(e) => {
                 log::warn!("failed to deserialize packet: {}", e);
@@ -36,16 +40,20 @@ impl Engine {
         out
     }
 
-    fn handle_deserialized_packet(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
-        let sender_id = if let Some(rec) = self.device_record_from_packet(pkt) {
-            let id = rec.core.device_id.clone();
-            if let Some(event) = self.push_registry_update(rec) {
-                out.events.push(event);
-            }
-            Some(id)
-        } else {
-            None
-        };
+    fn handle_deserialized_packet(
+        &mut self,
+        pkt: &BMPacket,
+        arrival: &Arrival,
+        out: &mut ProcessOutput,
+    ) {
+        if let Some(event) = self.note_peer(pkt, arrival) {
+            out.events.push(event);
+        }
+        let sender_id = Some(pkt.device_id.clone());
+
+        if arrival.datagram {
+            log::trace!("datagram in from '{}'", pkt.device_id);
+        }
 
         let channel = pkt.channel;
         let pkt_type = pkt.packet_type;
@@ -91,10 +99,68 @@ impl Engine {
         }
     }
 
-    fn handle_ack(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
-        let Some(rec) = self.device_record_from_packet(pkt) else {
+    /// Notes that a peer spoke, and where from.
+    ///
+    /// A packet header names a device and says nothing about where it is, so a
+    /// peer already on record is refreshed in place rather than rebuilt.
+    fn note_peer(&mut self, pkt: &BMPacket, arrival: &Arrival) -> Option<Event> {
+        let announce = self.roles.server;
+        let source = arrival.source.as_deref().filter(|s| !s.is_empty());
+
+        if let Some(rec) = self.state.registry.get_mut(&pkt.device_id) {
+            if rec.core.device_name != pkt.device_name {
+                rec.core.device_name.clone_from(&pkt.device_name);
+            }
+            rec.core.device_type = pkt.device_type;
+            Self::note_source(&mut rec.core, source);
+            return announce.then(|| Event::PeerSeen {
+                record: rec.clone(),
+            });
+        }
+
+        let mut core = DeviceCore::new(
+            pkt.device_id.clone(),
+            pkt.device_name.clone(),
+            pkt.device_type,
+        );
+        Self::note_source(&mut core, source);
+        let record = DeviceRecord::new(core, None);
+        let seen = announce.then(|| record.clone());
+        self.state.registry.upsert(record);
+        seen.map(|record| Event::PeerSeen { record })
+    }
+
+    /// The host a peer's bytes came from. The port it listens on for datagrams
+    /// is its own to declare, and it does that in its ack.
+    fn note_source(core: &mut DeviceCore, source: Option<&str>) {
+        let Some(source) = source else {
             return;
         };
+        match core.address.as_mut() {
+            Some(address) if address.address != source => source.clone_into(&mut address.address),
+            Some(_) => {}
+            None => core.address = Some(BMAddress::new(source.to_string(), 0, 0)),
+        }
+    }
+
+    fn note_unreliable_port(&mut self, device_id: &str, port: i32) {
+        let Some(rec) = self.state.registry.get_mut(device_id) else {
+            log::debug!("'{device_id}' announced port {port} before we had a record for it");
+            return;
+        };
+        let known = match rec.core.address.as_mut() {
+            Some(address) => std::mem::replace(&mut address.unreliable_port, port),
+            None => {
+                rec.core.address = Some(BMAddress::new(String::new(), port, 0));
+                0
+            }
+        };
+        if known != port {
+            log::info!("'{device_id}' takes datagrams on port {port}");
+        }
+    }
+
+    fn handle_ack(&mut self, pkt: &BMPacket, out: &mut ProcessOutput) {
         let mut udp_port = 0;
         if let Some(msg) = &pkt.message {
             let mut cur = BMStream::view(msg.as_slice());
@@ -104,10 +170,13 @@ impl Engine {
                 Err(e) => log::debug!("ack decode failed: {e}"),
             }
         }
-        out.events.push(Event::PeerConnected {
-            record: rec,
-            udp_port,
-        });
+        if udp_port > 0 {
+            self.note_unreliable_port(&pkt.device_id, udp_port);
+        }
+        let Some(record) = self.state.registry.get(&pkt.device_id).cloned() else {
+            return;
+        };
+        out.events.push(Event::PeerConnected { record, udp_port });
 
         // The ack is a game saying it is ready to be talked to, and it arrives
         // after the version exchange, so this is the first safe moment to open
@@ -295,23 +364,195 @@ impl Engine {
         }
     }
 
-    fn device_record_from_packet(&self, pkt: &BMPacket) -> Option<DeviceRecord> {
-        let core = DeviceCore::new(
-            pkt.device_id.clone(),
-            pkt.device_name.clone(),
-            pkt.device_type,
-        );
-        Some(DeviceRecord::new(core, None))
-    }
-
     pub fn push_registry_update(&mut self, mut record: DeviceRecord) -> Option<Event> {
-        if record.info.is_none() {
-            if let Some(existing) = self.state.registry.get(record.device_id()) {
+        if let Some(existing) = self.state.registry.get(record.device_id()) {
+            if record.info.is_none() {
                 record.info = existing.info.clone();
+            }
+            // A packet header names a device but says nothing about where it
+            // is, so a record built from one must not lose an address.
+            if let Some(known) = existing.core.address.clone() {
+                record
+                    .core
+                    .address
+                    .get_or_insert_with(BMAddress::default)
+                    .fill_gaps_from(&known);
             }
         }
 
         self.state.registry.upsert(record.clone());
         self.roles.server.then(|| Event::PeerSeen { record })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+    use crate::config::EngineConfig;
+    use crate::policy::EndpointMode;
+    use crate::types::device_type::DeviceType;
+
+    /// A game that will answer with an ack naming the port it listens on.
+    fn game_acking(from: &str, unreliable_port: i32) -> Vec<u8> {
+        let mut eng = Engine::default();
+        let mut core = DeviceCore::new(from.to_string(), "Game".to_string(), DeviceType::Unity);
+        core.address = Some(BMAddress::new("0.0.0.0".to_string(), unreliable_port, 0));
+        eng.init_local_device(core);
+        eng.configure(EngineConfig {
+            endpoint: Some(EndpointMode::Game),
+            opens_sessions: false,
+            ..Default::default()
+        })
+        .unwrap();
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new("me".to_string(), "Me".to_string(), DeviceType::Android),
+            None,
+        ));
+        eng.make_ack_packet("me").remove(0).message().to_vec()
+    }
+
+    fn controller_knowing(game: &str) -> Engine {
+        let mut eng = Engine::default();
+        eng.init_local_device(DeviceCore::new(
+            "me".to_string(),
+            "Me".to_string(),
+            DeviceType::Android,
+        ));
+        eng.configure(EngineConfig {
+            endpoint: Some(EndpointMode::Controller),
+            opens_sessions: false,
+            ..Default::default()
+        })
+        .unwrap();
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new(game.to_string(), "Game".to_string(), DeviceType::Unity),
+            None,
+        ));
+        eng
+    }
+
+    fn address_of<'a>(eng: &'a Engine, id: &str) -> Option<&'a BMAddress> {
+        eng.state.registry.get(id)?.core.address.as_ref()
+    }
+
+    /// Any ordinary message from a peer. It names the sender in its header and
+    /// carries no address at all.
+    fn plain_packet_from(peer: &str) -> Vec<u8> {
+        let mut eng = Engine::default();
+        eng.init_local_device(DeviceCore::new(
+            peer.to_string(),
+            "Game".to_string(),
+            DeviceType::Unity,
+        ));
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new("me".to_string(), "Me".to_string(), DeviceType::Android),
+            None,
+        ));
+        eng.make_message_invoke("me", "onHostUpdate", None, Vec::new())
+            .remove(0)
+            .message()
+            .to_vec()
+    }
+
+    #[test]
+    fn a_peer_is_placed_where_its_bytes_came_from() {
+        let mut eng = controller_knowing("game");
+        eng.process_incoming(
+            &game_acking("game", 9080),
+            &Arrival {
+                source: Some("192.168.1.5".to_string()),
+                ..Default::default()
+            },
+        );
+
+        let address = address_of(&eng, "game").expect("the ack should have placed it");
+        // The host is the transport's to report, the port is the peer's to name.
+        assert_eq!(address.address, "192.168.1.5");
+        assert_eq!(address.unreliable_port, 9080);
+    }
+
+    #[test]
+    fn a_port_learned_from_an_ack_outlives_the_next_packet() {
+        let mut eng = controller_knowing("game");
+        eng.process_incoming(&game_acking("game", 9049), &Arrival::default());
+        assert_eq!(
+            address_of(&eng, "game").map(|a| a.unreliable_port),
+            Some(9049)
+        );
+
+        // Anything at all from the same peer, carrying no address of its own.
+        eng.process_incoming(&plain_packet_from("game"), &Arrival::default());
+        assert_eq!(
+            address_of(&eng, "game").map(|a| a.unreliable_port),
+            Some(9049),
+            "a later packet must not erase where the peer can be reached"
+        );
+    }
+
+    /// The host list carries what a host registered with, which is older than
+    /// the port it named in its ack.
+    #[test]
+    fn a_host_list_entry_does_not_undo_an_ack() {
+        let mut eng = controller_knowing("game");
+        eng.process_incoming(&game_acking("game", 9049), &Arrival::default());
+
+        let mut listed = DeviceCore::new("game".to_string(), "Game".to_string(), DeviceType::Unity);
+        listed.address = Some(BMAddress::new("10.0.0.9".to_string(), 0, 8088));
+        eng.state.upsert_registry_info(BMRegistryInfo {
+            slot_id: 1,
+            app_id: "app".to_string(),
+            current_players: None,
+            max_players: None,
+            device: listed,
+            device_address: BMAddress::new("10.0.0.9".to_string(), 0, 8088),
+        });
+
+        let address = address_of(&eng, "game").expect("the host is still known");
+        assert_eq!(
+            address.unreliable_port, 9049,
+            "the ack knows this, a list does not"
+        );
+        assert_eq!(
+            address.reliable_port, 8088,
+            "and the list still fills a gap"
+        );
+    }
+
+    #[test]
+    fn a_claimed_port_must_not_outrank_an_observed_one() {
+        let mut eng = controller_knowing("game");
+        eng.process_incoming(&game_acking("game", 9049), &Arrival::default());
+
+        // A host list update arriving later, claiming a different port.
+        let mut listed = DeviceCore::new("game".to_string(), "Game".to_string(), DeviceType::Unity);
+        listed.address = Some(BMAddress::new("10.0.0.9".to_string(), 1234, 8088));
+        eng.state.upsert_registry_info(BMRegistryInfo {
+            slot_id: 1,
+            app_id: "app".to_string(),
+            current_players: None,
+            max_players: None,
+            device: listed,
+            device_address: BMAddress::new("10.0.0.9".to_string(), 1234, 8088),
+        });
+
+        assert_eq!(
+            address_of(&eng, "game").map(|a| a.unreliable_port),
+            Some(9049),
+            "the ack observed this port, the list only claims one"
+        );
+    }
+
+    #[test]
+    fn a_relayed_arrival_still_carries_the_port() {
+        let mut eng = controller_knowing("game");
+        eng.process_incoming(&game_acking("game", 9080), &Arrival::default());
+
+        let address = address_of(&eng, "game").expect("the ack alone should record a port");
+        assert_eq!(address.unreliable_port, 9080);
+        assert!(
+            address.address.is_empty(),
+            "a transport that reports no source invents none"
+        );
     }
 }

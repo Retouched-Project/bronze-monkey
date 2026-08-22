@@ -26,6 +26,18 @@ impl BMAddress {
         }
     }
 
+    pub fn fill_gaps_from(&mut self, known: &BMAddress) {
+        if self.address.is_empty() {
+            self.address.clone_from(&known.address);
+        }
+        if self.unreliable_port <= 0 {
+            self.unreliable_port = known.unreliable_port;
+        }
+        if self.reliable_port <= 0 {
+            self.reliable_port = known.reliable_port;
+        }
+    }
+
     pub fn read_from<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Self> {
         let address = input.read_utf()?;
         let unreliable_port = input.read_int()?;

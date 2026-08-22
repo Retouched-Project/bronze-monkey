@@ -191,7 +191,7 @@ mod tests {
         assert!(deserialize_message(&huge, &mut decoded).is_err());
 
         let mut engine = crate::engine::processing::Engine::default();
-        let out = engine.process_incoming(&huge);
+        let out = engine.process_incoming(&huge, &crate::engine::events::Arrival::default());
         assert!(
             out.events.is_empty(),
             "an oversized message must not decode"

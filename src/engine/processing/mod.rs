@@ -7,6 +7,7 @@ mod incoming;
 mod rpc;
 mod server_ops;
 
+use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::messages::bm_encoding::Value;
 use crate::config::{ConfigError, EngineConfig};
 use crate::devices::device_core::DeviceCore;
@@ -57,6 +58,9 @@ pub(crate) type RpcHandler = fn(&mut RpcContext);
 pub struct Engine {
     pub(crate) state: EngineState,
     pub(crate) roles: ActiveRoles,
+    /// Whether the caller has an unreliable path it can write to.
+    pub(crate) datagrams: bool,
+    pub(crate) input_paths: HashMap<String, bool>,
     bound_continuations: HashMap<String, RpcHandler>,
     pub server_policy: ServerPolicy,
     pub game_policy: GamePolicy,
@@ -69,6 +73,8 @@ impl Engine {
         Self {
             state: EngineState::new(),
             roles: ActiveRoles::default(),
+            datagrams: false,
+            input_paths: HashMap::new(),
             bound_continuations: HashMap::new(),
             server_policy: ServerPolicy::new(),
             game_policy: GamePolicy::new(),
@@ -89,20 +95,26 @@ impl Engine {
         self.roles
     }
 
+    pub(crate) fn registry_info_of(&self, device_id: &str) -> Option<BMRegistryInfo> {
+        self.state.registry_info_of(device_id)
+    }
+
     /// Everything this engine is told about itself. Pass the whole of it
     /// whenever any of it changes; roles move, and a screen can be learned late.
     pub fn configure(&mut self, config: EngineConfig) -> Result<(), ConfigError> {
         config.check()?;
         log::info!(
-            "configure server={} endpoint={:?} opens_sessions={}",
+            "configure server={} endpoint={:?} opens_sessions={} datagrams={}",
             config.server,
             config.endpoint,
-            config.opens_sessions
+            config.opens_sessions,
+            config.datagrams
         );
         self.roles = ActiveRoles {
             server: config.server,
             endpoint: config.endpoint,
         };
+        self.datagrams = config.datagrams;
         self.server_policy.auto_approve_registration = config.approves_registrations;
         self.controller_policy.session = SessionInputs {
             automatic: config.opens_sessions,
@@ -187,6 +199,7 @@ impl Engine {
     pub(crate) fn reset_game_session(&mut self) {
         self.controller_policy.input_reliability = Default::default();
         self.state.chunk_buffers.clear();
+        self.input_paths.clear();
     }
 
     pub(crate) fn set_input_reliability(&mut self, touch: Option<i32>, sensors: Option<i32>) {

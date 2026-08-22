@@ -20,9 +20,10 @@ use crate::codec::messages::touch::Touch;
 use crate::codec::messages::touch_set::TouchSet;
 use crate::codec::object::Object;
 use crate::devices::device_core::DeviceCore;
-use crate::engine::events::Outgoing;
+use crate::engine::events::{Outgoing, Via};
 use crate::engine::methods;
 use crate::engine::protocol::serialize_message;
+use crate::link::framing::frame;
 use crate::types::channel_type::ChannelType;
 use crate::types::control_mode::ControlMode;
 use crate::types::packet_type::PacketType;
@@ -460,6 +461,8 @@ impl Engine {
         domain: Option<String>,
         return_method: Option<&str>,
     ) -> Vec<Outgoing> {
+        self.state.local_info = Some(info.clone());
+
         let mut params = vec![Value::Object(Object::BMRegistryInfo(info))];
         if let Some(d) = domain {
             params.push(Value::String(d));
@@ -624,18 +627,82 @@ impl Engine {
             packet_type.code(),
             message,
         ) {
-            Ok(bytes) => vec![Outgoing {
-                target_device_id: target.to_string(),
-                channel,
-                reliability: rel,
-                prefers_datagram: rel == BMReliability::Unreliable.code(),
-                payload: bytes,
-            }],
+            Ok(bytes) => vec![self.dispatch(target.to_string(), channel, rel, bytes)],
             Err(e) => {
                 log::error!("packet build failed: {e}");
                 Vec::new()
             }
         }
+    }
+
+    /// Shapes a message for the path it takes to this peer.
+    ///
+    /// A datagram is chosen when the message goes unreliably and the caller
+    /// declared an unreliable path. Everything else is framed and goes over the
+    /// stream, which every peer can accept at any time.
+    pub(crate) fn dispatch(
+        &mut self,
+        target: String,
+        channel: i32,
+        reliability: i32,
+        message: Vec<u8>,
+    ) -> Outgoing {
+        let unreliable = reliability == BMReliability::Unreliable.code();
+        let datagram = unreliable
+            .then(|| self.datagram_endpoint_of(&target))
+            .flatten();
+
+        if unreliable {
+            self.note_input_path(&target, datagram.is_some());
+        }
+
+        let (via, payload) = match datagram {
+            Some((address, port)) => (Via::Datagram { address, port }, message),
+            None => (Via::Stream, frame(&message)),
+        };
+        Outgoing {
+            target_device_id: target,
+            channel,
+            reliability,
+            via,
+            payload,
+        }
+    }
+
+    /// Reports the path input takes to a peer, once, and again if it changes.
+    fn note_input_path(&mut self, target: &str, datagram: bool) {
+        if self.input_paths.insert(target.to_string(), datagram) == Some(datagram) {
+            return;
+        }
+        match self.datagram_endpoint_of(target) {
+            Some((address, port)) => {
+                log::info!("input to '{target}' goes by datagram, to {address}:{port}")
+            }
+            None => {
+                log::info!("input to '{target}' goes by stream: no unreliable path was declared")
+            }
+        }
+    }
+
+    /// Where a peer takes datagrams, when the caller has an unreliable path to
+    /// write to.
+    ///
+    /// Whether a message wants a datagram is the protocol's call, made through
+    /// reliability, and a game that cannot take one says so with
+    /// setReliabilityForTouch. So this reports what is known of reaching the
+    /// peer rather than judging it: an incomplete answer is a fault to surface,
+    /// not a reason to quietly send everything the slow way.
+    fn datagram_endpoint_of(&self, target: &str) -> Option<(String, i32)> {
+        if !self.datagrams {
+            return None;
+        }
+        let known = self
+            .state
+            .registry
+            .get(target)
+            .and_then(|r| r.core.address.clone())
+            .unwrap_or_default();
+        Some((known.address, known.unreliable_port))
     }
 
     fn build_packet_bytes(
@@ -684,6 +751,7 @@ mod session_tests {
     use crate::config::EngineConfig;
     use crate::devices::device_core::DeviceCore;
     use crate::engine::device_registry::DeviceRecord;
+    use crate::engine::events::Arrival;
     use crate::engine::methods;
     use crate::engine::processing::Engine;
     use crate::engine::protocol::deserialize_message;
@@ -715,7 +783,7 @@ mod session_tests {
             .iter()
             .filter_map(|o| {
                 let mut pkt = crate::codec::externals::bm_packet::BMPacket::default();
-                deserialize_message(&o.payload, &mut pkt).ok()?;
+                deserialize_message(o.message(), &mut pkt).ok()?;
                 let msg = pkt.message?;
                 let mut cur = crate::codec::bm_stream::BMStream::view(msg.as_slice());
                 match crate::codec::object::Object::decode(&mut cur).ok()? {
@@ -803,7 +871,7 @@ mod session_tests {
             ),
             None,
         ));
-        eng.make_ack_packet("local").remove(0).payload
+        eng.make_ack_packet("local").remove(0).message().to_vec()
     }
 
     #[test]
@@ -818,7 +886,7 @@ mod session_tests {
             ..Default::default()
         })
         .unwrap();
-        let out = eng.process_incoming(&ack_from("game1"));
+        let out = eng.process_incoming(&ack_from("game1"), &Arrival::default());
         assert_eq!(
             methods_of(&out.outgoings),
             [
@@ -832,7 +900,7 @@ mod session_tests {
     #[test]
     fn a_controller_that_asked_for_nothing_is_left_to_open_its_own() {
         let mut eng = controller_with_game("game1");
-        let out = eng.process_incoming(&ack_from("game1"));
+        let out = eng.process_incoming(&ack_from("game1"), &Arrival::default());
         assert!(
             out.outgoings.is_empty(),
             "the engine spoke for a caller that never asked it to"
@@ -860,7 +928,7 @@ mod session_tests {
             ..Default::default()
         })
         .unwrap();
-        let out = eng.process_incoming(&ack_from("game1"));
+        let out = eng.process_incoming(&ack_from("game1"), &Arrival::default());
         assert!(out.outgoings.is_empty());
         // The values it handed over are still there to send by hand.
         assert_eq!(

@@ -43,6 +43,10 @@ impl DeviceRegistry {
         self.devices.get(device_id)
     }
 
+    pub fn get_mut(&mut self, device_id: &str) -> Option<&mut DeviceRecord> {
+        self.devices.get_mut(device_id)
+    }
+
     pub fn snapshot(&self) -> Vec<DeviceRecord> {
         self.devices.values().cloned().collect()
     }

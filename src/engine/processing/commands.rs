@@ -2,7 +2,6 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 use super::Engine;
-use crate::codec::externals::bm_reliability::BMReliability;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_invoke::BMInvoke;
 use crate::codec::object::Object;
@@ -25,13 +24,7 @@ impl Engine {
                     log::warn!("emit Raw: target device id is empty");
                     return Vec::new();
                 }
-                vec![Outgoing {
-                    target_device_id: target,
-                    channel,
-                    reliability,
-                    prefers_datagram: reliability == BMReliability::Unreliable.code(),
-                    payload,
-                }]
+                vec![self.dispatch(target, channel, reliability, payload)]
             }
             Command::SendObject {
                 target,
@@ -129,15 +122,30 @@ impl Engine {
                 None,
                 vec![Value::Bool(visible), Value::Bool(notify_everyone)],
             ),
-            Command::ConnectToHost {
-                target,
-                host,
-                self_info,
-            } => {
+            Command::ConnectToHost { target, host_id } => {
+                let Some(host) = self.registry_info_of(&host_id) else {
+                    log::warn!("emit ConnectToHost: '{host_id}' is not a host we know");
+                    return Vec::new();
+                };
+                let Some(self_info) = self.state.local_info.clone() else {
+                    log::warn!(
+                        "emit ConnectToHost: nothing registered to introduce ourselves with"
+                    );
+                    return Vec::new();
+                };
                 self.reset_game_session();
                 self.make_device_connect_requested(&target, host, self_info)
             }
-            Command::ReportConnectionFailed { target, controller } => {
+            Command::ReportConnectionFailed {
+                target,
+                controller_id,
+            } => {
+                let Some(controller) = self.registry_info_of(&controller_id) else {
+                    log::warn!(
+                        "emit ReportConnectionFailed: '{controller_id}' is not a device we know"
+                    );
+                    return Vec::new();
+                };
                 self.make_connection_failed(&target, controller)
             }
             Command::SendTouch { target, touches } => {
@@ -327,10 +335,12 @@ impl Engine {
 mod tests {
     use super::*;
     use crate::codec::externals::bm_packet::BMPacket;
+    use crate::codec::externals::bm_reliability::BMReliability;
     use crate::devices::device_core::DeviceCore;
     use crate::engine::device_registry::DeviceRecord;
-    use crate::engine::protocol::{deserialize_message, deserialize_packet};
-    use crate::link::framing::{Framer, frame};
+    use crate::engine::events::Via;
+    use crate::engine::protocol::deserialize_message;
+    use crate::link::framing::Framer;
     use crate::types::device_type::DeviceType;
 
     fn engine_with_peer(peer: &str) -> Engine {
@@ -347,6 +357,24 @@ mod tests {
         eng
     }
 
+    /// A peer that has told us a port, and a caller that can write to it.
+    fn engine_with_datagrams(peer: &str) -> Engine {
+        let mut eng = engine_with_peer(peer);
+        eng.configure(crate::config::EngineConfig {
+            datagrams: true,
+            ..Default::default()
+        })
+        .expect("nothing else is configured");
+        let mut core = DeviceCore::new(peer.to_string(), "Game".to_string(), DeviceType::Flash);
+        core.address = Some(crate::devices::bm_address::BMAddress::new(
+            "10.0.0.2".to_string(),
+            9080,
+            9081,
+        ));
+        eng.push_registry_update(DeviceRecord::new(core, None));
+        eng
+    }
+
     #[test]
     fn an_outgoing_carries_a_message_with_no_length_in_front() {
         let mut eng = engine_with_peer("game1");
@@ -356,19 +384,22 @@ mod tests {
             y: 2,
         });
         assert_eq!(out.len(), 1);
+        assert_eq!(out[0].via, Via::Stream);
 
-        // It reads back directly as a message.
+        // It arrives ready to write, so a stream reads it back whole.
+        let mut framer = Framer::new();
+        let back = framer
+            .feed(&out[0].payload)
+            .expect("payload should be framed");
+        assert_eq!(back.len(), 1);
+
         let mut pkt = BMPacket::default();
-        deserialize_message(&out[0].payload, &mut pkt).expect("payload should be a message");
+        deserialize_message(&back[0], &mut pkt).expect("the frame should hold a message");
         assert_eq!(pkt.device_id, "local");
-
-        // And not as a framed packet, which is what it used to be.
-        let mut framed = BMPacket::default();
-        assert!(deserialize_packet(&out[0].payload, &mut framed).is_err());
     }
 
     #[test]
-    fn a_framed_outgoing_survives_a_stream() {
+    fn a_stream_bound_message_is_not_a_bare_one() {
         let mut eng = engine_with_peer("game1");
         let out = eng.emit(Command::SendDPad {
             target: "game1".to_string(),
@@ -376,14 +407,63 @@ mod tests {
             y: 4,
         });
 
-        let mut framer = Framer::new();
-        let back = framer.feed(&frame(&out[0].payload)).unwrap();
-        assert_eq!(back, vec![out[0].payload.clone()]);
+        // The length in front is what makes it writable, and it is part of the
+        // payload, so the payload does not read as a bare message.
+        let mut bare = BMPacket::default();
+        assert!(deserialize_message(&out[0].payload, &mut bare).is_err());
     }
 
     #[test]
-    fn sensor_traffic_prefers_a_datagram_and_control_traffic_does_not() {
+    fn a_datagram_is_taken_when_reliability_asks_and_a_path_exists() {
+        // Unreliable traffic alone is not enough: without an unreliable path
+        // the caller could not write a bare message anywhere.
         let mut eng = engine_with_peer("game1");
+        let sensors = eng.emit(Command::SendAccel {
+            target: "game1".to_string(),
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        });
+        assert_eq!(sensors[0].reliability, BMReliability::Unreliable.code());
+        assert_eq!(sensors[0].via, Via::Stream, "no datagram path was declared");
+
+        let mut eng = engine_with_datagrams("game1");
+        let sensors = eng.emit(Command::SendAccel {
+            target: "game1".to_string(),
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        });
+        assert_eq!(
+            sensors[0].via,
+            Via::Datagram {
+                address: "10.0.0.2".to_string(),
+                port: 9080
+            },
+            "the engine says where, so nothing else has to work it out"
+        );
+        // A datagram carries the message as it is.
+        let mut pkt = BMPacket::default();
+        deserialize_message(&sensors[0].payload, &mut pkt).expect("a datagram is a bare message");
+
+        let control = eng.emit(Command::SendButton {
+            target: "game1".to_string(),
+            handler: "a".to_string(),
+            pressed: true,
+        });
+        assert_eq!(control[0].via, Via::Stream, "control traffic goes reliably");
+    }
+
+    /// Reliability is the game's to set, through setReliabilityForTouch, and a
+    /// game that wants its input reliably says so.
+    #[test]
+    fn a_peer_with_no_port_still_gets_what_reliability_asked_for() {
+        let mut eng = engine_with_peer("game1");
+        eng.configure(crate::config::EngineConfig {
+            datagrams: true,
+            ..Default::default()
+        })
+        .expect("nothing else is configured");
 
         let sensors = eng.emit(Command::SendAccel {
             target: "game1".to_string(),
@@ -391,13 +471,85 @@ mod tests {
             y: 0.0,
             z: 1.0,
         });
-        assert!(sensors[0].prefers_datagram, "sensors go unreliable");
+        assert_eq!(
+            sensors[0].via,
+            Via::Datagram {
+                address: String::new(),
+                port: 0
+            },
+            "an empty endpoint fails loudly where a stream would hide it"
+        );
+    }
 
-        let control = eng.emit(Command::SendButton {
-            target: "game1".to_string(),
-            handler: "a".to_string(),
-            pressed: true,
+    /// A host list entry and our own registration are both things the engine
+    /// already holds, so asking to be introduced needs neither passed back.
+    #[test]
+    fn an_introduction_is_built_from_what_the_engine_already_knows() {
+        let mut eng = engine_with_peer("game1");
+        let listed = registry_info("game1", DeviceType::Unity);
+        eng.state.upsert_registry_info(listed);
+
+        // Nothing registered yet, so there is no way to say who we are.
+        let refused = eng.emit(Command::ConnectToHost {
+            target: "server".to_string(),
+            host_id: "game1".to_string(),
         });
-        assert!(!control[0].prefers_datagram, "buttons go reliable");
+        assert!(refused.is_empty(), "it cannot invent a registration");
+
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new(
+                "server".to_string(),
+                "Registry".to_string(),
+                DeviceType::Server,
+            ),
+            None,
+        ));
+        eng.emit(Command::Register {
+            target: "server".to_string(),
+            info: registry_info("local", DeviceType::Android),
+            domain: None,
+            return_method: None,
+        });
+
+        let out = eng.emit(Command::ConnectToHost {
+            target: "server".to_string(),
+            host_id: "game1".to_string(),
+        });
+        assert_eq!(out.len(), 1, "the introduction goes to the registry");
+        assert_eq!(out[0].target_device_id, "server");
+    }
+
+    #[test]
+    fn an_unknown_host_is_refused_rather_than_guessed() {
+        let mut eng = engine_with_peer("game1");
+        eng.emit(Command::Register {
+            target: "game1".to_string(),
+            info: registry_info("local", DeviceType::Android),
+            domain: None,
+            return_method: None,
+        });
+        let out = eng.emit(Command::ConnectToHost {
+            target: "game1".to_string(),
+            host_id: "never-heard-of-it".to_string(),
+        });
+        assert!(out.is_empty());
+    }
+
+    fn registry_info(
+        id: &str,
+        kind: DeviceType,
+    ) -> crate::codec::externals::bm_registry_info::BMRegistryInfo {
+        let mut device = DeviceCore::new(id.to_string(), id.to_string(), kind);
+        let address =
+            crate::devices::bm_address::BMAddress::new("10.0.0.2".to_string(), 9080, 9081);
+        device.address = Some(address.clone());
+        crate::codec::externals::bm_registry_info::BMRegistryInfo {
+            slot_id: 0,
+            app_id: "app".to_string(),
+            current_players: None,
+            max_players: None,
+            device,
+            device_address: address,
+        }
     }
 }

@@ -167,6 +167,9 @@ impl Engine {
             engine, inv, out, ..
         } = ctx;
         let infos = engine.collect_registry_infos(&inv.params);
+        for info in &infos {
+            engine.state.upsert_registry_info(info.clone());
+        }
         out.events.push(Event::HostList { infos });
     }
 
@@ -218,6 +221,7 @@ impl Engine {
             engine, inv, out, ..
         } = ctx;
         for info in engine.collect_registry_infos(&inv.params) {
+            engine.state.upsert_registry_info(info.clone());
             out.events.push(Event::HostConnected { info });
         }
     }
@@ -305,6 +309,7 @@ impl Engine {
             engine, inv, out, ..
         } = ctx;
         for info in engine.collect_registry_infos(&inv.params) {
+            engine.state.upsert_registry_info(info.clone());
             out.events.push(Event::HostUpdated { info });
         }
     }

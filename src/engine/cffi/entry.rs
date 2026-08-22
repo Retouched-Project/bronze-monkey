@@ -8,7 +8,7 @@ use crate::controls::assembler::{SchemeAssembler, SchemeOffer};
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
-use crate::engine::events::Command;
+use crate::engine::events::{Arrival, Command};
 use crate::engine::processing::Engine;
 use crate::link::crossdomain::Sniffer;
 use crate::link::framing::Framer;
@@ -155,7 +155,7 @@ pub unsafe extern "C" fn bm_engine_init_local_device(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn bm_engine_register_device(
+pub unsafe extern "C" fn bm_engine_declare_peer(
     ptr_engine: *mut Engine,
     mp_ptr: *const u8,
     mp_len: usize,
@@ -178,6 +178,8 @@ pub unsafe extern "C" fn bm_engine_process_incoming(
     ptr_engine: *mut Engine,
     payload: *const u8,
     payload_len: usize,
+    arrival: *const u8,
+    arrival_len: usize,
     out_ptr: *mut *mut u8,
     out_len: *mut usize,
 ) -> bool {
@@ -188,7 +190,15 @@ pub unsafe extern "C" fn bm_engine_process_incoming(
         let Some(engine) = engine_mut(ptr_engine) else {
             return false;
         };
-        let out = engine.process_incoming(in_slice(payload, payload_len));
+        // A caller with nothing to say about the transport passes no bytes.
+        let arrival = match arrival_len {
+            0 => Arrival::default(),
+            _ => match rmp_serde::from_slice(in_slice(arrival, arrival_len)) {
+                Ok(a) => a,
+                Err(_) => return false,
+            },
+        };
+        let out = engine.process_incoming(in_slice(payload, payload_len), &arrival);
         match rmp_serde::to_vec_named(&out) {
             Ok(buf) => {
                 write_buf(buf, out_ptr, out_len);

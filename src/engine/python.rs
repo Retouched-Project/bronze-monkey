@@ -19,7 +19,7 @@ use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
-use crate::engine::events::{Command, Outgoing};
+use crate::engine::events::{Arrival, Command, Outgoing};
 use crate::engine::processing::Engine;
 use crate::engine::protocol::{
     deserialize_packet as protocol_deserialize_packet, serialize_packet,
@@ -145,8 +145,20 @@ impl BMEnginePy {
         Ok(PyList::new(py, py_records)?)
     }
 
-    fn process_incoming<'py>(&self, py: Python<'py>, data: &[u8]) -> PyResult<Bound<'py, PyAny>> {
-        let out = self.inner.write().unwrap().process_incoming(data);
+    /// `arrival` is whatever the transport knows about where the bytes came
+    /// from. A relayed transport has nothing to say and passes nothing.
+    #[pyo3(signature = (data, arrival = None))]
+    fn process_incoming<'py>(
+        &self,
+        py: Python<'py>,
+        data: &[u8],
+        arrival: Option<Bound<'py, PyAny>>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let arrival: Arrival = match arrival {
+            Some(value) => depythonize(&value)?,
+            None => Arrival::default(),
+        };
+        let out = self.inner.write().unwrap().process_incoming(data, &arrival);
         Ok(pythonize(py, &out)?)
     }
 
@@ -171,7 +183,7 @@ impl BMEnginePy {
         self.inner.write().unwrap().clear_button_handlers();
     }
 
-    fn register_device(
+    fn declare_peer(
         &self,
         device_id: String,
         device_name: String,
@@ -585,6 +597,9 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("DEVICE_TYPE_NATIVE", DeviceType::Native.code())?;
     m.add("DEVICE_TYPE_PALM", DeviceType::Palm.code())?;
     m.add("DEVICE_TYPE_SERVER", DeviceType::Server.code())?;
+    m.add("ENDPOINT_MODE_NONE", EndpointMode::NONE_CODE)?;
+    m.add("ENDPOINT_MODE_GAME", EndpointMode::Game.code())?;
+    m.add("ENDPOINT_MODE_CONTROLLER", EndpointMode::Controller.code())?;
     m.add("PACKET_TYPE_DATA", PacketType::Data.code())?;
     m.add("PACKET_TYPE_PING", PacketType::Ping.code())?;
     m.add("PACKET_TYPE_ACK", PacketType::Ack.code())?;

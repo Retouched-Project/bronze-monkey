@@ -11,6 +11,7 @@ pub struct EngineState {
     pub(crate) registry: DeviceRegistry,
     pub(crate) seq_by_channel: HashMap<i32, i32>,
     pub(crate) local_device: Option<DeviceCore>,
+    pub(crate) local_info: Option<BMRegistryInfo>,
     pub(crate) chunk_buffers: HashMap<String, Vec<u8>>,
     pub(crate) invoke_counter: i32,
     pub(crate) used_slots: HashSet<i16>,
@@ -23,6 +24,7 @@ impl EngineState {
             registry: DeviceRegistry::default(),
             seq_by_channel: HashMap::new(),
             local_device: None,
+            local_info: None,
             chunk_buffers: HashMap::new(),
             invoke_counter: 1,
             used_slots: HashSet::new(),
@@ -40,6 +42,10 @@ impl EngineState {
 
     pub fn local_device(&self) -> Option<&DeviceCore> {
         self.local_device.as_ref()
+    }
+
+    pub(crate) fn registry_info_of(&self, device_id: &str) -> Option<BMRegistryInfo> {
+        self.registry.get(device_id)?.info.clone()
     }
 
     pub fn init_local_device(&mut self, core: DeviceCore) {
@@ -75,6 +81,11 @@ impl EngineState {
     }
 
     pub(crate) fn upsert_registry_info(&mut self, mut info: BMRegistryInfo) {
+        let known_address = self
+            .registry
+            .get(&info.device.device_id)
+            .and_then(|r| r.core.address.clone());
+
         if let Some(existing) = self
             .registry
             .get(&info.device.device_id)
@@ -90,7 +101,18 @@ impl EngineState {
                 info.max_players = existing.max_players;
             }
         }
-        let record = DeviceRecord::new(info.device.clone(), Some(info));
+
+        // A registry lists what a host said about itself, which a host is free
+        // to get wrong. What we have observed of reaching it outranks that, so
+        // a claim only fills what nothing has told us yet. The claim itself is
+        // kept intact on the info, and goes back out on the wire unaltered.
+        let mut address = known_address.unwrap_or_default();
+        address.fill_gaps_from(&info.device_address);
+
+        let mut core = info.device.clone();
+        core.address = Some(address);
+
+        let record = DeviceRecord::new(core, Some(info));
         self.registry.upsert(record);
     }
 

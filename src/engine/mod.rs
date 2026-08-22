@@ -14,6 +14,6 @@ pub mod state;
 pub mod wasm;
 
 pub use device_registry::{DeviceRecord, DeviceRegistry};
-pub use events::{Command, ControlConfig, Event, Outgoing, ProcessOutput, Sensor};
+pub use events::{Arrival, Command, ControlConfig, Event, Outgoing, ProcessOutput, Sensor, Via};
 pub use processing::Engine;
 pub use state::EngineState;

@@ -7,7 +7,7 @@ use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
-use crate::engine::events::Command;
+use crate::engine::events::{Arrival, Command};
 use crate::types::device_type::DeviceType;
 use console_error_panic_hook;
 use js_sys;
@@ -139,7 +139,7 @@ impl BmEngineWasm {
         Ok(())
     }
 
-    pub fn register_device(
+    pub fn declare_peer(
         &mut self,
         id: &str,
         name: &str,
@@ -235,8 +235,17 @@ impl BmEngineWasm {
         Ok(array.into())
     }
 
-    pub fn process_incoming(&mut self, data: &[u8]) -> Result<JsValue, JsError> {
-        let result = catch_unwind(AssertUnwindSafe(|| self.inner.process_incoming(data)));
+    /// `arrival` is whatever the transport knows about where the bytes came
+    /// from. A relayed transport has nothing to say and passes nothing.
+    pub fn process_incoming(&mut self, data: &[u8], arrival: JsValue) -> Result<JsValue, JsError> {
+        let arrival: Arrival = if arrival.is_undefined() || arrival.is_null() {
+            Arrival::default()
+        } else {
+            serde_wasm_bindgen::from_value(arrival).map_err(|e| JsError::new(&e.to_string()))?
+        };
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            self.inner.process_incoming(data, &arrival)
+        }));
 
         match result {
             Ok(out) => to_js(&out),

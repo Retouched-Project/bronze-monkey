@@ -9,15 +9,58 @@ use crate::engine::device_registry::DeviceRecord;
 use crate::types::control_mode::ControlMode;
 use serde::{Deserialize, Serialize};
 
+/// What a transport knows about bytes it just received.
+///
+/// Every field is optional, so a transport that carries no addressing of its
+/// own says nothing and passes `Arrival::default()`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
+pub struct Arrival {
+    pub source: Option<String>,
+    pub source_port: i32,
+    pub datagram: bool,
+}
+
+/// Which path an outgoing message is built for, and where that path leads.
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all_fields = "camelCase"))]
+pub enum Via {
+    Stream,
+    Datagram { address: String, port: i32 },
+}
+
+impl Via {
+    pub fn is_datagram(&self) -> bool {
+        matches!(self, Via::Datagram { .. })
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct Outgoing {
     pub target_device_id: String,
     pub channel: i32,
     pub reliability: i32,
-    pub prefers_datagram: bool,
+    pub via: Via,
     #[serde(with = "serde_bytes")]
     pub payload: Vec<u8>,
+}
+
+impl Outgoing {
+    /// The message inside the payload, without whatever the path put around
+    /// it. For inspecting what was sent. Writing is `payload`, always.
+    pub fn message(&self) -> &[u8] {
+        match self.via {
+            Via::Stream => {
+                let start = crate::link::framing::LENGTH_PREFIX_LEN.min(self.payload.len());
+                &self.payload[start..]
+            }
+            Via::Datagram { .. } => &self.payload,
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, Serialize)]
@@ -276,12 +319,11 @@ pub enum Command {
     },
     ConnectToHost {
         target: String,
-        host: BMRegistryInfo,
-        self_info: BMRegistryInfo,
+        host_id: String,
     },
     ReportConnectionFailed {
         target: String,
-        controller: BMRegistryInfo,
+        controller_id: String,
     },
     SendTouch {
         target: String,

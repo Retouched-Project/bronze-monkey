@@ -32,6 +32,12 @@ pub struct EngineConfig {
 
     /// Whether a registry lets devices in without being asked.
     pub approves_registrations: bool,
+
+    /// Whether the caller has an unreliable path it can write to. Leaving this
+    /// false means every message comes back framed for a stream, which every
+    /// peer accepts. It says nothing about owning a socket: a transport that
+    /// relays to one elsewhere still has the path.
+    pub datagrams: bool,
 }
 
 impl Default for EngineConfig {
@@ -45,6 +51,7 @@ impl Default for EngineConfig {
             screen_width: 0,
             screen_height: 0,
             approves_registrations: true,
+            datagrams: false,
         }
     }
 }
