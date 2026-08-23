@@ -290,6 +290,29 @@ pub unsafe extern "C" fn bm_engine_configure(
     })
 }
 
+/// Takes a msgpack encoded list of handler names.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_engine_register_button_handlers(
+    ptr_engine: *mut Engine,
+    mp_ptr: *const u8,
+    mp_len: usize,
+) -> bool {
+    catch_bool(|| {
+        let Some(engine) = engine_mut(ptr_engine) else {
+            return false;
+        };
+        let handlers: Vec<String> = match rmp_serde::from_slice(in_slice(mp_ptr, mp_len)) {
+            Ok(h) => h,
+            Err(e) => {
+                crate::set_last_error(e);
+                return false;
+            }
+        };
+        engine.register_button_handlers(handlers);
+        true
+    })
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn bm_engine_clear_button_handlers(ptr_engine: *mut Engine) -> bool {
     catch_bool(|| {

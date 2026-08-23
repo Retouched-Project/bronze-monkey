@@ -513,6 +513,77 @@ mod tests {
         );
     }
 
+    /// A game recognises a button by the handler name its scheme gave it, and
+    /// a controller has no business doing so.
+    #[test]
+    fn a_registered_handler_turns_an_invoke_into_a_button() {
+        let press = invoke_from("phone", "aButton", methods::BUTTON_DOWN);
+
+        let mut game = peer_of("game", DeviceType::Unity, EndpointMode::Game);
+        game.register_button_handlers(["aButton"]);
+        let out = game.process_incoming(&press, &Arrival::default());
+        let pressed = out.events.iter().find_map(|e| match e {
+            Event::Button {
+                handler, pressed, ..
+            } => Some((handler.clone(), *pressed)),
+            _ => None,
+        });
+        assert_eq!(pressed, Some(("aButton".to_string(), true)));
+
+        // Nothing was registered, so the same invoke is just an invoke.
+        let mut bare = peer_of("game", DeviceType::Unity, EndpointMode::Game);
+        let out = bare.process_incoming(&press, &Arrival::default());
+        assert!(
+            !out.events.iter().any(|e| matches!(e, Event::Button { .. })),
+            "an unregistered name is not a button"
+        );
+
+        // A controller receiving the same invoke is not a game.
+        let mut phone = peer_of("game", DeviceType::Android, EndpointMode::Controller);
+        phone.register_button_handlers(["aButton"]);
+        let out = phone.process_incoming(&press, &Arrival::default());
+        assert!(
+            !out.events.iter().any(|e| matches!(e, Event::Button { .. })),
+            "only a game reads a button from an invoke"
+        );
+    }
+
+    fn peer_of(id: &str, kind: DeviceType, role: EndpointMode) -> Engine {
+        let mut eng = Engine::default();
+        eng.init_local_device(DeviceCore::new(id.to_string(), id.to_string(), kind));
+        eng.configure(EngineConfig {
+            endpoint: Some(role),
+            opens_sessions: false,
+            ..Default::default()
+        })
+        .unwrap();
+        eng
+    }
+
+    fn invoke_from(peer: &str, method: &str, state: &str) -> Vec<u8> {
+        let mut eng = Engine::default();
+        eng.init_local_device(DeviceCore::new(
+            peer.to_string(),
+            peer.to_string(),
+            DeviceType::Android,
+        ));
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new("game".to_string(), "Game".to_string(), DeviceType::Unity),
+            None,
+        ));
+        eng.make_message_invoke(
+            "game",
+            method,
+            None,
+            vec![crate::codec::messages::bm_encoding::Value::String(
+                state.to_string(),
+            )],
+        )
+        .remove(0)
+        .message()
+        .to_vec()
+    }
+
     #[test]
     fn a_peer_is_placed_where_its_bytes_came_from() {
         let mut eng = controller_knowing("game");
