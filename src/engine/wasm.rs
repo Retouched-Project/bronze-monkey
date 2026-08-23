@@ -169,16 +169,6 @@ impl BmEngineWasm {
             .map_err(|e| JsError::new(&e.to_string()))
     }
 
-    pub fn approve_registration(&mut self, device_id: &str) -> Result<JsValue, JsError> {
-        let outgoings = self.inner.approve_registration(device_id);
-        to_js(&outgoings)
-    }
-
-    pub fn deny_registration(&mut self, device_id: &str) -> Result<JsValue, JsError> {
-        let outgoings = self.inner.deny_registration(device_id);
-        to_js(&outgoings)
-    }
-
     pub fn get_registry(&self) -> Result<JsValue, JsError> {
         let records = self.inner.registry().snapshot();
         let array = js_sys::Array::new();

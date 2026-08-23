@@ -233,6 +233,69 @@ mod tests {
         );
     }
 
+    /// A registry that does not let devices in on its own queues them, and the
+    /// operator's answer is what lets them in or turns them away.
+    #[test]
+    fn a_queued_device_is_let_in_or_turned_away_by_command() {
+        for (approve, expected) in [(true, true), (false, false)] {
+            let mut eng = registry_server();
+            eng.configure(EngineConfig {
+                server: true,
+                approves_registrations: false,
+                ..Default::default()
+            })
+            .unwrap();
+            // A device waiting for approval is known from its packets and
+            // nothing more: it is on no registry until someone says so.
+            eng.push_registry_update(crate::engine::device_registry::DeviceRecord::new(
+                DeviceCore::new(
+                    "phone".to_string(),
+                    "phone".to_string(),
+                    DeviceType::Android,
+                ),
+                None,
+            ));
+            queue(&mut eng, "phone");
+            assert!(eng.registry_info_of("phone").is_none());
+
+            let device_id = "phone".to_string();
+            let out = eng.emit(if approve {
+                crate::engine::events::Command::ApproveRegistration { device_id }
+            } else {
+                crate::engine::events::Command::DenyRegistration { device_id }
+            });
+
+            assert_eq!(out.len(), 1, "the device is answered either way");
+            assert!(
+                eng.server_policy.pending_registrations.is_empty(),
+                "and stops waiting"
+            );
+            assert_eq!(
+                eng.registry_info_of("phone").is_some(),
+                expected,
+                "a device let in is on the registry, one turned away is not"
+            );
+        }
+    }
+
+    fn queue(eng: &mut Engine, id: &str) {
+        eng.server_policy.pending_registrations.insert(
+            id.to_string(),
+            PendingRegistration {
+                info: BMRegistryInfo {
+                    slot_id: 0,
+                    app_id: "app".to_string(),
+                    current_players: None,
+                    max_players: None,
+                    device: DeviceCore::new(id.to_string(), id.to_string(), DeviceType::Android),
+                    device_address: BMAddress::new("10.0.0.2".to_string(), 9080, 9081),
+                },
+                target_id: id.to_string(),
+                return_method: Some("onRegister".to_string()),
+            },
+        );
+    }
+
     /// A device that queued for approval and then left is not still waiting.
     #[test]
     fn a_departing_peer_stops_waiting_for_approval() {

@@ -203,24 +203,6 @@ impl BMEnginePy {
         eng.registry_mut().upsert(DeviceRecord::new(core, None));
         Ok(())
     }
-
-    fn approve_registration<'py>(
-        &self,
-        py: Python<'py>,
-        device_id: String,
-    ) -> PyResult<Bound<'py, PyList>> {
-        let actions = self.inner.write().unwrap().approve_registration(&device_id);
-        outgoings_to_py(py, actions)
-    }
-
-    fn deny_registration<'py>(
-        &self,
-        py: Python<'py>,
-        device_id: String,
-    ) -> PyResult<Bound<'py, PyList>> {
-        let actions = self.inner.write().unwrap().deny_registration(&device_id);
-        outgoings_to_py(py, actions)
-    }
 }
 
 #[pyfunction]
