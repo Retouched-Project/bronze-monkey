@@ -38,7 +38,7 @@ impl Via {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct Outgoing {
     pub target_device_id: String,
@@ -255,6 +255,38 @@ pub enum Sensor {
     Gyro,
     Orientation,
 }
+
+/// A command that was wrong in itself, as opposed to one the session cannot
+/// use right now.
+///
+/// Only caller mistakes land here. A send to a peer that has since left is
+/// ordinary protocol life: it comes back as no outgoings at all, the way the
+/// wire would have dropped it.
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EmitError {
+    EmptyTarget,
+    UnknownDevice { device_id: String },
+    NotRegistered,
+    Encode(String),
+}
+
+impl std::fmt::Display for EmitError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EmitError::EmptyTarget => write!(f, "the command named no target"),
+            EmitError::UnknownDevice { device_id } => {
+                write!(f, "'{device_id}' is not a device this engine knows")
+            }
+            EmitError::NotRegistered => {
+                write!(f, "nothing registered to introduce ourselves with")
+            }
+            EmitError::Encode(e) => write!(f, "the object would not encode: {e}"),
+        }
+    }
+}
+
+impl std::error::Error for EmitError {}
 
 #[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize)]

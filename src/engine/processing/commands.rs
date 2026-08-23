@@ -6,14 +6,20 @@ use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_invoke::BMInvoke;
 use crate::codec::object::Object;
 use crate::controls::parser::BMApplicationSchemeParser;
-use crate::engine::events::{Command, Outgoing, Sensor};
+use crate::engine::events::{Command, EmitError, Outgoing, Sensor};
 use crate::engine::methods;
 use crate::types::channel_type::ChannelType;
 use crate::types::packet_type::PacketType;
 
 impl Engine {
-    pub fn emit(&mut self, cmd: Command) -> Vec<Outgoing> {
-        match cmd {
+    /// Turns a command into what goes on the wire.
+    ///
+    /// An error means the call itself was wrong, and never that the session
+    /// cannot use it right now: a send to a peer that has since left comes
+    /// back as no outgoings at all, since a race between input and a
+    /// departure is ordinary protocol life.
+    pub fn emit(&mut self, cmd: Command) -> Result<Vec<Outgoing>, EmitError> {
+        Ok(match cmd {
             Command::Raw {
                 target,
                 channel,
@@ -21,8 +27,7 @@ impl Engine {
                 payload,
             } => {
                 if target.is_empty() {
-                    log::warn!("emit Raw: target device id is empty");
-                    return Vec::new();
+                    return Err(EmitError::EmptyTarget);
                 }
                 vec![self.dispatch(target, channel, reliability, payload)]
             }
@@ -37,10 +42,7 @@ impl Engine {
                     reliability.unwrap_or_else(|| self.reliability_for(&target, channel));
                 let msg = match self.build_object_bytes(object) {
                     Ok(m) => m,
-                    Err(e) => {
-                        log::error!("emit SendObject: encode failed: {e}");
-                        return Vec::new();
-                    }
+                    Err(e) => return Err(EmitError::Encode(e.to_string())),
                 };
                 self.make_packet(
                     &target,
@@ -124,14 +126,10 @@ impl Engine {
             ),
             Command::ConnectToHost { target, host_id } => {
                 let Some(host) = self.registry_info_of(&host_id) else {
-                    log::warn!("emit ConnectToHost: '{host_id}' is not a host we know");
-                    return Vec::new();
+                    return Err(EmitError::UnknownDevice { device_id: host_id });
                 };
                 let Some(self_info) = self.state.local_info.clone() else {
-                    log::warn!(
-                        "emit ConnectToHost: nothing registered to introduce ourselves with"
-                    );
-                    return Vec::new();
+                    return Err(EmitError::NotRegistered);
                 };
                 self.reset_game_session();
                 self.make_device_connect_requested(&target, host, self_info)
@@ -141,10 +139,9 @@ impl Engine {
                 controller_id,
             } => {
                 let Some(controller) = self.registry_info_of(&controller_id) else {
-                    log::warn!(
-                        "emit ReportConnectionFailed: '{controller_id}' is not a device we know"
-                    );
-                    return Vec::new();
+                    return Err(EmitError::UnknownDevice {
+                        device_id: controller_id,
+                    });
                 };
                 self.make_connection_failed(&target, controller)
             }
@@ -250,7 +247,7 @@ impl Engine {
                 target,
                 host_device_id,
             } => self.make_wait_for_new_host(&target, &host_device_id),
-        }
+        })
     }
 
     fn configure_sensor(
@@ -378,11 +375,13 @@ mod tests {
     #[test]
     fn an_outgoing_carries_a_message_with_no_length_in_front() {
         let mut eng = engine_with_peer("game1");
-        let out = eng.emit(Command::SendDPad {
-            target: "game1".to_string(),
-            x: 1,
-            y: 2,
-        });
+        let out = eng
+            .emit(Command::SendDPad {
+                target: "game1".to_string(),
+                x: 1,
+                y: 2,
+            })
+            .unwrap();
         assert_eq!(out.len(), 1);
         assert_eq!(out[0].via, Via::Stream);
 
@@ -401,11 +400,13 @@ mod tests {
     #[test]
     fn a_stream_bound_message_is_not_a_bare_one() {
         let mut eng = engine_with_peer("game1");
-        let out = eng.emit(Command::SendDPad {
-            target: "game1".to_string(),
-            x: 3,
-            y: 4,
-        });
+        let out = eng
+            .emit(Command::SendDPad {
+                target: "game1".to_string(),
+                x: 3,
+                y: 4,
+            })
+            .unwrap();
 
         // The length in front is what makes it writable, and it is part of the
         // payload, so the payload does not read as a bare message.
@@ -418,22 +419,26 @@ mod tests {
         // Unreliable traffic alone is not enough: without an unreliable path
         // the caller could not write a bare message anywhere.
         let mut eng = engine_with_peer("game1");
-        let sensors = eng.emit(Command::SendAccel {
-            target: "game1".to_string(),
-            x: 0.0,
-            y: 0.0,
-            z: 1.0,
-        });
+        let sensors = eng
+            .emit(Command::SendAccel {
+                target: "game1".to_string(),
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            })
+            .unwrap();
         assert_eq!(sensors[0].reliability, BMReliability::Unreliable.code());
         assert_eq!(sensors[0].via, Via::Stream, "no datagram path was declared");
 
         let mut eng = engine_with_datagrams("game1");
-        let sensors = eng.emit(Command::SendAccel {
-            target: "game1".to_string(),
-            x: 0.0,
-            y: 0.0,
-            z: 1.0,
-        });
+        let sensors = eng
+            .emit(Command::SendAccel {
+                target: "game1".to_string(),
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            })
+            .unwrap();
         assert_eq!(
             sensors[0].via,
             Via::Datagram {
@@ -446,11 +451,13 @@ mod tests {
         let mut pkt = BMPacket::default();
         deserialize_message(&sensors[0].payload, &mut pkt).expect("a datagram is a bare message");
 
-        let control = eng.emit(Command::SendButton {
-            target: "game1".to_string(),
-            handler: "a".to_string(),
-            pressed: true,
-        });
+        let control = eng
+            .emit(Command::SendButton {
+                target: "game1".to_string(),
+                handler: "a".to_string(),
+                pressed: true,
+            })
+            .unwrap();
         assert_eq!(control[0].via, Via::Stream, "control traffic goes reliably");
     }
 
@@ -465,12 +472,14 @@ mod tests {
         })
         .expect("nothing else is configured");
 
-        let sensors = eng.emit(Command::SendAccel {
-            target: "game1".to_string(),
-            x: 0.0,
-            y: 0.0,
-            z: 1.0,
-        });
+        let sensors = eng
+            .emit(Command::SendAccel {
+                target: "game1".to_string(),
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            })
+            .unwrap();
         assert_eq!(
             sensors[0].via,
             Via::Datagram {
@@ -494,7 +503,11 @@ mod tests {
             target: "server".to_string(),
             host_id: "game1".to_string(),
         });
-        assert!(refused.is_empty(), "it cannot invent a registration");
+        assert_eq!(
+            refused,
+            Err(EmitError::NotRegistered),
+            "it cannot invent a registration, and says so"
+        );
 
         eng.push_registry_update(DeviceRecord::new(
             DeviceCore::new(
@@ -509,12 +522,15 @@ mod tests {
             info: registry_info("local", DeviceType::Android),
             domain: None,
             return_method: None,
-        });
+        })
+        .unwrap();
 
-        let out = eng.emit(Command::ConnectToHost {
-            target: "server".to_string(),
-            host_id: "game1".to_string(),
-        });
+        let out = eng
+            .emit(Command::ConnectToHost {
+                target: "server".to_string(),
+                host_id: "game1".to_string(),
+            })
+            .unwrap();
         assert_eq!(out.len(), 1, "the introduction goes to the registry");
         assert_eq!(out[0].target_device_id, "server");
     }
@@ -527,12 +543,45 @@ mod tests {
             info: registry_info("local", DeviceType::Android),
             domain: None,
             return_method: None,
-        });
+        })
+        .unwrap();
         let out = eng.emit(Command::ConnectToHost {
             target: "game1".to_string(),
             host_id: "never-heard-of-it".to_string(),
         });
-        assert!(out.is_empty());
+        assert_eq!(
+            out,
+            Err(EmitError::UnknownDevice {
+                device_id: "never-heard-of-it".to_string()
+            })
+        );
+    }
+
+    /// A send racing a departure is not a mistake: the wire would have
+    /// dropped it, so it comes back as nothing to send rather than an error.
+    #[test]
+    fn a_send_to_a_departed_peer_is_dropped_not_refused() {
+        let mut eng = engine_with_peer("game1");
+        eng.peer_gone("game1");
+        let out = eng.emit(Command::SendAccel {
+            target: "game1".to_string(),
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        });
+        assert_eq!(out, Ok(Vec::new()));
+    }
+
+    #[test]
+    fn a_command_with_no_target_is_refused() {
+        let mut eng = engine_with_peer("game1");
+        let out = eng.emit(Command::Raw {
+            target: String::new(),
+            channel: 3,
+            reliability: 2,
+            payload: vec![1, 2, 3],
+        });
+        assert_eq!(out, Err(EmitError::EmptyTarget));
     }
 
     fn registry_info(

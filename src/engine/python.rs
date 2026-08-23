@@ -168,7 +168,12 @@ impl BMEnginePy {
         command: Bound<'py, PyAny>,
     ) -> PyResult<Bound<'py, PyList>> {
         let cmd: Command = depythonize(&command)?;
-        let outgoings = self.inner.write().unwrap().emit(cmd);
+        let outgoings = self
+            .inner
+            .write()
+            .unwrap()
+            .emit(cmd)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
         outgoings_to_py(py, outgoings)
     }
 

@@ -226,9 +226,19 @@ pub unsafe extern "C" fn bm_engine_emit(
         };
         let cmd: Command = match rmp_serde::from_slice(in_slice(cmd_ptr, cmd_len)) {
             Ok(c) => c,
-            Err(_) => return false,
+            Err(e) => {
+                crate::set_last_error(e);
+                return false;
+            }
         };
-        match rmp_serde::to_vec_named(&engine.emit(cmd)) {
+        let outgoings = match engine.emit(cmd) {
+            Ok(o) => o,
+            Err(e) => {
+                crate::set_last_error(e);
+                return false;
+            }
+        };
+        match rmp_serde::to_vec_named(&outgoings) {
             Ok(buf) => {
                 write_buf(buf, out_ptr, out_len);
                 true

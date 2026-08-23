@@ -259,11 +259,13 @@ mod tests {
             assert!(eng.registry_info_of("phone").is_none());
 
             let device_id = "phone".to_string();
-            let out = eng.emit(if approve {
-                crate::engine::events::Command::ApproveRegistration { device_id }
-            } else {
-                crate::engine::events::Command::DenyRegistration { device_id }
-            });
+            let out = eng
+                .emit(if approve {
+                    crate::engine::events::Command::ApproveRegistration { device_id }
+                } else {
+                    crate::engine::events::Command::DenyRegistration { device_id }
+                })
+                .unwrap();
 
             assert_eq!(out.len(), 1, "the device is answered either way");
             assert!(

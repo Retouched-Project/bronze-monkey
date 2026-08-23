@@ -246,10 +246,15 @@ impl BmEngineWasm {
         }
     }
 
+    /// Throws when the command itself was wrong. A send to a peer that has
+    /// since left is not an error and comes back as no outgoings at all.
     pub fn emit(&mut self, command: JsValue) -> Result<JsValue, JsError> {
         let cmd: Command =
             serde_wasm_bindgen::from_value(command).map_err(|e| JsError::new(&e.to_string()))?;
-        let outgoings = self.inner.emit(cmd);
+        let outgoings = self
+            .inner
+            .emit(cmd)
+            .map_err(|e| JsError::new(&e.to_string()))?;
         to_js(&outgoings)
     }
 
