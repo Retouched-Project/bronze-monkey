@@ -10,6 +10,12 @@ pub struct BMApplicationSchemeParser {
     sampling_mode: String,
 }
 
+impl Default for BMApplicationSchemeParser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BMApplicationSchemeParser {
     pub fn new() -> Self {
         Self {
@@ -76,9 +82,11 @@ impl BMApplicationSchemeParser {
                             current_resource = Some(res);
                         }
                         b"DisplayObject" => {
-                            let mut obj = DisplayObject::default();
-                            obj.sampling_mode = self.sampling_mode.clone();
-                            obj.deadzone = 0.25; // default deadzone when unspecified
+                            let mut obj = DisplayObject {
+                                sampling_mode: self.sampling_mode.clone(),
+                                deadzone: 0.25,
+                                ..Default::default()
+                            };
                             for attr in e.attributes() {
                                 let attr = attr.map_err(|e| e.to_string())?;
                                 let val = std::str::from_utf8(&attr.value).unwrap_or("");
@@ -214,17 +222,13 @@ impl BMApplicationSchemeParser {
                     }
                 }
                 Ok(Event::Text(e)) => {
-                    if in_data_element {
-                        if let Ok(text) = e.unescape() {
-                            data_buffer.push_str(&text);
-                        }
+                    if in_data_element && let Ok(text) = e.unescape() {
+                        data_buffer.push_str(&text);
                     }
                 }
                 Ok(Event::CData(e)) => {
-                    if in_data_element {
-                        if let Ok(text) = std::str::from_utf8(&e) {
-                            data_buffer.push_str(text);
-                        }
+                    if in_data_element && let Ok(text) = std::str::from_utf8(&e) {
+                        data_buffer.push_str(text);
                     }
                 }
                 Ok(Event::End(e)) => {

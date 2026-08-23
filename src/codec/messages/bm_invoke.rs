@@ -38,7 +38,7 @@ impl BMInvoke {
         for _ in 0..count {
             let obj = Object::decode(input)?;
             match obj {
-                Object::BMParameter(p) => params.push((*p).value),
+                Object::BMParameter(p) => params.push(p.value),
                 other => params.push(Value::Object(other)),
             }
         }

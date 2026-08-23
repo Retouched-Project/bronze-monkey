@@ -183,73 +183,73 @@ impl Engine {
     }
 
     fn handle_data(&mut self, pkt: &BMPacket, channel: i32, out: &mut ProcessOutput) {
-        if let Some(msg) = &pkt.message {
-            if !msg.is_empty() {
-                let mut cur = BMStream::view(msg.as_slice());
-                match Object::decode(&mut cur) {
-                    Ok(obj) => match obj {
-                        Object::BMInvoke(inv) => self.handle_invoke(
-                            ReceivedInvoke {
-                                method: inv.method,
-                                return_method: inv.return_method,
-                                params: inv.params,
-                            },
-                            Some(pkt.device_id.clone()),
-                            out,
-                        ),
-                        Object::BMByteChunk(chunk) => {
-                            let device_id = pkt.device_id.clone();
-                            self.handle_chunk(device_id, chunk, out);
-                        }
-                        Object::TouchSet(ts) => out.events.push(Event::Touch {
-                            sender: pkt.device_id.clone(),
-                            touches: ts.touches,
-                        }),
-                        Object::Acceleration(a) => out.events.push(Event::Accel {
-                            sender: pkt.device_id.clone(),
-                            x: a.x,
-                            y: a.y,
-                            z: a.z,
-                        }),
-                        Object::BMGyro(g) => out.events.push(Event::Gyro {
-                            sender: pkt.device_id.clone(),
-                            x: g.x,
-                            y: g.y,
-                            z: g.z,
-                        }),
-                        Object::Orientation(o) => out.events.push(Event::Orientation {
-                            sender: pkt.device_id.clone(),
-                            x: o.x,
-                            y: o.y,
-                            z: o.z,
-                            w: o.w,
-                        }),
-                        Object::DPadUpdate(d) => out.events.push(Event::DPad {
-                            sender: pkt.device_id.clone(),
-                            x: d.x,
-                            y: d.y,
-                        }),
-                        _ => {
-                            log::debug!("rx data object {:?} channel={}", obj.class_id(), channel);
-                        }
-                    },
-                    Err(e) => {
-                        let head = if msg.len() >= 5 {
-                            format!(
-                                "{:02x} {:02x} {:02x} {:02x} {:02x}",
-                                msg[0], msg[1], msg[2], msg[3], msg[4]
-                            )
-                        } else {
-                            "too short".into()
-                        };
-                        log::debug!(
-                            "rx data message decode failed len={} channel={} head={} err={}",
-                            msg.len(),
-                            channel,
-                            head,
-                            e
-                        );
+        if let Some(msg) = &pkt.message
+            && !msg.is_empty()
+        {
+            let mut cur = BMStream::view(msg.as_slice());
+            match Object::decode(&mut cur) {
+                Ok(obj) => match obj {
+                    Object::BMInvoke(inv) => self.handle_invoke(
+                        ReceivedInvoke {
+                            method: inv.method,
+                            return_method: inv.return_method,
+                            params: inv.params,
+                        },
+                        Some(pkt.device_id.clone()),
+                        out,
+                    ),
+                    Object::BMByteChunk(chunk) => {
+                        let device_id = pkt.device_id.clone();
+                        self.handle_chunk(device_id, chunk, out);
                     }
+                    Object::TouchSet(ts) => out.events.push(Event::Touch {
+                        sender: pkt.device_id.clone(),
+                        touches: ts.touches,
+                    }),
+                    Object::Acceleration(a) => out.events.push(Event::Accel {
+                        sender: pkt.device_id.clone(),
+                        x: a.x,
+                        y: a.y,
+                        z: a.z,
+                    }),
+                    Object::BMGyro(g) => out.events.push(Event::Gyro {
+                        sender: pkt.device_id.clone(),
+                        x: g.x,
+                        y: g.y,
+                        z: g.z,
+                    }),
+                    Object::Orientation(o) => out.events.push(Event::Orientation {
+                        sender: pkt.device_id.clone(),
+                        x: o.x,
+                        y: o.y,
+                        z: o.z,
+                        w: o.w,
+                    }),
+                    Object::DPadUpdate(d) => out.events.push(Event::DPad {
+                        sender: pkt.device_id.clone(),
+                        x: d.x,
+                        y: d.y,
+                    }),
+                    _ => {
+                        log::debug!("rx data object {:?} channel={}", obj.class_id(), channel);
+                    }
+                },
+                Err(e) => {
+                    let head = if msg.len() >= 5 {
+                        format!(
+                            "{:02x} {:02x} {:02x} {:02x} {:02x}",
+                            msg[0], msg[1], msg[2], msg[3], msg[4]
+                        )
+                    } else {
+                        "too short".into()
+                    };
+                    log::debug!(
+                        "rx data message decode failed len={} channel={} head={} err={}",
+                        msg.len(),
+                        channel,
+                        head,
+                        e
+                    );
                 }
             }
         }
@@ -292,14 +292,14 @@ impl Engine {
             total,
         });
 
-        if current >= total {
-            if let Some(blob) = self.state.chunk_buffers.remove(&set_id) {
-                out.events.push(Event::ChunkComplete {
-                    device_id,
-                    set_id,
-                    blob,
-                });
-            }
+        if current >= total
+            && let Some(blob) = self.state.chunk_buffers.remove(&set_id)
+        {
+            out.events.push(Event::ChunkComplete {
+                device_id,
+                set_id,
+                blob,
+            });
         }
     }
 
@@ -336,17 +336,18 @@ impl Engine {
             claimed = true;
         }
 
-        if !claimed && self.roles.game() && self.game_policy.button_handlers.contains(&inv.method) {
-            if let Some(state) = self.param_string(&inv.params, 0) {
-                if state == methods::BUTTON_DOWN || state == methods::BUTTON_UP {
-                    out.events.push(Event::Button {
-                        sender: sender_id.clone().unwrap_or_default(),
-                        handler: inv.method.clone(),
-                        pressed: state == methods::BUTTON_DOWN,
-                    });
-                    claimed = true;
-                }
-            }
+        if !claimed
+            && self.roles.game()
+            && self.game_policy.button_handlers.contains(&inv.method)
+            && let Some(state) = self.param_string(&inv.params, 0)
+            && (state == methods::BUTTON_DOWN || state == methods::BUTTON_UP)
+        {
+            out.events.push(Event::Button {
+                sender: sender_id.clone().unwrap_or_default(),
+                handler: inv.method.clone(),
+                pressed: state == methods::BUTTON_DOWN,
+            });
+            claimed = true;
         }
 
         if !claimed {

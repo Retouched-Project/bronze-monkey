@@ -43,10 +43,9 @@ impl Engine {
                     .registry
                     .get(&dev_id)
                     .and_then(|r| r.info.as_ref().map(|i| i.slot_id))
+                    && existing > 0
                 {
-                    if existing > 0 {
-                        engine.state.used_slots.remove(&existing);
-                    }
+                    engine.state.used_slots.remove(&existing);
                 }
                 info.slot_id = engine.state.allocate_slot();
             } else {
@@ -507,38 +506,37 @@ impl Engine {
             engine.server_policy.hidden_hosts.insert(device_id.clone())
         };
 
-        if changed && notify_everyone {
-            if let Some(info) = engine
+        if changed
+            && notify_everyone
+            && let Some(info) = engine
                 .state
                 .registry
                 .get(&device_id)
                 .and_then(|r| r.info.clone())
-            {
-                if info.device.device_type.is_game() {
-                    let method = if visible {
-                        methods::ON_HOST_CONNECTED
-                    } else {
-                        methods::ON_HOST_DISCONNECTED
-                    };
-                    let info_val = Value::Object(Object::BMRegistryInfo(info));
-                    let viewer_ids: Vec<String> = engine
-                        .state
-                        .registry
-                        .snapshot()
-                        .into_iter()
-                        .filter_map(|r| r.info)
-                        .filter(|r| r.device.device_type.is_controller())
-                        .map(|r| r.device.device_id)
-                        .collect();
-                    for vid in viewer_ids {
-                        out.outgoings.extend(engine.make_message_invoke(
-                            &vid,
-                            method,
-                            None,
-                            vec![info_val.clone()],
-                        ));
-                    }
-                }
+            && info.device.device_type.is_game()
+        {
+            let method = if visible {
+                methods::ON_HOST_CONNECTED
+            } else {
+                methods::ON_HOST_DISCONNECTED
+            };
+            let info_val = Value::Object(Object::BMRegistryInfo(info));
+            let viewer_ids: Vec<String> = engine
+                .state
+                .registry
+                .snapshot()
+                .into_iter()
+                .filter_map(|r| r.info)
+                .filter(|r| r.device.device_type.is_controller())
+                .map(|r| r.device.device_id)
+                .collect();
+            for vid in viewer_ids {
+                out.outgoings.extend(engine.make_message_invoke(
+                    &vid,
+                    method,
+                    None,
+                    vec![info_val.clone()],
+                ));
             }
         }
 

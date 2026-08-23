@@ -50,12 +50,12 @@ impl AckPacket {
 
     pub fn write_to(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
         out.write_short(1)?;
-        out.write_bytes(&[b'@'])?;
+        out.write_bytes(b"@")?;
         out.write_short(registry::class_id_for_device_type(self.device.device_type) as i16)?;
         self.device.write_to(out)?;
 
         out.write_short(1)?;
-        out.write_bytes(&[b'@'])?;
+        out.write_bytes(b"@")?;
         out.write_short(registry::BM_CLASS_ID_ADDRESS as i16)?;
         self.device_address.write_to(out)
     }

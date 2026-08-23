@@ -29,7 +29,7 @@ use std::os::raw::c_char;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 thread_local! {
-    static LAST_ERROR: RefCell<Option<CString>> = RefCell::new(None);
+    static LAST_ERROR: RefCell<Option<CString>> = const { RefCell::new(None) };
 }
 
 pub fn set_last_error(e: impl std::fmt::Display) {

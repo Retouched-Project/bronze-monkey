@@ -101,9 +101,9 @@ pub unsafe extern "C" fn bm_registry_ids(out: *mut u32, out_len: usize) -> usize
         return 0;
     }
     let n = ENTRIES.len().min(out_len);
-    for i in 0..n {
+    for (i, (id, _)) in ENTRIES.iter().take(n).enumerate() {
         unsafe {
-            *out.add(i) = ENTRIES[i].0;
+            *out.add(i) = *id;
         }
     }
     n

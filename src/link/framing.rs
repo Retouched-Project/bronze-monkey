@@ -68,10 +68,7 @@ impl Framer {
         let mut messages = Vec::new();
         let mut offset = 0;
 
-        loop {
-            let Some(header) = self.buffer.get(offset..offset + LENGTH_PREFIX_LEN) else {
-                break;
-            };
+        while let Some(header) = self.buffer.get(offset..offset + LENGTH_PREFIX_LEN) {
             let len = u32::from_le_bytes([header[0], header[1], header[2], header[3]]) as usize;
             if len > self.max_len {
                 self.buffer.clear();

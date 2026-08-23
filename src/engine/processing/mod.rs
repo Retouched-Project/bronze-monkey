@@ -129,20 +129,20 @@ impl Engine {
         if let Some(handler) = self.bound_continuations.get(method) {
             return Some(*handler);
         }
-        if self.roles.server {
-            if let Some(handler) = ServerPolicy::claims(method) {
-                return Some(handler);
-            }
+        if self.roles.server
+            && let Some(handler) = ServerPolicy::claims(method)
+        {
+            return Some(handler);
         }
-        if self.roles.game() {
-            if let Some(handler) = GamePolicy::claims(method) {
-                return Some(handler);
-            }
+        if self.roles.game()
+            && let Some(handler) = GamePolicy::claims(method)
+        {
+            return Some(handler);
         }
-        if self.roles.controller() {
-            if let Some(handler) = ControllerPolicy::claims(method) {
-                return Some(handler);
-            }
+        if self.roles.controller()
+            && let Some(handler) = ControllerPolicy::claims(method)
+        {
+            return Some(handler);
         }
         None
     }

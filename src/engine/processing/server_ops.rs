@@ -27,10 +27,9 @@ impl Engine {
                 .registry
                 .get(&dev_id)
                 .and_then(|r| r.info.as_ref().map(|i| i.slot_id))
+                && existing > 0
             {
-                if existing > 0 {
-                    self.state.used_slots.remove(&existing);
-                }
+                self.state.used_slots.remove(&existing);
             }
             info.slot_id = self.state.allocate_slot();
         } else {

@@ -751,20 +751,17 @@ impl Engine {
         packet_type: i32,
         message: Option<Vec<u8>>,
     ) -> std::result::Result<Vec<u8>, String> {
-        let pkt = BMPacket::new(
+        let pkt = BMPacket {
             sequence,
             channel,
-            timestamp_ms,
-            0.0,
-            PacketType::from_i32(packet_type).unwrap_or(PacketType::Data),
-            sender.device_type,
-            sender.device_name.clone(),
-            sender.device_id.clone(),
+            timestamp: timestamp_ms,
+            packet_type: PacketType::from_i32(packet_type).unwrap_or(PacketType::Data),
+            device_type: sender.device_type,
+            device_name: sender.device_name.clone(),
+            device_id: sender.device_id.clone(),
             message,
-            None,
-            0,
-            0,
-        );
+            ..Default::default()
+        };
         serialize_message(&pkt).map_err(|e| e.to_string())
     }
 

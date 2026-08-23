@@ -136,17 +136,18 @@ mod tests {
     use super::*;
 
     fn sample(message: Option<Vec<u8>>) -> BMPacket {
-        let mut pkt = BMPacket::default();
-        pkt.channel = 3;
-        pkt.sequence = 99;
-        pkt.timestamp = 1234.5;
-        pkt.rtt = 12.0;
-        pkt.packet_type = PacketType::Data;
-        pkt.device_type = DeviceType::Flash;
-        pkt.device_id = "dev-id".to_string();
-        pkt.device_name = "Device Name".to_string();
-        pkt.message = message;
-        pkt
+        BMPacket {
+            channel: 3,
+            sequence: 99,
+            timestamp: 1234.5,
+            rtt: 12.0,
+            packet_type: PacketType::Data,
+            device_type: DeviceType::Flash,
+            device_id: "dev-id".to_string(),
+            device_name: "Device Name".to_string(),
+            message,
+            ..Default::default()
+        }
     }
 
     fn assert_round_trip(original: &BMPacket) {
@@ -208,16 +209,15 @@ mod tests {
     // packet envelope + framing so the codec cannot silently drift.
     #[test]
     fn packet_golden_bytes() {
-        let mut pkt = BMPacket::default();
-        pkt.channel = 2;
-        pkt.sequence = 7;
-        pkt.timestamp = 0.0;
-        pkt.rtt = 0.0;
-        pkt.packet_type = PacketType::Data;
-        pkt.device_type = DeviceType::Flash;
-        pkt.device_id = "a".to_string();
-        pkt.device_name = "b".to_string();
-        pkt.message = None;
+        let pkt = BMPacket {
+            channel: 2,
+            sequence: 7,
+            packet_type: PacketType::Data,
+            device_type: DeviceType::Flash,
+            device_id: "a".to_string(),
+            device_name: "b".to_string(),
+            ..Default::default()
+        };
 
         let bytes = serialize_packet(&pkt).unwrap();
         let expected: &[u8] = &[
