@@ -260,14 +260,14 @@ pub unsafe extern "C" fn bm_engine_emit(
                 return false;
             }
         };
-        let outgoings = match engine.emit(cmd) {
+        let out = match engine.emit(cmd) {
             Ok(o) => o,
             Err(e) => {
                 crate::set_last_error(e);
                 return false;
             }
         };
-        match rmp_serde::to_vec_named(&outgoings) {
+        match rmp_serde::to_vec_named(&out) {
             Ok(buf) => {
                 write_buf(buf, out_ptr, out_len);
                 true

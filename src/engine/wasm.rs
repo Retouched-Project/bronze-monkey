@@ -264,11 +264,11 @@ impl BmEngineWasm {
     pub fn emit(&mut self, command: JsValue) -> Result<JsValue, JsError> {
         let cmd: Command =
             serde_wasm_bindgen::from_value(command).map_err(|e| JsError::new(&e.to_string()))?;
-        let outgoings = self
+        let out = self
             .inner
             .emit(cmd)
             .map_err(|e| JsError::new(&e.to_string()))?;
-        to_js(&outgoings)
+        to_js(&out)
     }
 
     pub fn register_button_handlers(&mut self, handlers: Vec<String>) {

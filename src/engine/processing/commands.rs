@@ -6,7 +6,7 @@ use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_invoke::BMInvoke;
 use crate::codec::object::Object;
 use crate::controls::parser::BMApplicationSchemeParser;
-use crate::engine::events::{Command, EmitError, Outgoing, Sensor};
+use crate::engine::events::{Command, EmitError, Outgoing, ProcessOutput, Sensor};
 use crate::engine::methods;
 use crate::types::channel_type::ChannelType;
 use crate::types::packet_type::PacketType;
@@ -18,8 +18,12 @@ impl Engine {
     /// cannot use it right now: a send to a peer that has since left comes
     /// back as no outgoings at all, since a race between input and a
     /// departure is ordinary protocol life.
-    pub fn emit(&mut self, cmd: Command) -> Result<Vec<Outgoing>, EmitError> {
-        Ok(match cmd {
+    ///
+    /// The answer is shaped like any other, because a command can start
+    /// something the clock has to finish: whatever it schedules is named here
+    /// rather than waiting for the next packet to arrive.
+    pub fn emit(&mut self, cmd: Command) -> Result<ProcessOutput, EmitError> {
+        let outgoings = match cmd {
             Command::Raw {
                 target,
                 channel,
@@ -247,6 +251,11 @@ impl Engine {
                 target,
                 host_device_id,
             } => self.make_wait_for_new_host(&target, &host_device_id),
+        };
+        Ok(ProcessOutput {
+            events: Vec::new(),
+            outgoings,
+            next_time_ms: self.next_deadline(),
         })
     }
 
@@ -381,7 +390,8 @@ mod tests {
                 x: 1,
                 y: 2,
             })
-            .unwrap();
+            .unwrap()
+            .outgoings;
         assert_eq!(out.len(), 1);
         assert_eq!(out[0].via, Via::Stream);
 
@@ -406,7 +416,8 @@ mod tests {
                 x: 3,
                 y: 4,
             })
-            .unwrap();
+            .unwrap()
+            .outgoings;
 
         // The length in front is what makes it writable, and it is part of the
         // payload, so the payload does not read as a bare message.
@@ -426,7 +437,8 @@ mod tests {
                 y: 0.0,
                 z: 1.0,
             })
-            .unwrap();
+            .unwrap()
+            .outgoings;
         assert_eq!(sensors[0].reliability, BMReliability::Unreliable.code());
         assert_eq!(sensors[0].via, Via::Stream, "no datagram path was declared");
 
@@ -438,7 +450,8 @@ mod tests {
                 y: 0.0,
                 z: 1.0,
             })
-            .unwrap();
+            .unwrap()
+            .outgoings;
         assert_eq!(
             sensors[0].via,
             Via::Datagram {
@@ -457,7 +470,8 @@ mod tests {
                 handler: "a".to_string(),
                 pressed: true,
             })
-            .unwrap();
+            .unwrap()
+            .outgoings;
         assert_eq!(control[0].via, Via::Stream, "control traffic goes reliably");
     }
 
@@ -479,7 +493,8 @@ mod tests {
                 y: 0.0,
                 z: 1.0,
             })
-            .unwrap();
+            .unwrap()
+            .outgoings;
         assert_eq!(
             sensors[0].via,
             Via::Datagram {
@@ -504,8 +519,8 @@ mod tests {
             host_id: "game1".to_string(),
         });
         assert_eq!(
-            refused,
-            Err(EmitError::NotRegistered),
+            refused.unwrap_err(),
+            EmitError::NotRegistered,
             "it cannot invent a registration, and says so"
         );
 
@@ -530,7 +545,8 @@ mod tests {
                 target: "server".to_string(),
                 host_id: "game1".to_string(),
             })
-            .unwrap();
+            .unwrap()
+            .outgoings;
         assert_eq!(out.len(), 1, "the introduction goes to the registry");
         assert_eq!(out[0].target_device_id, "server");
     }
@@ -550,10 +566,10 @@ mod tests {
             host_id: "never-heard-of-it".to_string(),
         });
         assert_eq!(
-            out,
-            Err(EmitError::UnknownDevice {
+            out.unwrap_err(),
+            EmitError::UnknownDevice {
                 device_id: "never-heard-of-it".to_string()
-            })
+            }
         );
     }
 
@@ -569,7 +585,7 @@ mod tests {
             y: 0.0,
             z: 1.0,
         });
-        assert_eq!(out, Ok(Vec::new()));
+        assert!(out.unwrap().outgoings.is_empty());
     }
 
     #[test]
@@ -581,7 +597,7 @@ mod tests {
             reliability: 2,
             payload: vec![1, 2, 3],
         });
-        assert_eq!(out, Err(EmitError::EmptyTarget));
+        assert_eq!(out.unwrap_err(), EmitError::EmptyTarget);
     }
 
     fn registry_info(

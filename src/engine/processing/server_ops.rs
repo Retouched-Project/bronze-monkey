@@ -266,7 +266,8 @@ mod tests {
                 } else {
                     crate::engine::events::Command::DenyRegistration { device_id }
                 })
-                .unwrap();
+                .unwrap()
+                .outgoings;
 
             assert_eq!(out.len(), 1, "the device is answered either way");
             assert!(

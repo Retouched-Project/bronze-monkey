@@ -173,15 +173,15 @@ impl BMEnginePy {
         &self,
         py: Python<'py>,
         command: Bound<'py, PyAny>,
-    ) -> PyResult<Bound<'py, PyList>> {
+    ) -> PyResult<Bound<'py, PyAny>> {
         let cmd: Command = depythonize(&command)?;
-        let outgoings = self
+        let out = self
             .inner
             .write()
             .unwrap()
             .emit(cmd)
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
-        outgoings_to_py(py, outgoings)
+        Ok(pythonize(py, &out)?)
     }
 
     fn register_button_handlers(&self, handlers: Vec<String>) {
