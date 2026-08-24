@@ -601,10 +601,10 @@ impl Engine {
             log::warn!("target device id is empty");
             return Vec::new();
         }
-        let Some(rec) = self.state.registry.get(target).cloned() else {
+        if self.state.registry.get(target).is_none() {
             log::warn!("unknown target device: {target}");
             return Vec::new();
-        };
+        }
 
         let rel = reliability.unwrap_or_else(|| Self::default_reliability_for_channel(channel));
         let seq = self.state.next_sequence(channel);
@@ -618,15 +618,25 @@ impl Engine {
             .unwrap_or_default()
             .as_millis() as f64;
 
-        let sender = self.state.local_device.as_ref().unwrap_or(&rec.core);
-        match self.build_packet_bytes(
-            sender,
-            channel,
-            seq,
-            timestamp_ms,
-            packet_type.code(),
-            message,
-        ) {
+        let built = {
+            let Some(sender) = self
+                .state
+                .local_device
+                .as_ref()
+                .or_else(|| self.state.registry.get(target).map(|r| &r.core))
+            else {
+                return Vec::new();
+            };
+            self.build_packet_bytes(
+                sender,
+                channel,
+                seq,
+                timestamp_ms,
+                packet_type.code(),
+                message,
+            )
+        };
+        match built {
             Ok(bytes) => vec![self.dispatch(target.to_string(), channel, rel, bytes)],
             Err(e) => {
                 log::error!("packet build failed: {e}");
