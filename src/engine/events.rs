@@ -20,6 +20,7 @@ pub struct Arrival {
     pub source: Option<String>,
     pub source_port: i32,
     pub datagram: bool,
+    pub now_ms: Option<u64>,
 }
 
 /// Which path an outgoing message is built for, and where that path leads.
@@ -68,6 +69,7 @@ impl Outgoing {
 pub struct ProcessOutput {
     pub events: Vec<Event>,
     pub outgoings: Vec<Outgoing>,
+    pub next_time_ms: Option<u64>,
 }
 
 impl ProcessOutput {

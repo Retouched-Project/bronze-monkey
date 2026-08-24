@@ -209,6 +209,35 @@ pub unsafe extern "C" fn bm_engine_process_incoming(
     })
 }
 
+/// Tells the engine what time it is, in milliseconds on any monotonic clock
+/// the caller prefers.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_engine_handle_time(
+    ptr_engine: *mut Engine,
+    now_ms: u64,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        let Some(engine) = engine_mut(ptr_engine) else {
+            return false;
+        };
+        match rmp_serde::to_vec_named(&engine.handle_time(now_ms)) {
+            Ok(buf) => {
+                write_buf(buf, out_ptr, out_len);
+                true
+            }
+            Err(e) => {
+                crate::set_last_error(e);
+                false
+            }
+        }
+    })
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn bm_engine_emit(
     ptr_engine: *mut Engine,

@@ -162,6 +162,13 @@ impl BMEnginePy {
         Ok(pythonize(py, &out)?)
     }
 
+    /// Tells the engine what time it is, in milliseconds on any monotonic
+    /// clock the caller prefers.
+    fn handle_time<'py>(&self, py: Python<'py>, now_ms: u64) -> PyResult<Bound<'py, PyAny>> {
+        let out = self.inner.write().unwrap().handle_time(now_ms);
+        Ok(pythonize(py, &out)?)
+    }
+
     fn emit<'py>(
         &self,
         py: Python<'py>,

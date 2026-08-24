@@ -6,6 +6,7 @@ mod commands;
 mod incoming;
 mod rpc;
 mod server_ops;
+mod time;
 
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::messages::bm_encoding::Value;
@@ -61,6 +62,8 @@ pub struct Engine {
     /// Whether the caller has an unreliable path it can write to.
     pub(crate) datagrams: bool,
     pub(crate) input_paths: HashMap<String, bool>,
+    pub(crate) clock_ms: Option<u64>,
+    pub(crate) ping_at: HashMap<String, u64>,
     bound_continuations: HashMap<String, RpcHandler>,
     pub server_policy: ServerPolicy,
     pub game_policy: GamePolicy,
@@ -75,6 +78,8 @@ impl Engine {
             roles: ActiveRoles::default(),
             datagrams: false,
             input_paths: HashMap::new(),
+            clock_ms: None,
+            ping_at: HashMap::new(),
             bound_continuations: HashMap::new(),
             server_policy: ServerPolicy::new(),
             game_policy: GamePolicy::new(),

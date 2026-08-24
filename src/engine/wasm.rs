@@ -246,6 +246,19 @@ impl BmEngineWasm {
         }
     }
 
+    /// Tells the engine what time it is, in milliseconds on any monotonic
+    /// clock the caller prefers.
+    pub fn handle_time(&mut self, now_ms: f64) -> Result<JsValue, JsError> {
+        let result = catch_unwind(AssertUnwindSafe(|| self.inner.handle_time(now_ms as u64)));
+        match result {
+            Ok(out) => to_js(&out),
+            Err(_) => {
+                log::error!("panic in handle_time");
+                Err(JsError::new("Rust panic in handle_time"))
+            }
+        }
+    }
+
     /// Throws when the command itself was wrong. A send to a peer that has
     /// since left is not an error and comes back as no outgoings at all.
     pub fn emit(&mut self, command: JsValue) -> Result<JsValue, JsError> {

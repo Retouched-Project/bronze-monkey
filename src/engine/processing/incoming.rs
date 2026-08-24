@@ -37,6 +37,10 @@ impl Engine {
                 log::warn!("failed to deserialize packet: {}", e);
             }
         }
+        if let Some(now_ms) = arrival.now_ms {
+            self.advance_clock(now_ms, &mut out);
+        }
+        out.next_time_ms = self.next_deadline();
         out
     }
 
