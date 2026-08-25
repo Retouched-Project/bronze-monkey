@@ -84,37 +84,68 @@ impl Engine {
         }
     }
 
-    /// Whether a reading may go out, moving the boundary on when it may.
+    /// Whether a reading may go out, moving the boundary on when it may, and
+    /// naming the moment the next one could.
     ///
     /// Without a clock there is no boundary to be on the wrong side of, so
     /// every reading passes.
-    pub(crate) fn sensor_due(&mut self, sensor: Sensor) -> bool {
+    pub(crate) fn sensor_due(&mut self, sensor: Sensor) -> Paced {
         let Some(now) = self.clock_ms else {
-            return true;
+            return Paced::unpaced();
         };
         let Some(gate) = self.sensor_pacing.gate_mut(sensor) else {
-            return true;
+            return Paced::unpaced();
         };
 
         let interval = gate.interval_ms.unwrap_or(DEFAULT_SENSOR_INTERVAL_MS);
         if interval == 0 {
-            return true;
+            return Paced::unpaced();
         }
 
         let Some(last) = gate.last_dispatch_ms else {
             // The first reading seen starts the interval rather than riding it.
             gate.last_dispatch_ms = Some(now);
-            return false;
+            return Paced::wait(now + interval);
         };
 
         let next_at = last + interval;
         if now < next_at {
-            return false;
+            return Paced::wait(next_at);
         }
         // Land on the last boundary at or before now. Advancing to now instead
         // would let a late reading carry the whole cadence later with it.
-        gate.last_dispatch_ms = Some(((now - next_at) / interval) * interval + next_at);
-        true
+        let landed = ((now - next_at) / interval) * interval + next_at;
+        gate.last_dispatch_ms = Some(landed);
+        Paced {
+            send: true,
+            next_send_ms: Some(landed + interval),
+        }
+    }
+}
+
+/// What the gate decided, and when it would next say yes.
+///
+/// The moment is worth as much as the verdict. A caller told when to come back
+/// can stop offering readings that have no chance, which on a stream sampled
+/// far faster than the interval is most of them.
+pub(crate) struct Paced {
+    pub send: bool,
+    pub next_send_ms: Option<u64>,
+}
+
+impl Paced {
+    fn unpaced() -> Self {
+        Self {
+            send: true,
+            next_send_ms: None,
+        }
+    }
+
+    fn wait(until: u64) -> Self {
+        Self {
+            send: false,
+            next_send_ms: Some(until),
+        }
     }
 }
 
@@ -124,7 +155,7 @@ mod tests {
     use crate::config::EngineConfig;
     use crate::devices::device_core::DeviceCore;
     use crate::engine::device_registry::DeviceRecord;
-    use crate::engine::events::Command;
+    use crate::engine::events::{Command, ProcessOutput};
     use crate::policy::EndpointMode;
     use crate::types::device_type::DeviceType;
 
@@ -161,6 +192,102 @@ mod tests {
         .unwrap()
         .outgoings
         .len()
+    }
+
+    fn accel_out(eng: &mut Engine, now_ms: u64) -> ProcessOutput {
+        eng.emit(
+            Command::SendAccel {
+                target: "game".to_string(),
+                x: 0.1,
+                y: 0.2,
+                z: 0.3,
+            },
+            Some(now_ms),
+        )
+        .unwrap()
+    }
+
+    /// A caller that is told when to come back can stop offering readings that
+    /// have no chance, which on a stream sampled far faster than the interval
+    /// is most of them.
+    #[test]
+    fn a_refusal_says_when_it_would_have_said_yes() {
+        let mut eng = controller();
+
+        let first = accel_out(&mut eng, 0);
+        assert!(first.outgoings.is_empty());
+        assert_eq!(first.next_send_ms, Some(100), "come back at the boundary");
+
+        let early = accel_out(&mut eng, 40);
+        assert!(early.outgoings.is_empty());
+        assert_eq!(early.next_send_ms, Some(100), "the answer does not move");
+
+        let due = accel_out(&mut eng, 100);
+        assert_eq!(due.outgoings.len(), 1);
+        assert_eq!(due.next_send_ms, Some(200), "and it names the one after");
+    }
+
+    /// The moment is about the send that asked, not about whatever else the
+    /// engine has scheduled, or a caller would come back for another sensor's
+    /// turn and be refused.
+    #[test]
+    fn each_sensor_is_told_about_its_own_turn() {
+        let mut eng = controller();
+        eng.set_sensor_interval(Sensor::Gyro, 250);
+        accel_out(&mut eng, 0);
+
+        let gyro = eng
+            .emit(
+                Command::SendGyro {
+                    target: "game".to_string(),
+                    x: 1.0,
+                    y: 2.0,
+                    z: 3.0,
+                },
+                Some(0),
+            )
+            .unwrap();
+        assert_eq!(gyro.next_send_ms, Some(250), "the gyro hears about 250");
+        assert_eq!(
+            accel_out(&mut eng, 0).next_send_ms,
+            Some(100),
+            "and the accel about 100"
+        );
+    }
+
+    /// Nothing was weighed, so there is nothing to come back for.
+    #[test]
+    fn a_send_that_was_never_paced_names_no_moment() {
+        let mut eng = controller();
+        let out = eng
+            .emit(
+                Command::SendDPad {
+                    target: "game".to_string(),
+                    x: 1,
+                    y: 2,
+                },
+                Some(0),
+            )
+            .unwrap();
+        assert_eq!(out.outgoings.len(), 1);
+        assert_eq!(out.next_send_ms, None);
+
+        // Nor when the caller keeps no clock at all.
+        let mut eng = controller();
+        assert_eq!(
+            eng.emit(
+                Command::SendAccel {
+                    target: "game".to_string(),
+                    x: 0.1,
+                    y: 0.2,
+                    z: 0.3,
+                },
+                None,
+            )
+            .unwrap()
+            .next_send_ms,
+            None
+        );
     }
 
     /// A game that named nothing still gets a cadence, and it is the one both

@@ -162,25 +162,45 @@ impl Engine {
                 let reliability = self.reliability_for(&target, ChannelType::Touch.value());
                 self.make_touch_set(&target, touches, reliability)
             }
-            Command::SendAccel { target, x, y, z } if self.sensor_due(Sensor::Accel) => {
-                let reliability = self.reliability_for(&target, ChannelType::Acceleration.value());
-                self.make_accel(&target, x, y, z, reliability)
+            Command::SendAccel { target, x, y, z } => {
+                let paced = self.sensor_due(Sensor::Accel);
+                out.next_send_ms = paced.next_send_ms;
+                if !paced.send {
+                    Vec::new()
+                } else {
+                    let reliability =
+                        self.reliability_for(&target, ChannelType::Acceleration.value());
+                    self.make_accel(&target, x, y, z, reliability)
+                }
             }
-            Command::SendGyro { target, x, y, z } if self.sensor_due(Sensor::Gyro) => {
-                let reliability = self.reliability_for(&target, ChannelType::Gyro.value());
-                self.make_gyro(&target, x as f32, y as f32, z as f32, reliability)
+            Command::SendGyro { target, x, y, z } => {
+                let paced = self.sensor_due(Sensor::Gyro);
+                out.next_send_ms = paced.next_send_ms;
+                if !paced.send {
+                    Vec::new()
+                } else {
+                    let reliability = self.reliability_for(&target, ChannelType::Gyro.value());
+                    self.make_gyro(&target, x as f32, y as f32, z as f32, reliability)
+                }
             }
-            Command::SendOrientation { target, x, y, z, w }
-                if self.sensor_due(Sensor::Orientation) =>
-            {
-                let reliability = self.reliability_for(&target, ChannelType::Orientation.value());
-                self.make_orientation(&target, x as f32, y as f32, z as f32, w as f32, reliability)
+            Command::SendOrientation { target, x, y, z, w } => {
+                let paced = self.sensor_due(Sensor::Orientation);
+                out.next_send_ms = paced.next_send_ms;
+                if !paced.send {
+                    Vec::new()
+                } else {
+                    let reliability =
+                        self.reliability_for(&target, ChannelType::Orientation.value());
+                    self.make_orientation(
+                        &target,
+                        x as f32,
+                        y as f32,
+                        z as f32,
+                        w as f32,
+                        reliability,
+                    )
+                }
             }
-            // A reading whose turn has not come is dropped, not held: the next
-            // one to arrive after the boundary is the one worth having.
-            Command::SendAccel { .. }
-            | Command::SendGyro { .. }
-            | Command::SendOrientation { .. } => Vec::new(),
             Command::SendDPad { target, x, y } => self.make_dpad_update(&target, x, y),
             Command::SendButton {
                 target,

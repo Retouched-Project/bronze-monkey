@@ -70,6 +70,7 @@ pub struct ProcessOutput {
     pub events: Vec<Event>,
     pub outgoings: Vec<Outgoing>,
     pub next_time_ms: Option<u64>,
+    pub next_send_ms: Option<u64>,
 }
 
 impl ProcessOutput {
