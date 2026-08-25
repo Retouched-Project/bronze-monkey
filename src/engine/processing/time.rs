@@ -12,7 +12,7 @@
 use super::Engine;
 use crate::engine::events::ProcessOutput;
 
-pub(crate) const PING_INTERVAL_MS: u64 = 1000;
+pub(crate) const PING_INTERVAL_MS: u64 = 60_000;
 
 impl Engine {
     /// Tells the engine what time it is, with no bytes attached.
@@ -124,23 +124,23 @@ mod tests {
     }
 
     #[test]
-    fn a_game_pings_a_connected_controller_each_second() {
+    fn a_game_probes_a_connected_controller_once_a_minute() {
         let mut eng = game();
         let out = eng.process_incoming(&ping_from("phone"), &at(0));
         assert_eq!(out.outgoings.len(), 1, "the first ping is acked");
-        assert_eq!(out.next_time_ms, Some(1000), "and a ping is owed");
+        assert_eq!(out.next_time_ms, Some(60_000), "and a probe is owed");
 
-        let quiet = eng.handle_time(999);
+        let quiet = eng.handle_time(59_999);
         assert!(quiet.outgoings.is_empty(), "nothing is due early");
-        assert_eq!(quiet.next_time_ms, Some(1000));
+        assert_eq!(quiet.next_time_ms, Some(60_000));
 
-        let due = eng.handle_time(1000);
+        let due = eng.handle_time(60_000);
         assert_eq!(due.outgoings.len(), 1);
         assert_eq!(due.outgoings[0].target_device_id, "phone");
         let mut pkt = crate::codec::externals::bm_packet::BMPacket::default();
         deserialize_message(due.outgoings[0].message(), &mut pkt).unwrap();
         assert_eq!(pkt.packet_type, PacketType::Ping);
-        assert_eq!(due.next_time_ms, Some(2000));
+        assert_eq!(due.next_time_ms, Some(120_000));
     }
 
     #[test]
@@ -148,11 +148,11 @@ mod tests {
         let mut eng = game();
         eng.process_incoming(&ping_from("phone"), &at(0));
 
-        let due = eng.handle_time(5500);
+        let due = eng.handle_time(330_000);
         assert_eq!(due.outgoings.len(), 1, "five missed intervals, one ping");
         assert_eq!(
             due.next_time_ms,
-            Some(6500),
+            Some(390_000),
             "and the cadence restarts from now"
         );
     }
@@ -175,8 +175,8 @@ mod tests {
 
         let first = eng.handle_time(7000);
         assert!(first.outgoings.is_empty(), "the first tick only schedules");
-        assert_eq!(first.next_time_ms, Some(8000));
-        assert_eq!(eng.handle_time(8000).outgoings.len(), 1);
+        assert_eq!(first.next_time_ms, Some(67_000));
+        assert_eq!(eng.handle_time(67_000).outgoings.len(), 1);
     }
 
     #[test]
@@ -185,7 +185,7 @@ mod tests {
         eng.process_incoming(&ping_from("phone"), &at(0));
         eng.peer_gone("phone");
 
-        let out = eng.handle_time(2000);
+        let out = eng.handle_time(120_000);
         assert!(out.outgoings.is_empty());
         assert_eq!(out.next_time_ms, None);
     }
