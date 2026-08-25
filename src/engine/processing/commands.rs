@@ -28,9 +28,7 @@ impl Engine {
     /// caller that has no clock passes nothing and is never held back.
     pub fn emit(&mut self, cmd: Command, now_ms: Option<u64>) -> Result<ProcessOutput, EmitError> {
         let mut out = ProcessOutput::new();
-        if let Some(now_ms) = now_ms {
-            self.advance_clock(now_ms, &mut out);
-        }
+        let now = now_ms.map(|now_ms| self.set_clock(now_ms));
 
         let outgoings = match cmd {
             Command::Raw {
@@ -157,6 +155,9 @@ impl Engine {
                     });
                 };
                 self.make_connection_failed(&target, controller)
+            }
+            Command::TouchEvent { target, events } => {
+                self.take_touch_events(&target, events, &mut out.next_send_ms)
             }
             Command::SendTouch { target, touches } => {
                 let reliability = self.reliability_for(&target, ChannelType::Touch.value());
@@ -289,6 +290,9 @@ impl Engine {
             } => self.make_wait_for_new_host(&target, &host_device_id),
         };
         out.outgoings.extend(outgoings);
+        if let Some(now) = now {
+            self.run_due(now, &mut out);
+        }
         out.next_time_ms = self.next_deadline();
         Ok(out)
     }

@@ -259,6 +259,33 @@ pub enum Sensor {
     Orientation,
 }
 
+/// What a caller can report a finger doing. Stationary is absent on purpose:
+/// it is a state the engine reaches once a set has gone, never one a caller
+/// observes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TouchPhase {
+    Began,
+    Moved,
+    Ended,
+    Cancelled,
+}
+
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+#[cfg_attr(target_arch = "wasm32", serde(rename_all_fields = "camelCase"))]
+pub enum TouchEvent {
+    Pointer {
+        id: i32,
+        x: f64,
+        y: f64,
+        phase: TouchPhase,
+        screen_width: i16,
+        screen_height: i16,
+    },
+    CancelAll,
+}
+
 /// A command that was wrong in itself, as opposed to one the session cannot
 /// use right now.
 ///
@@ -362,6 +389,10 @@ pub enum Command {
     ReportConnectionFailed {
         target: String,
         controller_id: String,
+    },
+    TouchEvent {
+        target: String,
+        events: Vec<TouchEvent>,
     },
     SendTouch {
         target: String,

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+mod batching;
 mod builders;
 mod commands;
 mod incoming;
@@ -60,12 +61,12 @@ pub(crate) type RpcHandler = fn(&mut RpcContext);
 pub struct Engine {
     pub(crate) state: EngineState,
     pub(crate) roles: ActiveRoles,
-    /// Whether the caller has an unreliable path it can write to.
     pub(crate) datagrams: bool,
     pub(crate) input_paths: HashMap<String, bool>,
     pub(crate) clock_ms: Option<u64>,
     pub(crate) ping_at: HashMap<String, u64>,
     pub(crate) sensor_pacing: pacing::SensorPacing,
+    pub(crate) touch: batching::TouchBatch,
     bound_continuations: HashMap<String, RpcHandler>,
     pub server_policy: ServerPolicy,
     pub game_policy: GamePolicy,
@@ -83,6 +84,7 @@ impl Engine {
             clock_ms: None,
             ping_at: HashMap::new(),
             sensor_pacing: pacing::SensorPacing::default(),
+            touch: batching::TouchBatch::default(),
             bound_continuations: HashMap::new(),
             server_policy: ServerPolicy::new(),
             game_policy: GamePolicy::new(),
@@ -209,6 +211,7 @@ impl Engine {
         self.state.chunk_buffers.clear();
         self.input_paths.clear();
         self.sensor_pacing = pacing::SensorPacing::default();
+        self.reset_touch();
     }
 
     pub(crate) fn set_input_reliability(&mut self, touch: Option<i32>, sensors: Option<i32>) {

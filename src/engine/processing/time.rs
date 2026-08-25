@@ -30,12 +30,18 @@ impl Engine {
     /// runs backwards: an older reading than the one already seen is treated
     /// as now.
     pub(crate) fn advance_clock(&mut self, now_ms: u64, out: &mut ProcessOutput) {
-        let now = self.clock_ms.map_or(now_ms, |seen| seen.max(now_ms));
-        self.clock_ms = Some(now);
+        let now = self.set_clock(now_ms);
         self.run_due(now, out);
     }
 
-    fn run_due(&mut self, now: u64, out: &mut ProcessOutput) {
+    pub(crate) fn set_clock(&mut self, now_ms: u64) -> u64 {
+        let now = self.clock_ms.map_or(now_ms, |seen| seen.max(now_ms));
+        self.clock_ms = Some(now);
+        now
+    }
+
+    pub(crate) fn run_due(&mut self, now: u64, out: &mut ProcessOutput) {
+        self.repeat_touches(now, &mut out.outgoings);
         if self.roles.game() {
             self.schedule_pings(now);
             let due: Vec<String> = self
@@ -62,7 +68,11 @@ impl Engine {
     }
 
     pub(crate) fn next_deadline(&self) -> Option<u64> {
-        self.ping_at.values().min().copied()
+        let ping = self.ping_at.values().min().copied();
+        match (ping, self.touch_repeat_due()) {
+            (Some(a), Some(b)) => Some(a.min(b)),
+            (a, b) => a.or(b),
+        }
     }
 }
 

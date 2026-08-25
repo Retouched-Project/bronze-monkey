@@ -82,6 +82,12 @@ impl Engine {
                 self.set_sensor_enabled(sensor, enabled);
             }
         }
+        if let Some(ms) = cfg.touch_interval_ms {
+            self.set_touch_interval(ms);
+        }
+        if let Some(enabled) = cfg.touch_enabled {
+            self.set_touch_enabled(enabled);
+        }
     }
 
     /// Whether a reading may go out, moving the boundary on when it may, and
