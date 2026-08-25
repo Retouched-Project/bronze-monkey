@@ -4,6 +4,7 @@
 mod builders;
 mod commands;
 mod incoming;
+mod pacing;
 mod rpc;
 mod server_ops;
 mod time;
@@ -64,6 +65,7 @@ pub struct Engine {
     pub(crate) input_paths: HashMap<String, bool>,
     pub(crate) clock_ms: Option<u64>,
     pub(crate) ping_at: HashMap<String, u64>,
+    pub(crate) sensor_pacing: pacing::SensorPacing,
     bound_continuations: HashMap<String, RpcHandler>,
     pub server_policy: ServerPolicy,
     pub game_policy: GamePolicy,
@@ -80,6 +82,7 @@ impl Engine {
             input_paths: HashMap::new(),
             clock_ms: None,
             ping_at: HashMap::new(),
+            sensor_pacing: pacing::SensorPacing::default(),
             bound_continuations: HashMap::new(),
             server_policy: ServerPolicy::new(),
             game_policy: GamePolicy::new(),
@@ -205,6 +208,7 @@ impl Engine {
         self.controller_policy.input_reliability = Default::default();
         self.state.chunk_buffers.clear();
         self.input_paths.clear();
+        self.sensor_pacing = pacing::SensorPacing::default();
     }
 
     pub(crate) fn set_input_reliability(&mut self, touch: Option<i32>, sensors: Option<i32>) {

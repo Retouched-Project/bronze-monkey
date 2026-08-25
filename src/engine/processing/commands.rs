@@ -22,7 +22,16 @@ impl Engine {
     /// The answer is shaped like any other, because a command can start
     /// something the clock has to finish: whatever it schedules is named here
     /// rather than waiting for the next packet to arrive.
-    pub fn emit(&mut self, cmd: Command) -> Result<ProcessOutput, EmitError> {
+    ///
+    /// `now_ms` is the caller's clock, on whatever monotonic scale it keeps.
+    /// It is what lets a paced command know whether its turn has come, and a
+    /// caller that has no clock passes nothing and is never held back.
+    pub fn emit(&mut self, cmd: Command, now_ms: Option<u64>) -> Result<ProcessOutput, EmitError> {
+        let mut out = ProcessOutput::new();
+        if let Some(now_ms) = now_ms {
+            self.advance_clock(now_ms, &mut out);
+        }
+
         let outgoings = match cmd {
             Command::Raw {
                 target,
@@ -153,18 +162,25 @@ impl Engine {
                 let reliability = self.reliability_for(&target, ChannelType::Touch.value());
                 self.make_touch_set(&target, touches, reliability)
             }
-            Command::SendAccel { target, x, y, z } => {
+            Command::SendAccel { target, x, y, z } if self.sensor_due(Sensor::Accel) => {
                 let reliability = self.reliability_for(&target, ChannelType::Acceleration.value());
                 self.make_accel(&target, x, y, z, reliability)
             }
-            Command::SendGyro { target, x, y, z } => {
+            Command::SendGyro { target, x, y, z } if self.sensor_due(Sensor::Gyro) => {
                 let reliability = self.reliability_for(&target, ChannelType::Gyro.value());
                 self.make_gyro(&target, x as f32, y as f32, z as f32, reliability)
             }
-            Command::SendOrientation { target, x, y, z, w } => {
+            Command::SendOrientation { target, x, y, z, w }
+                if self.sensor_due(Sensor::Orientation) =>
+            {
                 let reliability = self.reliability_for(&target, ChannelType::Orientation.value());
                 self.make_orientation(&target, x as f32, y as f32, z as f32, w as f32, reliability)
             }
+            // A reading whose turn has not come is dropped, not held: the next
+            // one to arrive after the boundary is the one worth having.
+            Command::SendAccel { .. }
+            | Command::SendGyro { .. }
+            | Command::SendOrientation { .. } => Vec::new(),
             Command::SendDPad { target, x, y } => self.make_dpad_update(&target, x, y),
             Command::SendButton {
                 target,
@@ -252,11 +268,9 @@ impl Engine {
                 host_device_id,
             } => self.make_wait_for_new_host(&target, &host_device_id),
         };
-        Ok(ProcessOutput {
-            events: Vec::new(),
-            outgoings,
-            next_time_ms: self.next_deadline(),
-        })
+        out.outgoings.extend(outgoings);
+        out.next_time_ms = self.next_deadline();
+        Ok(out)
     }
 
     fn configure_sensor(
@@ -385,11 +399,14 @@ mod tests {
     fn an_outgoing_carries_a_message_with_no_length_in_front() {
         let mut eng = engine_with_peer("game1");
         let out = eng
-            .emit(Command::SendDPad {
-                target: "game1".to_string(),
-                x: 1,
-                y: 2,
-            })
+            .emit(
+                Command::SendDPad {
+                    target: "game1".to_string(),
+                    x: 1,
+                    y: 2,
+                },
+                None,
+            )
             .unwrap()
             .outgoings;
         assert_eq!(out.len(), 1);
@@ -411,11 +428,14 @@ mod tests {
     fn a_stream_bound_message_is_not_a_bare_one() {
         let mut eng = engine_with_peer("game1");
         let out = eng
-            .emit(Command::SendDPad {
-                target: "game1".to_string(),
-                x: 3,
-                y: 4,
-            })
+            .emit(
+                Command::SendDPad {
+                    target: "game1".to_string(),
+                    x: 3,
+                    y: 4,
+                },
+                None,
+            )
             .unwrap()
             .outgoings;
 
@@ -431,12 +451,15 @@ mod tests {
         // the caller could not write a bare message anywhere.
         let mut eng = engine_with_peer("game1");
         let sensors = eng
-            .emit(Command::SendAccel {
-                target: "game1".to_string(),
-                x: 0.0,
-                y: 0.0,
-                z: 1.0,
-            })
+            .emit(
+                Command::SendAccel {
+                    target: "game1".to_string(),
+                    x: 0.0,
+                    y: 0.0,
+                    z: 1.0,
+                },
+                None,
+            )
             .unwrap()
             .outgoings;
         assert_eq!(sensors[0].reliability, BMReliability::Unreliable.code());
@@ -444,12 +467,15 @@ mod tests {
 
         let mut eng = engine_with_datagrams("game1");
         let sensors = eng
-            .emit(Command::SendAccel {
-                target: "game1".to_string(),
-                x: 0.0,
-                y: 0.0,
-                z: 1.0,
-            })
+            .emit(
+                Command::SendAccel {
+                    target: "game1".to_string(),
+                    x: 0.0,
+                    y: 0.0,
+                    z: 1.0,
+                },
+                None,
+            )
             .unwrap()
             .outgoings;
         assert_eq!(
@@ -465,11 +491,14 @@ mod tests {
         deserialize_message(&sensors[0].payload, &mut pkt).expect("a datagram is a bare message");
 
         let control = eng
-            .emit(Command::SendButton {
-                target: "game1".to_string(),
-                handler: "a".to_string(),
-                pressed: true,
-            })
+            .emit(
+                Command::SendButton {
+                    target: "game1".to_string(),
+                    handler: "a".to_string(),
+                    pressed: true,
+                },
+                None,
+            )
             .unwrap()
             .outgoings;
         assert_eq!(control[0].via, Via::Stream, "control traffic goes reliably");
@@ -487,12 +516,15 @@ mod tests {
         .expect("nothing else is configured");
 
         let sensors = eng
-            .emit(Command::SendAccel {
-                target: "game1".to_string(),
-                x: 0.0,
-                y: 0.0,
-                z: 1.0,
-            })
+            .emit(
+                Command::SendAccel {
+                    target: "game1".to_string(),
+                    x: 0.0,
+                    y: 0.0,
+                    z: 1.0,
+                },
+                None,
+            )
             .unwrap()
             .outgoings;
         assert_eq!(
@@ -514,10 +546,13 @@ mod tests {
         eng.state.upsert_registry_info(listed);
 
         // Nothing registered yet, so there is no way to say who we are.
-        let refused = eng.emit(Command::ConnectToHost {
-            target: "server".to_string(),
-            host_id: "game1".to_string(),
-        });
+        let refused = eng.emit(
+            Command::ConnectToHost {
+                target: "server".to_string(),
+                host_id: "game1".to_string(),
+            },
+            None,
+        );
         assert_eq!(
             refused.unwrap_err(),
             EmitError::NotRegistered,
@@ -532,19 +567,25 @@ mod tests {
             ),
             None,
         ));
-        eng.emit(Command::Register {
-            target: "server".to_string(),
-            info: registry_info("local", DeviceType::Android),
-            domain: None,
-            return_method: None,
-        })
+        eng.emit(
+            Command::Register {
+                target: "server".to_string(),
+                info: registry_info("local", DeviceType::Android),
+                domain: None,
+                return_method: None,
+            },
+            None,
+        )
         .unwrap();
 
         let out = eng
-            .emit(Command::ConnectToHost {
-                target: "server".to_string(),
-                host_id: "game1".to_string(),
-            })
+            .emit(
+                Command::ConnectToHost {
+                    target: "server".to_string(),
+                    host_id: "game1".to_string(),
+                },
+                None,
+            )
             .unwrap()
             .outgoings;
         assert_eq!(out.len(), 1, "the introduction goes to the registry");
@@ -554,17 +595,23 @@ mod tests {
     #[test]
     fn an_unknown_host_is_refused_rather_than_guessed() {
         let mut eng = engine_with_peer("game1");
-        eng.emit(Command::Register {
-            target: "game1".to_string(),
-            info: registry_info("local", DeviceType::Android),
-            domain: None,
-            return_method: None,
-        })
+        eng.emit(
+            Command::Register {
+                target: "game1".to_string(),
+                info: registry_info("local", DeviceType::Android),
+                domain: None,
+                return_method: None,
+            },
+            None,
+        )
         .unwrap();
-        let out = eng.emit(Command::ConnectToHost {
-            target: "game1".to_string(),
-            host_id: "never-heard-of-it".to_string(),
-        });
+        let out = eng.emit(
+            Command::ConnectToHost {
+                target: "game1".to_string(),
+                host_id: "never-heard-of-it".to_string(),
+            },
+            None,
+        );
         assert_eq!(
             out.unwrap_err(),
             EmitError::UnknownDevice {
@@ -579,24 +626,30 @@ mod tests {
     fn a_send_to_a_departed_peer_is_dropped_not_refused() {
         let mut eng = engine_with_peer("game1");
         eng.peer_gone("game1");
-        let out = eng.emit(Command::SendAccel {
-            target: "game1".to_string(),
-            x: 0.0,
-            y: 0.0,
-            z: 1.0,
-        });
+        let out = eng.emit(
+            Command::SendAccel {
+                target: "game1".to_string(),
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            },
+            None,
+        );
         assert!(out.unwrap().outgoings.is_empty());
     }
 
     #[test]
     fn a_command_with_no_target_is_refused() {
         let mut eng = engine_with_peer("game1");
-        let out = eng.emit(Command::Raw {
-            target: String::new(),
-            channel: 3,
-            reliability: 2,
-            payload: vec![1, 2, 3],
-        });
+        let out = eng.emit(
+            Command::Raw {
+                target: String::new(),
+                channel: 3,
+                reliability: 2,
+                payload: vec![1, 2, 3],
+            },
+            None,
+        );
         assert_eq!(out.unwrap_err(), EmitError::EmptyTarget);
     }
 

@@ -173,13 +173,14 @@ impl BMEnginePy {
         &self,
         py: Python<'py>,
         command: Bound<'py, PyAny>,
+        now_ms: Option<u64>,
     ) -> PyResult<Bound<'py, PyAny>> {
         let cmd: Command = depythonize(&command)?;
         let out = self
             .inner
             .write()
             .unwrap()
-            .emit(cmd)
+            .emit(cmd, now_ms)
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
         Ok(pythonize(py, &out)?)
     }

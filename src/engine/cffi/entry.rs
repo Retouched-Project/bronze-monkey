@@ -243,6 +243,8 @@ pub unsafe extern "C" fn bm_engine_emit(
     ptr_engine: *mut Engine,
     cmd_ptr: *const u8,
     cmd_len: usize,
+    now_ms: u64,
+    has_now: bool,
     out_ptr: *mut *mut u8,
     out_len: *mut usize,
 ) -> bool {
@@ -260,7 +262,7 @@ pub unsafe extern "C" fn bm_engine_emit(
                 return false;
             }
         };
-        let out = match engine.emit(cmd) {
+        let out = match engine.emit(cmd, has_now.then_some(now_ms)) {
             Ok(o) => o,
             Err(e) => {
                 crate::set_last_error(e);

@@ -324,6 +324,7 @@ impl Engine {
                 self.set_input_reliability(touch, sensors);
                 claimed = true;
             } else if let Some(cfg) = self.parse_control_rpc(&inv) {
+                self.note_sensor_config(&cfg);
                 out.events.push(Event::ControlConfig(cfg));
                 claimed = true;
             }

@@ -261,11 +261,14 @@ mod tests {
 
             let device_id = "phone".to_string();
             let out = eng
-                .emit(if approve {
-                    crate::engine::events::Command::ApproveRegistration { device_id }
-                } else {
-                    crate::engine::events::Command::DenyRegistration { device_id }
-                })
+                .emit(
+                    if approve {
+                        crate::engine::events::Command::ApproveRegistration { device_id }
+                    } else {
+                        crate::engine::events::Command::DenyRegistration { device_id }
+                    },
+                    None,
+                )
                 .unwrap()
                 .outgoings;
 
