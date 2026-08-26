@@ -453,6 +453,77 @@ mod tests {
         }
     }
 
+    /// The C binding carries commands as named msgpack, and nothing on either
+    /// side of it is checked by a compiler.
+    #[test]
+    fn the_keys_a_caller_writes_are_the_keys_that_are_read() {
+        #[derive(serde::Serialize)]
+        struct Pointer {
+            #[serde(rename = "type")]
+            kind: &'static str,
+            id: i32,
+            x: f64,
+            y: f64,
+            phase: &'static str,
+            screen_width: i16,
+            screen_height: i16,
+        }
+        #[derive(serde::Serialize)]
+        struct Batch {
+            #[serde(rename = "type")]
+            kind: &'static str,
+            target: &'static str,
+            events: Vec<Pointer>,
+        }
+
+        let bytes = rmp_serde::to_vec_named(&Batch {
+            kind: "TouchEvent",
+            target: "game",
+            events: vec![Pointer {
+                kind: "Pointer",
+                id: 2,
+                x: 1.5,
+                y: 2.5,
+                phase: "Began",
+                screen_width: 480,
+                screen_height: 320,
+            }],
+        })
+        .unwrap();
+
+        let cmd: Command = rmp_serde::from_slice(&bytes).expect("reads as a command");
+        match cmd {
+            Command::TouchEvent { target, events } => {
+                assert_eq!(target, "game");
+                assert_eq!(
+                    events,
+                    vec![TouchEvent::Pointer {
+                        id: 2,
+                        x: 1.5,
+                        y: 2.5,
+                        phase: TouchPhase::Began,
+                        screen_width: 480,
+                        screen_height: 320,
+                    }]
+                );
+            }
+            other => panic!("expected a touch batch, got {other:?}"),
+        }
+    }
+
+    /// A gesture taken away whole carries nothing but its name.
+    #[test]
+    fn taking_a_gesture_away_needs_no_fields() {
+        #[derive(serde::Serialize)]
+        struct Tagged {
+            #[serde(rename = "type")]
+            kind: &'static str,
+        }
+        let bytes = rmp_serde::to_vec_named(&Tagged { kind: "CancelAll" }).unwrap();
+        let event: TouchEvent = rmp_serde::from_slice(&bytes).expect("reads as an event");
+        assert_eq!(event, TouchEvent::CancelAll);
+    }
+
     /// The escape hatch: a set the caller built itself goes as it is, around
     /// all of this.
     #[test]
