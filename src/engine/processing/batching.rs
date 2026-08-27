@@ -472,6 +472,39 @@ mod tests {
         assert_eq!(eng.handle_time(500).next_time_ms, None);
     }
 
+    /// Handing a batch over at the boundary must land the same set as offering
+    /// the same events one at a time would have. This is what lets a caller
+    /// hold them back rather than crossing for each one.
+    #[test]
+    fn a_batch_lands_what_the_events_would_have_landed_singly() {
+        let during = || {
+            vec![
+                pointer(1, 2.0, TouchPhase::Began),
+                pointer(0, 4.0, TouchPhase::Moved),
+                pointer(1, 6.0, TouchPhase::Moved),
+                pointer(0, 8.0, TouchPhase::Moved),
+            ]
+        };
+
+        let mut singly = controller();
+        feed(&mut singly, 0, vec![pointer(0, 1.0, TouchPhase::Began)]);
+        for (offset, event) in during().into_iter().enumerate() {
+            let held = feed(&mut singly, 10 + offset as u64 * 10, vec![event]);
+            assert!(held.outgoings.is_empty(), "each one waits its turn");
+        }
+        let one_at_a_time = sent(&singly.handle_time(50));
+
+        let mut batched = controller();
+        feed(&mut batched, 0, vec![pointer(0, 1.0, TouchPhase::Began)]);
+        let as_a_batch = sent(&feed(&mut batched, 50, during()));
+
+        assert_eq!(one_at_a_time.len(), 2);
+        for (a, b) in one_at_a_time.iter().zip(as_a_batch.iter()) {
+            assert_eq!((a.id, a.x, a.state), (b.id, b.x, b.state));
+        }
+        assert_eq!(one_at_a_time.len(), as_a_batch.len());
+    }
+
     /// A stream either delivers or breaks, so there is nothing to repeat.
     #[test]
     fn a_reliable_set_is_not_repeated() {
