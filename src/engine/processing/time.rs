@@ -41,7 +41,7 @@ impl Engine {
     }
 
     pub(crate) fn run_due(&mut self, now: u64, out: &mut ProcessOutput) {
-        self.repeat_touches(now, &mut out.outgoings);
+        self.run_touch_due(now, &mut out.outgoings);
         if self.roles.game() {
             self.schedule_pings(now);
             let due: Vec<String> = self
@@ -68,11 +68,14 @@ impl Engine {
     }
 
     pub(crate) fn next_deadline(&self) -> Option<u64> {
-        let ping = self.ping_at.values().min().copied();
-        match (ping, self.touch_repeat_due()) {
-            (Some(a), Some(b)) => Some(a.min(b)),
-            (a, b) => a.or(b),
-        }
+        [
+            self.ping_at.values().min().copied(),
+            self.touch_flush_due(),
+            self.touch_repeat_due(),
+        ]
+        .into_iter()
+        .flatten()
+        .min()
     }
 }
 

@@ -24,6 +24,7 @@ pub(crate) struct TouchBatch {
     pending: BTreeMap<i32, Touch>,
     interval_ms: Option<u64>,
     last_flush_ms: Option<u64>,
+    unreported: bool,
     enabled: bool,
     target: String,
 }
@@ -47,6 +48,7 @@ impl TouchBatch {
     }
 
     fn apply(&mut self, event: TouchEvent) {
+        self.unreported = true;
         match event {
             TouchEvent::CancelAll => {
                 for touch in self.pending.values_mut() {
@@ -111,6 +113,16 @@ impl Engine {
         self.touch.interval_ms = (ms > 0).then_some(ms as u64);
     }
 
+    /// What a control scheme said about touch. A scheme declares that its
+    /// layout needs raw touch; it does not forbid it. So a scheme silent on
+    /// touch leaves alone whatever a game turned on for its own hit testing,
+    /// and only the game can take it away again.
+    pub(crate) fn declare_touch(&mut self, enabled: bool) {
+        if enabled {
+            self.set_touch_enabled(true);
+        }
+    }
+
     /// Switching touch on starts an empty set and a fresh window, so a session
     /// never inherits fingers from the one before it.
     pub(crate) fn set_touch_enabled(&mut self, enabled: bool) {
@@ -128,6 +140,9 @@ impl Engine {
         events: Vec<TouchEvent>,
         next_send_ms: &mut Option<u64>,
     ) -> Vec<Outgoing> {
+        if !self.touch.enabled {
+            return Vec::new();
+        }
         if !target.is_empty() {
             self.touch.target = target.to_string();
         }
@@ -161,8 +176,21 @@ impl Engine {
         let reliability = self.reliability_for(&target, ChannelType::Touch.value());
 
         self.touch.last_flush_ms = self.clock_ms;
+        self.touch.unreported = false;
         self.touch.advance();
         self.make_touch_set(&target, touches, reliability)
+    }
+
+    /// Input held back for the cadence still has to go, and no further event
+    /// is coming once a finger stops moving. Fresh input goes at half the
+    /// interval, where a set with nothing new in it repeats at the whole one.
+    pub(crate) fn touch_flush_due(&self) -> Option<u64> {
+        if !self.touch.unreported || self.touch.pending.is_empty() {
+            return None;
+        }
+        self.touch
+            .last_flush_ms
+            .map(|last| last + self.touch.interval() / 2)
     }
 
     /// A set that has already gone still repeats while a finger is down, so a
@@ -179,8 +207,9 @@ impl Engine {
             .map(|last| last + self.touch.interval())
     }
 
-    pub(crate) fn repeat_touches(&mut self, now: u64, out: &mut Vec<Outgoing>) {
-        if self.touch_repeat_due().is_some_and(|due| due <= now) {
+    pub(crate) fn run_touch_due(&mut self, now: u64, out: &mut Vec<Outgoing>) {
+        let due = |at: Option<u64>| at.is_some_and(|at| at <= now);
+        if due(self.touch_flush_due()) || due(self.touch_repeat_due()) {
             out.extend(self.flush_touches());
         }
     }
@@ -218,6 +247,7 @@ mod tests {
             DeviceCore::new("game".to_string(), "Game".to_string(), DeviceType::Unity),
             None,
         ));
+        eng.declare_touch(true);
         eng
     }
 
@@ -396,6 +426,52 @@ mod tests {
         assert_eq!(touches[0].x, 7.0);
     }
 
+    /// The end of a swipe is the position that matters, and no further event
+    /// is coming once the finger stops. It must not wait for the next tap.
+    #[test]
+    fn the_last_move_of_a_swipe_arrives_without_another_touch() {
+        let mut eng = controller();
+        feed(&mut eng, 0, vec![pointer(0, 1.0, TouchPhase::Began)]);
+
+        let held = feed(&mut eng, 10, vec![pointer(0, 9.0, TouchPhase::Moved)]);
+        assert!(held.outgoings.is_empty(), "too soon for the wire");
+        assert_eq!(held.next_time_ms, Some(50), "but the clock is told");
+
+        let flushed = eng.handle_time(50);
+        assert_eq!(flushed.outgoings.len(), 1, "and it goes on its own");
+        assert_eq!(sent(&flushed)[0].x, 9.0);
+    }
+
+    /// The same holds when the game asked for a stream, where there is no
+    /// repeat to fall back on.
+    #[test]
+    fn held_back_input_still_arrives_when_touch_is_reliable() {
+        let mut eng = controller();
+        eng.set_input_reliability(Some(BMReliability::ReliableOrdered.code()), None);
+        feed(&mut eng, 0, vec![pointer(0, 1.0, TouchPhase::Began)]);
+
+        let held = feed(&mut eng, 10, vec![pointer(0, 4.0, TouchPhase::Moved)]);
+        assert!(held.outgoings.is_empty());
+        assert_eq!(
+            held.next_time_ms,
+            Some(50),
+            "a stream has no repeat, so this is the only thing that will send it"
+        );
+        assert_eq!(sent(&eng.handle_time(50))[0].x, 4.0);
+    }
+
+    /// Nothing new means nothing owed, so a settled set does not keep waking
+    /// the caller for a flush it does not need.
+    #[test]
+    fn a_set_with_nothing_new_owes_no_flush() {
+        let mut eng = controller();
+        eng.set_input_reliability(Some(BMReliability::ReliableOrdered.code()), None);
+        feed(&mut eng, 0, vec![pointer(0, 1.0, TouchPhase::Began)]);
+
+        assert_eq!(eng.touch_flush_due(), None, "the set has just gone");
+        assert_eq!(eng.handle_time(500).next_time_ms, None);
+    }
+
     /// A stream either delivers or breaks, so there is nothing to repeat.
     #[test]
     fn a_reliable_set_is_not_repeated() {
@@ -426,13 +502,92 @@ mod tests {
         );
     }
 
+    /// Switching touch off and on again is a clean slate.
     #[test]
     fn switching_touch_on_forgets_the_fingers_before_it() {
         let mut eng = controller();
         feed(&mut eng, 0, vec![pointer(0, 1.0, TouchPhase::Began)]);
+        eng.set_touch_enabled(false);
         eng.set_touch_enabled(true);
 
         assert!(feed(&mut eng, 500, vec![]).outgoings.is_empty());
+    }
+
+    /// A game that turns touch off is not sent touch, and nothing is left
+    /// repeating behind it.
+    #[test]
+    fn a_game_that_turns_touch_off_stops_receiving_it() {
+        let mut eng = controller();
+        feed(&mut eng, 0, vec![pointer(0, 1.0, TouchPhase::Began)]);
+        eng.set_touch_enabled(false);
+
+        let after = feed(&mut eng, 100, vec![pointer(0, 2.0, TouchPhase::Moved)]);
+        assert!(after.outgoings.is_empty());
+        assert_eq!(eng.touch_repeat_due(), None);
+        assert!(eng.handle_time(1000).outgoings.is_empty());
+    }
+
+    /// Nothing has said touch is wanted, so nothing is sent.
+    #[test]
+    fn touch_is_not_sent_until_something_asks_for_it() {
+        let mut eng = Engine::default();
+        eng.init_local_device(DeviceCore::new(
+            "phone".to_string(),
+            "Phone".to_string(),
+            DeviceType::Android,
+        ));
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new("game".to_string(), "Game".to_string(), DeviceType::Unity),
+            None,
+        ));
+
+        assert!(
+            feed(&mut eng, 0, vec![pointer(0, 1.0, TouchPhase::Began)])
+                .outgoings
+                .is_empty()
+        );
+
+        eng.declare_touch(true);
+        assert_eq!(
+            feed(&mut eng, 100, vec![pointer(0, 1.0, TouchPhase::Began)])
+                .outgoings
+                .len(),
+            1
+        );
+    }
+
+    /// A scheme says its layout needs touch; it does not say a game may not
+    /// have it. So one that is silent leaves a game's own choice standing, and
+    /// only the game can take it back.
+    #[test]
+    fn a_scheme_can_ask_for_touch_but_cannot_refuse_it() {
+        let mut eng = controller();
+        eng.declare_touch(false);
+        assert_eq!(
+            feed(&mut eng, 0, vec![pointer(0, 1.0, TouchPhase::Began)])
+                .outgoings
+                .len(),
+            1,
+            "the silent scheme changed nothing"
+        );
+
+        eng.set_touch_enabled(false);
+        eng.declare_touch(false);
+        assert!(
+            feed(&mut eng, 100, vec![pointer(1, 1.0, TouchPhase::Began)])
+                .outgoings
+                .is_empty(),
+            "and cannot undo the game's refusal either"
+        );
+
+        eng.declare_touch(true);
+        assert_eq!(
+            feed(&mut eng, 200, vec![pointer(2, 1.0, TouchPhase::Began)])
+                .outgoings
+                .len(),
+            1,
+            "but a scheme that asks is answered"
+        );
     }
 
     /// A caller that keeps no clock keeps the behaviour it had.

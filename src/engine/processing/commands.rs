@@ -156,6 +156,10 @@ impl Engine {
                 };
                 self.make_connection_failed(&target, controller)
             }
+            Command::DeclareTouch { enabled } => {
+                self.declare_touch(enabled);
+                Vec::new()
+            }
             Command::TouchEvent { target, events } => {
                 self.take_touch_events(&target, events, &mut out.next_send_ms)
             }

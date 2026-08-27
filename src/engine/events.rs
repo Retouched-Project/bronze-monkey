@@ -390,6 +390,9 @@ pub enum Command {
         target: String,
         controller_id: String,
     },
+    DeclareTouch {
+        enabled: bool,
+    },
     TouchEvent {
         target: String,
         events: Vec<TouchEvent>,
