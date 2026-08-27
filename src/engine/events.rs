@@ -18,7 +18,6 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct Arrival {
     pub source: Option<String>,
-    pub source_port: i32,
     pub datagram: bool,
     pub now_ms: Option<u64>,
 }
