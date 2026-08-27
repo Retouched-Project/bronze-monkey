@@ -180,6 +180,16 @@ impl Engine {
         &self.state.registry
     }
 
+    /// Everyone waiting to be let in, for a caller that has to draw them
+    /// rather than answer the moment they arrive.
+    pub fn pending_registrations(&self) -> Vec<BMRegistryInfo> {
+        self.server_policy
+            .pending_registrations
+            .values()
+            .map(|p| p.info.clone())
+            .collect()
+    }
+
     pub fn registry_mut(&mut self) -> &mut DeviceRegistry {
         &mut self.state.registry
     }

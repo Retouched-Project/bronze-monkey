@@ -302,6 +302,31 @@ pub unsafe extern "C" fn bm_engine_registry(
     })
 }
 
+/// Everyone waiting to be let in, for a caller that draws them rather than
+/// answering the moment they arrive.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn bm_engine_pending_registrations(
+    ptr_engine: *mut Engine,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> bool {
+    catch_bool(|| {
+        if out_ptr.is_null() || out_len.is_null() {
+            return false;
+        }
+        let Some(engine) = engine_mut(ptr_engine) else {
+            return false;
+        };
+        match rmp_serde::to_vec_named(&engine.pending_registrations()) {
+            Ok(buf) => {
+                write_buf(buf, out_ptr, out_len);
+                true
+            }
+            Err(_) => false,
+        }
+    })
+}
+
 /// Applies a msgpack encoded EngineConfig: everything this engine is told about
 /// itself, all at once.
 #[unsafe(no_mangle)]

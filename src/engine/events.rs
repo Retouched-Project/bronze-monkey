@@ -105,6 +105,10 @@ pub enum Event {
     RegistrationResult {
         success: bool,
     },
+    RegistrationPending {
+        info: BMRegistryInfo,
+        domain: Option<String>,
+    },
     SlotAssigned {
         info: BMRegistryInfo,
     },

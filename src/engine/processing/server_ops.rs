@@ -285,6 +285,96 @@ mod tests {
         }
     }
 
+    fn register_from(id: &str) -> Vec<u8> {
+        let mut eng = Engine::default();
+        eng.init_local_device(DeviceCore::new(
+            id.to_string(),
+            id.to_string(),
+            DeviceType::Android,
+        ));
+        eng.push_registry_update(crate::engine::device_registry::DeviceRecord::new(
+            DeviceCore::new(
+                "reg".to_string(),
+                "Registry".to_string(),
+                DeviceType::Server,
+            ),
+            None,
+        ));
+        let info = BMRegistryInfo {
+            slot_id: 0,
+            app_id: "app".to_string(),
+            current_players: None,
+            max_players: None,
+            device: DeviceCore::new(id.to_string(), id.to_string(), DeviceType::Android),
+            device_address: BMAddress::new("10.0.0.2".to_string(), 9080, 9081),
+        };
+        eng.make_registry_register("reg", info, None, Some("onRegister"))
+            .remove(0)
+            .message()
+            .to_vec()
+    }
+
+    fn waiting_ids(out: &crate::engine::events::ProcessOutput) -> Vec<String> {
+        out.events
+            .iter()
+            .filter_map(|e| match e {
+                crate::engine::events::Event::RegistrationPending { info, .. } => {
+                    Some(info.device.device_id.clone())
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// A server that answers for itself has to be told someone is waiting, or
+    /// the request sits where nothing can see it.
+    #[test]
+    fn a_device_left_waiting_is_announced_and_can_be_listed() {
+        let mut eng = registry_server();
+        eng.server_policy.auto_approve_registration = false;
+
+        let out = eng.process_incoming(&register_from("phone"), &Default::default());
+
+        assert_eq!(
+            waiting_ids(&out),
+            vec!["phone".to_string()],
+            "someone is waiting and it is said so"
+        );
+        assert!(
+            out.outgoings.is_empty(),
+            "and nothing is answered until it is decided"
+        );
+
+        let listed: Vec<String> = eng
+            .pending_registrations()
+            .into_iter()
+            .map(|i| i.device.device_id)
+            .collect();
+        assert_eq!(listed, vec!["phone".to_string()], "and can be asked for");
+    }
+
+    /// A device let straight in was never waiting.
+    #[test]
+    fn a_device_let_straight_in_is_never_announced_as_waiting() {
+        let mut eng = registry_server();
+
+        let out = eng.process_incoming(&register_from("phone"), &Default::default());
+        assert!(waiting_ids(&out).is_empty(), "nothing was ever pending");
+        assert!(eng.pending_registrations().is_empty());
+    }
+
+    /// A device that leaves while waiting stops waiting.
+    #[test]
+    fn a_device_that_goes_while_waiting_is_no_longer_listed() {
+        let mut eng = registry_server();
+        eng.server_policy.auto_approve_registration = false;
+        eng.process_incoming(&register_from("phone"), &Default::default());
+        assert_eq!(eng.pending_registrations().len(), 1);
+
+        eng.peer_gone("phone");
+        assert!(eng.pending_registrations().is_empty());
+    }
+
     fn queue(eng: &mut Engine, id: &str) {
         eng.server_policy.pending_registrations.insert(
             id.to_string(),

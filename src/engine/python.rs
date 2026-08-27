@@ -135,6 +135,17 @@ impl BMEnginePy {
         outgoings_to_py(py, actions)
     }
 
+    /// Everyone waiting to be let in, for a caller that lists them rather than
+    /// answering the moment they arrive.
+    fn pending_registrations<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
+        let eng = self.inner.read().unwrap();
+        let mut items = Vec::new();
+        for info in eng.pending_registrations() {
+            items.push(registry_info_to_py(py, &info)?);
+        }
+        PyList::new(py, items)
+    }
+
     fn get_registry<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
         let eng = self.inner.read().unwrap();
         let registry = eng.registry();

@@ -101,16 +101,17 @@ impl Engine {
                 }
             }
         } else {
-            // Manual approval: stash the request (with the caller's return
-            // method) until the integrator calls approve/deny_registration.
+            // The caller's return method is kept with the request, since the
+            // answer may be given long after the call that asked for it.
             engine.server_policy.pending_registrations.insert(
                 info.device.device_id.clone(),
                 PendingRegistration {
-                    info,
+                    info: info.clone(),
                     target_id: target_id.to_string(),
                     return_method: inv.return_method.clone(),
                 },
             );
+            out.events.push(Event::RegistrationPending { info, domain });
         }
     }
 

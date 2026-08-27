@@ -169,6 +169,12 @@ impl BmEngineWasm {
             .map_err(|e| JsError::new(&e.to_string()))
     }
 
+    /// Everyone waiting to be let in, for a caller that draws them rather than
+    /// answering the moment they arrive.
+    pub fn pending_registrations(&self) -> Result<JsValue, JsError> {
+        to_js(&self.inner.pending_registrations())
+    }
+
     pub fn get_registry(&self) -> Result<JsValue, JsError> {
         let records = self.inner.registry().snapshot();
         let array = js_sys::Array::new();
