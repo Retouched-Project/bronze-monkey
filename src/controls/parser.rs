@@ -294,6 +294,19 @@ mod tests {
             .expect("one display object")
     }
 
+    /// Some endpoints prefix the declaration with a UTF-8 BOM.
+    #[test]
+    fn leading_bom_is_tolerated() {
+        let mut xml = vec![0xEF, 0xBB, 0xBF];
+        xml.extend_from_slice(
+            br#"<?xml version="1.0" encoding="utf-8"?><BMApplicationScheme version="0.1" width="480" height="320"><DisplayObject id="1" type="button"/></BMApplicationScheme>"#,
+        );
+        let scheme = BMApplicationSchemeParser::new().parse(&xml).unwrap();
+        assert_eq!(scheme.version, "0.1");
+        assert_eq!(scheme.width, 480);
+        assert_eq!(scheme.display_objects.len(), 1);
+    }
+
     #[test]
     fn color_6hex_is_opaque() {
         assert_eq!(parse_one("color=\"ff0000\"").color, 0xFFFF_0000u32 as i32);
