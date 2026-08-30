@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="no" width="568" height="320" sample="linear" accelerometerEnabled="no">
+<Resources>
+</Resources>
+<Layout>
+		<DisplayObject id="201" name="ip5_bg" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="70" />
+		</DisplayObject>
+		<DisplayObject id="202" name="logo_bg" type="image" hidden="no" top="0" left="0.07922535211267606" width="0.8450704225352113" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="71" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

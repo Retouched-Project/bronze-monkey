@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="no" width="480" height="320" sample="linear" accelerometerEnabled="yes">
+<Resources>
+		<Resource id="48" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAOGJlY2Y3MjhhNjBmZTg5Y2Oa8e4AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="49" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMWY5NDc4YWYwMGRlNmFmNicbEwAAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+</Resources>
+<Layout>
+		<DisplayObject id="76" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="40" />
+		</DisplayObject>
+		<DisplayObject id="77" type="button" hidden="no" top="0.784375" left="0.35" width="0.29375" height="0.134375" sample="linear" functionHandler="button_Back">
+				<Asset name="up" resourceRef="12" />
+				<Asset name="down" resourceRef="13" />
+		</DisplayObject>
+		<DisplayObject id="78" type="button" hidden="no" top="0.246875" left="0.14791666666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_1">
+				<Asset name="up" resourceRef="48" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="79" type="button" hidden="no" top="0.246875" left="0.27291666666666664" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_2">
+				<Asset name="up" resourceRef="48" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="80" type="button" hidden="no" top="0.246875" left="0.39791666666666664" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_3">
+				<Asset name="up" resourceRef="48" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="81" type="button" hidden="no" top="0.246875" left="0.5229166666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_4">
+				<Asset name="up" resourceRef="48" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="82" type="button" hidden="no" top="0.246875" left="0.6479166666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_5">
+				<Asset name="up" resourceRef="48" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="83" type="image" hidden="no" top="0.246875" left="0.7729166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+		<DisplayObject id="84" type="image" hidden="no" top="0.434375" left="0.14791666666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+		<DisplayObject id="85" type="image" hidden="no" top="0.434375" left="0.27291666666666664" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+		<DisplayObject id="86" type="image" hidden="no" top="0.434375" left="0.39791666666666664" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+		<DisplayObject id="87" type="image" hidden="no" top="0.434375" left="0.5229166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+		<DisplayObject id="88" type="image" hidden="no" top="0.434375" left="0.6479166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+		<DisplayObject id="89" type="image" hidden="no" top="0.434375" left="0.7729166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+		<DisplayObject id="90" type="image" hidden="no" top="0.621875" left="0.14791666666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+		<DisplayObject id="91" type="image" hidden="no" top="0.621875" left="0.27291666666666664" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+		<DisplayObject id="92" type="image" hidden="no" top="0.621875" left="0.39791666666666664" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+		<DisplayObject id="93" type="image" hidden="no" top="0.621875" left="0.5229166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+		<DisplayObject id="94" type="image" hidden="no" top="0.621875" left="0.6479166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+		<DisplayObject id="95" type="image" hidden="no" top="0.621875" left="0.7729166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="49" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="no" width="568" height="320" sample="linear" accelerometerEnabled="no">
+<Resources>
+</Resources>
+<Layout>
+		<DisplayObject id="282" name="ip5_bg_black" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="72" />
+		</DisplayObject>
+		<DisplayObject id="283" name="level_bg4" type="image" hidden="no" top="0" left="0.07922535211267606" width="0.8450704225352113" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="115" />
+		</DisplayObject>
+		<DisplayObject id="284" type="button" hidden="no" top="0.90625" left="0.31514084507042256" width="0.22535211267605634" height="0.090625" sample="linear" functionHandler="btn_back_levels">
+				<Asset name="up" resourceRef="83" />
+				<Asset name="down" resourceRef="84" />
+		</DisplayObject>
+		<DisplayObject id="285" type="button" hidden="no" top="0.746875" left="0.29225352112676056" width="0.2640845070422535" height="0.13125" sample="linear" functionHandler="btn_play_levels">
+				<Asset name="up" resourceRef="102" />
+				<Asset name="down" resourceRef="103" />
+		</DisplayObject>
+		<DisplayObject id="286" type="button" hidden="no" top="0.46875" left="0.573943661971831" width="0.061619718309859156" height="0.096875" sample="linear" functionHandler="btn_arena_next">
+				<Asset name="up" resourceRef="104" />
+				<Asset name="down" resourceRef="105" />
+		</DisplayObject>
+		<DisplayObject id="287" type="button" hidden="no" top="0.46875" left="0.20774647887323944" width="0.061619718309859156" height="0.096875" sample="linear" functionHandler="btn_arena_prev">
+				<Asset name="up" resourceRef="106" />
+				<Asset name="down" resourceRef="107" />
+		</DisplayObject>
+		<DisplayObject id="288" type="button" hidden="no" top="0.640625" left="0.34683098591549294" width="0.15316901408450703" height="0.078125" sample="linear" functionHandler="btn_arena_random">
+				<Asset name="up" resourceRef="108" />
+				<Asset name="down" resourceRef="109" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

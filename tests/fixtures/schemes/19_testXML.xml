@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="portrait" touchEnabled="yes" width="320" height="480" sample="linear" accelerometerEnabled="no">
+		<Menu>
+			<Option icon="5" title="Turn Music Off" event="musicToggle" close="no"/>
+			<Option icon="0" title="Choose Preferences" event="settings" close="no"/>
+			<Option icon="1" title="Back to game" event="backToGame" close="yes"/>
+		</Menu>
+<Resources>
+		<Resource id="1" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzMyYmE2ZjljOTk4ZmRhMLSC7TYAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+</Resources>
+<Layout>
+		<DisplayObject id="1" name="background" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="1" />
+		</DisplayObject>
+		<DisplayObject id="2" type="text" hidden="no" top="0.41354166666666664" left="0.025" width="0.953125" height="0.06979166666666667" text="Slide button to adjust settings" textSize="0.04854166666666667" color="ff0000"/>
+</Layout>
+</BMApplicationScheme>

@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="no" width="480" height="320" sample="linear" accelerometerEnabled="yes">
+<Resources>
+		<Resource id="1" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANWNkYjg5NDQ2ODQ0MTZkMJq8uHwAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="2" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZjk2MjZmYzFmYmU2YjUyMWH1XlEAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="3" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZjY2ZDZlZmM5Yzk3ZDY2Ng4FCxUAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="4" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZjg2NjdkOTE3MjY1ZDQwNGRetYAAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="5" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANDBiMTEwM2U3NjllYjJkNQ0Aj44AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="6" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANTU3NWM3MGZhMGI0YmQxNJNmI5UAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="7" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZjY2ZDZlZmM5Yzk3ZDY2Ng4FCxUAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="8" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMjIwNzI0ODc1ODZjODMyOd+9vD4AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="9" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMTBjOTZkMjRjYTY0ZDQ3ZgdoSr0AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="10" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMjA5YjJhOTcwOTRjNjIyMWd6XTgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="11" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWUyYjZmNWVlMWE3N2YyN0nKrEkAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="12" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYjIwNTU1NDRiOTQ0NDhkZRfP3/oAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="13" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZTI1NDQ4MmUyNTkwY2ViM7ZxQW4AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="14" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAOWI5ZTRjNmViNDVhYzgzNVRJkYIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="15" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMTljNDFjNjlmZWJmOGUwZlm2GOoAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="16" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANDBmOTFkOTFjYjg5MGU0Y75ZapMAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="17" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMTljNDFjNjlmZWJmOGUwZlm2GOoAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="18" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzA5NjRkNTEyMGMyZTg3ZSVHlccAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="19" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMGE2NTViNDNkMzUxODgwOZ2LYkUAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="20" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAOTViYzhkOGYzOTg0YmFkMoYL7OQAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="21" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZTZkM2ZkMWZhZWZlN2Q5MPuYxOQAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="22" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZTZkM2ZkMWZhZWZlN2Q5MPuYxOQAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="23" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYjFlYTI2Yjc0OTQ5MGNmMk+/xvMAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="24" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMzM5MmZlMTNhODlkNGNjNtuM0DAAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="25" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYTU3YjVmNGFjYzU0MjU3ZCba16sAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="26" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMDM3MGFkNDJiNjQxMjNmMFLZYoYAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="27" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAOTgwMzhhNWI3MzdmNzEyN/P0cOAAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="28" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAOTBkNjM1MzhkYTQwZWM4ZWPwWy4AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="29" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYTU3YjVmNGFjYzU0MjU3ZCba16sAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="30" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzNiMjgzYTI5ZDRhNjhhMmXTOOYAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="31" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzE5NDBiZGY2Y2E5NjJhOaHKZMwAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="32" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMTljNDFjNjlmZWJmOGUwZlm2GOoAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="33" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAN2VhYTVhM2MwZTJlNmYyNg0cjH8AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="34" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMTljNDFjNjlmZWJmOGUwZlm2GOoAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="35" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMmEyZGNlZjI5NzE3NTM2Yv0d4+QAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="36" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMTg1NzZiMGUwZjdjZWFkZJaVq7oAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="37" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMTljNDFjNjlmZWJmOGUwZlm2GOoAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="38" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAM2ViMzJjOTQ5NjE0YWVlNCCC1AgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="39" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMDI0OGM3MGFjODFiMTBjMSt7PaQAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="40" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMTBmNjFmYWEyZTkyMjYwN0+ze1IAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="41" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAOGJlY2Y3MjhhNjBmZTg5Y2Oa8e4AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="42" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAOGJlY2Y3MjhhNjBmZTg5Y2Oa8e4AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="43" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMWY5NDc4YWYwMGRlNmFmNicbEwAAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="44" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZDBjODcyODVmMjljMTg5ZbDyf0gAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="45" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMTljNDFjNjlmZWJmOGUwZlm2GOoAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="46" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANmZlYTE1N2QyZWUxOWVkNMu5wy4AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="47" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMzRlZTI5OGE1ZWVjNDA0NhXg4rQAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+</Resources>
+<Layout>
+		<DisplayObject id="1" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="1" />
+		</DisplayObject>
+		<DisplayObject id="2" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="2" />
+		</DisplayObject>
+		<DisplayObject id="3" type="button" hidden="yes" top="0.821875" left="0.08125" width="0.12291666666666666" height="0.1" sample="linear" functionHandler="button_Play">
+				<Asset name="up" resourceRef="3" />
+				<Asset name="down" resourceRef="4" />
+		</DisplayObject>
+		<DisplayObject id="4" type="button" hidden="yes" top="0.821875" left="0.28125" width="0.18333333333333332" height="0.0875" sample="linear" functionHandler="button_Scores">
+				<Asset name="up" resourceRef="5" />
+				<Asset name="down" resourceRef="6" />
+		</DisplayObject>
+		<DisplayObject id="5" type="button" hidden="yes" top="0.821875" left="0.5333333333333333" width="0.12291666666666666" height="0.1" sample="linear" functionHandler="button_Help">
+				<Asset name="up" resourceRef="7" />
+				<Asset name="down" resourceRef="8" />
+		</DisplayObject>
+		<DisplayObject id="6" type="button" hidden="yes" top="0.821875" left="0.7229166666666667" width="0.20208333333333334" height="0.0875" sample="linear" functionHandler="button_Credits">
+				<Asset name="up" resourceRef="9" />
+				<Asset name="down" resourceRef="10" />
+		</DisplayObject>
+		<DisplayObject id="7" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="11" />
+		</DisplayObject>
+		<DisplayObject id="8" type="button" hidden="yes" top="0.784375" left="0.35" width="0.29375" height="0.134375" sample="linear" functionHandler="button_Back">
+				<Asset name="up" resourceRef="12" />
+				<Asset name="down" resourceRef="13" />
+		</DisplayObject>
+		<DisplayObject id="9" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="14" />
+		</DisplayObject>
+		<DisplayObject id="10" type="button" hidden="yes" top="0.784375" left="0.35" width="0.29375" height="0.134375" sample="linear" functionHandler="button_Back">
+				<Asset name="up" resourceRef="12" />
+				<Asset name="down" resourceRef="13" />
+		</DisplayObject>
+		<DisplayObject id="11" type="button" hidden="yes" top="0.415625" left="0.1625" width="0.2916666666666667" height="0.134375" sample="linear" functionHandler="button_Score_Prev">
+				<Asset name="up" resourceRef="15" />
+				<Asset name="down" resourceRef="16" />
+		</DisplayObject>
+		<DisplayObject id="12" type="button" hidden="yes" top="0.415625" left="0.5541666666666667" width="0.2916666666666667" height="0.134375" sample="linear" functionHandler="button_Score_Next">
+				<Asset name="up" resourceRef="17" />
+				<Asset name="down" resourceRef="18" />
+		</DisplayObject>
+		<DisplayObject id="13" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="19" />
+		</DisplayObject>
+		<DisplayObject id="14" type="button" hidden="yes" top="0.634375" left="0.33541666666666664" width="0.29375" height="0.134375" sample="linear" functionHandler="button_Back">
+				<Asset name="up" resourceRef="12" />
+				<Asset name="down" resourceRef="13" />
+		</DisplayObject>
+		<DisplayObject id="15" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="20" />
+		</DisplayObject>
+		<DisplayObject id="16" type="button" hidden="yes" top="0.784375" left="0.35" width="0.29375" height="0.134375" sample="linear" functionHandler="button_Back">
+				<Asset name="up" resourceRef="12" />
+				<Asset name="down" resourceRef="13" />
+		</DisplayObject>
+		<DisplayObject id="17" type="button" hidden="yes" top="0.4375" left="0.8333333333333334" width="0.16666666666666666" height="0.28125" sample="linear" functionHandler="button_Help_Next">
+				<Asset name="up" resourceRef="21" />
+				<Asset name="down" resourceRef="22" />
+		</DisplayObject>
+		<DisplayObject id="18" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="23" />
+		</DisplayObject>
+		<DisplayObject id="19" type="button" hidden="yes" top="0.784375" left="0.35" width="0.29375" height="0.134375" sample="linear" functionHandler="button_Back">
+				<Asset name="up" resourceRef="12" />
+				<Asset name="down" resourceRef="13" />
+		</DisplayObject>
+		<DisplayObject id="20" type="button" hidden="yes" top="0.4375" left="0" width="0.16666666666666666" height="0.28125" sample="linear" functionHandler="button_Help_Prev">
+				<Asset name="up" resourceRef="21" />
+				<Asset name="down" resourceRef="22" />
+		</DisplayObject>
+		<DisplayObject id="21" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="24" />
+		</DisplayObject>
+		<DisplayObject id="22" type="button" hidden="yes" top="0.184375" left="0.8458333333333333" width="0.14375" height="0.3375" sample="linear" functionHandler="key_Up">
+				<Asset name="up" resourceRef="25" />
+				<Asset name="down" resourceRef="26" />
+		</DisplayObject>
+		<DisplayObject id="23" type="button" hidden="yes" top="0.409375" left="0.42291666666666666" width="0.15833333333333333" height="0.3625" sample="linear" functionHandler="key_Special">
+				<Asset name="up" resourceRef="27" />
+				<Asset name="down" resourceRef="28" />
+		</DisplayObject>
+		<DisplayObject id="24" type="button" hidden="yes" top="0.184375" left="0.014583333333333334" width="0.14375" height="0.3375" sample="linear" functionHandler="key_Down">
+				<Asset name="up" resourceRef="29" />
+				<Asset name="down" resourceRef="30" />
+		</DisplayObject>
+		<DisplayObject id="25" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="31" />
+		</DisplayObject>
+		<DisplayObject id="26" type="button" hidden="yes" top="0.63125" left="0.18541666666666667" width="0.2916666666666667" height="0.134375" sample="linear" functionHandler="button_Submit">
+				<Asset name="up" resourceRef="32" />
+				<Asset name="down" resourceRef="33" />
+		</DisplayObject>
+		<DisplayObject id="27" type="button" hidden="yes" top="0.63125" left="0.51875" width="0.2916666666666667" height="0.134375" sample="linear" functionHandler="button_Exit_Back">
+				<Asset name="up" resourceRef="34" />
+				<Asset name="down" resourceRef="35" />
+		</DisplayObject>
+		<DisplayObject id="28" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="36" />
+		</DisplayObject>
+		<DisplayObject id="29" type="button" hidden="yes" top="0.496875" left="0.35" width="0.2916666666666667" height="0.134375" sample="linear" functionHandler="button_Submit">
+				<Asset name="up" resourceRef="32" />
+				<Asset name="down" resourceRef="33" />
+		</DisplayObject>
+		<DisplayObject id="30" type="button" hidden="yes" top="0.69375" left="0.51875" width="0.2916666666666667" height="0.134375" sample="linear" functionHandler="button_Exit_Back">
+				<Asset name="up" resourceRef="34" />
+				<Asset name="down" resourceRef="35" />
+		</DisplayObject>
+		<DisplayObject id="31" type="button" hidden="yes" top="0.69375" left="0.18541666666666667" width="0.2916666666666667" height="0.134375" sample="linear" functionHandler="button_Retry">
+				<Asset name="up" resourceRef="37" />
+				<Asset name="down" resourceRef="38" />
+		</DisplayObject>
+		<DisplayObject id="32" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="39" />
+		</DisplayObject>
+		<DisplayObject id="33" type="button" hidden="yes" top="0.615625" left="0.51875" width="0.2916666666666667" height="0.134375" sample="linear" functionHandler="button_Exit_Back">
+				<Asset name="up" resourceRef="34" />
+				<Asset name="down" resourceRef="35" />
+		</DisplayObject>
+		<DisplayObject id="34" type="button" hidden="yes" top="0.615625" left="0.18541666666666667" width="0.2916666666666667" height="0.134375" sample="linear" functionHandler="button_Next_Level">
+				<Asset name="up" resourceRef="17" />
+				<Asset name="down" resourceRef="18" />
+		</DisplayObject>
+		<DisplayObject id="35" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="40" />
+		</DisplayObject>
+		<DisplayObject id="36" type="button" hidden="yes" top="0.784375" left="0.35" width="0.29375" height="0.134375" sample="linear" functionHandler="button_Back">
+				<Asset name="up" resourceRef="12" />
+				<Asset name="down" resourceRef="13" />
+		</DisplayObject>
+		<DisplayObject id="37" type="button" hidden="yes" top="0.246875" left="0.14791666666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_1">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="38" type="button" hidden="yes" top="0.246875" left="0.27291666666666664" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_2">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="39" type="button" hidden="yes" top="0.246875" left="0.39791666666666664" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_3">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="40" type="button" hidden="yes" top="0.246875" left="0.5229166666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_4">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="41" type="button" hidden="yes" top="0.246875" left="0.6479166666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_5">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="42" type="button" hidden="yes" top="0.246875" left="0.7729166666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_6">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="43" type="button" hidden="yes" top="0.434375" left="0.14791666666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_7">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="44" type="button" hidden="yes" top="0.434375" left="0.27291666666666664" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_8">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="45" type="button" hidden="yes" top="0.434375" left="0.39791666666666664" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_9">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="46" type="button" hidden="yes" top="0.434375" left="0.5229166666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_10">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="47" type="button" hidden="yes" top="0.434375" left="0.6479166666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_11">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="48" type="button" hidden="yes" top="0.434375" left="0.7729166666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_12">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="49" type="button" hidden="yes" top="0.621875" left="0.14791666666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_13">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="50" type="button" hidden="yes" top="0.621875" left="0.27291666666666664" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_14">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="51" type="button" hidden="yes" top="0.621875" left="0.39791666666666664" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_15">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="52" type="button" hidden="yes" top="0.621875" left="0.5229166666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_16">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="53" type="button" hidden="yes" top="0.621875" left="0.6479166666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_17">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="54" type="button" hidden="yes" top="0.621875" left="0.7729166666666667" width="0.075" height="0.09375" sample="linear" functionHandler="lvl_18">
+				<Asset name="up" resourceRef="41" />
+				<Asset name="down" resourceRef="42" />
+		</DisplayObject>
+		<DisplayObject id="55" type="image" hidden="yes" top="0.246875" left="0.14791666666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="56" type="image" hidden="yes" top="0.246875" left="0.27291666666666664" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="57" type="image" hidden="yes" top="0.246875" left="0.39791666666666664" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="58" type="image" hidden="yes" top="0.246875" left="0.5229166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="59" type="image" hidden="yes" top="0.246875" left="0.6479166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="60" type="image" hidden="yes" top="0.246875" left="0.7729166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="61" type="image" hidden="yes" top="0.434375" left="0.14791666666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="62" type="image" hidden="yes" top="0.434375" left="0.27291666666666664" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="63" type="image" hidden="yes" top="0.434375" left="0.39791666666666664" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="64" type="image" hidden="yes" top="0.434375" left="0.5229166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="65" type="image" hidden="yes" top="0.434375" left="0.6479166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="66" type="image" hidden="yes" top="0.434375" left="0.7729166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="67" type="image" hidden="yes" top="0.621875" left="0.14791666666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="68" type="image" hidden="yes" top="0.621875" left="0.27291666666666664" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="69" type="image" hidden="yes" top="0.621875" left="0.39791666666666664" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="70" type="image" hidden="yes" top="0.621875" left="0.5229166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="71" type="image" hidden="yes" top="0.621875" left="0.6479166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="72" type="image" hidden="yes" top="0.621875" left="0.7729166666666667" width="0.075" height="0.09375" functionHandler="up">
+				<Asset name="up" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="73" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="44" />
+		</DisplayObject>
+		<DisplayObject id="74" type="button" hidden="yes" top="0.43125" left="0.33541666666666664" width="0.2916666666666667" height="0.134375" sample="linear" functionHandler="button_Play_Level">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="75" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="47" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="no" width="480" height="320" sample="linear" accelerometerEnabled="yes">
+<Resources>
+</Resources>
+<Layout>
+		<DisplayObject id="32" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="39" />
+		</DisplayObject>
+		<DisplayObject id="33" type="button" hidden="no" top="0.615625" left="0.51875" width="0.2916666666666667" height="0.134375" sample="linear" functionHandler="button_Exit_Back">
+				<Asset name="up" resourceRef="34" />
+				<Asset name="down" resourceRef="35" />
+		</DisplayObject>
+		<DisplayObject id="34" type="button" hidden="no" top="0.615625" left="0.18541666666666667" width="0.2916666666666667" height="0.134375" sample="linear" functionHandler="button_Next_Level">
+				<Asset name="up" resourceRef="17" />
+				<Asset name="down" resourceRef="18" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

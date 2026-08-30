@@ -5,6 +5,9 @@ use crate::controls::{AppResource, ContextMenuOption, ControlAsset, ControlSchem
 use quick_xml::events::Event;
 use quick_xml::reader::Reader;
 
+pub const DEFAULT_DEADZONE: f32 = 0.25;
+pub const DEFAULT_SAMPLING_MODE: &str = "linear";
+
 pub struct BMApplicationSchemeParser {
     scheme: ControlScheme,
     sampling_mode: String,
@@ -19,8 +22,11 @@ impl Default for BMApplicationSchemeParser {
 impl BMApplicationSchemeParser {
     pub fn new() -> Self {
         Self {
-            scheme: ControlScheme::default(),
-            sampling_mode: "linear".to_string(),
+            scheme: ControlScheme {
+                sample: DEFAULT_SAMPLING_MODE.to_string(),
+                ..Default::default()
+            },
+            sampling_mode: DEFAULT_SAMPLING_MODE.to_string(),
         }
     }
 
@@ -43,7 +49,8 @@ impl BMApplicationSchemeParser {
                         b"BMApplicationScheme" => {
                             for attr in e.attributes() {
                                 let attr = attr.map_err(|e| e.to_string())?;
-                                let val = std::str::from_utf8(&attr.value).unwrap_or("");
+                                let val = attr.unescape_value().unwrap_or_default();
+                                let val = val.as_ref();
                                 match attr.key.as_ref() {
                                     b"accelerometerEnabled" => {
                                         self.scheme.accelerometer_enabled = self.is_yes(val)
@@ -61,7 +68,10 @@ impl BMApplicationSchemeParser {
                                             self.scheme.height = v;
                                         }
                                     }
-                                    b"sample" => self.sampling_mode = val.to_string(),
+                                    b"sample" => {
+                                        self.sampling_mode = val.to_string();
+                                        self.scheme.sample = val.to_string();
+                                    }
                                     _ => {}
                                 }
                             }
@@ -70,13 +80,16 @@ impl BMApplicationSchemeParser {
                             let mut res = AppResource::default();
                             for attr in e.attributes() {
                                 let attr = attr.map_err(|e| e.to_string())?;
-                                if attr.key.as_ref() == b"id" {
-                                    let val = std::str::from_utf8(&attr.value).unwrap_or("0");
-                                    if let Ok(v) = val.parse::<i32>() {
-                                        res.id = v;
-                                    } else {
-                                        // self.scheme.debug_log.push(format!("Failed to parse Resource ID from: '{}'", val));
+                                let val = attr.unescape_value().unwrap_or_default();
+                                let val = val.as_ref();
+                                match attr.key.as_ref() {
+                                    b"id" => {
+                                        if let Ok(v) = val.parse::<i32>() {
+                                            res.id = v;
+                                        }
                                     }
+                                    b"type" => res.r#type = val.to_string(),
+                                    _ => {}
                                 }
                             }
                             current_resource = Some(res);
@@ -84,12 +97,13 @@ impl BMApplicationSchemeParser {
                         b"DisplayObject" => {
                             let mut obj = DisplayObject {
                                 sampling_mode: self.sampling_mode.clone(),
-                                deadzone: 0.25,
+                                deadzone: DEFAULT_DEADZONE,
                                 ..Default::default()
                             };
                             for attr in e.attributes() {
                                 let attr = attr.map_err(|e| e.to_string())?;
-                                let val = std::str::from_utf8(&attr.value).unwrap_or("");
+                                let val = attr.unescape_value().unwrap_or_default();
+                                let val = val.as_ref();
                                 match attr.key.as_ref() {
                                     b"functionHandler" => obj.function_handler = val.to_string(),
                                     b"height" => {
@@ -108,6 +122,7 @@ impl BMApplicationSchemeParser {
                                         }
                                     }
                                     b"type" => obj.r#type = val.to_string(),
+                                    b"name" => obj.name = val.to_string(),
                                     b"width" => {
                                         if let Ok(v) = val.parse::<f32>() {
                                             obj.width = v;
@@ -163,7 +178,8 @@ impl BMApplicationSchemeParser {
                                 let mut asset = ControlAsset::default();
                                 for attr in e.attributes() {
                                     let attr = attr.map_err(|e| e.to_string())?;
-                                    let val = std::str::from_utf8(&attr.value).unwrap_or("");
+                                    let val = attr.unescape_value().unwrap_or_default();
+                                    let val = val.as_ref();
                                     match attr.key.as_ref() {
                                         b"name" => asset.name = val.to_string(),
                                         b"resourceRef" => {
@@ -182,7 +198,8 @@ impl BMApplicationSchemeParser {
                                 obj.has_hit_rect = true;
                                 for attr in e.attributes() {
                                     let attr = attr.map_err(|e| e.to_string())?;
-                                    let val = std::str::from_utf8(&attr.value).unwrap_or("0");
+                                    let val = attr.unescape_value().unwrap_or_default();
+                                    let val = val.as_ref();
                                     if let Ok(v) = val.parse::<f32>() {
                                         match attr.key.as_ref() {
                                             b"left" => obj.hit_left = v,
@@ -199,7 +216,8 @@ impl BMApplicationSchemeParser {
                             let mut opt = ContextMenuOption::default();
                             for attr in e.attributes() {
                                 let attr = attr.map_err(|e| e.to_string())?;
-                                let val = std::str::from_utf8(&attr.value).unwrap_or("");
+                                let val = attr.unescape_value().unwrap_or_default();
+                                let val = val.as_ref();
                                 match attr.key.as_ref() {
                                     b"title" => opt.title = val.to_string(),
                                     b"event" => opt.event = val.to_string(),

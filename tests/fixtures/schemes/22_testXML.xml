@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="yes" width="480" height="320" sample="nearest" accelerometerEnabled="no">
+<Resources>
+		<Resource id="1" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAOGQ5NDc0Y2EyYzM3Njg3MvyIbvwAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="2" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYTE4M2U0NGJiNzI2NGYyNCpyLoAAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="3" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYzk2ZjQyNmQ0MjVhZWJkMEySa0QAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+</Resources>
+<Layout>
+		<DisplayObject id="1" name="background" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="1" />
+		</DisplayObject>
+		<DisplayObject id="2" type="text" hidden="no" top="0.280625" left="0.025" width="0.9208333333333333" height="0.09421874999999999" text="Hello Test Device" textSize="0.07171875" color="990000"/>
+		<DisplayObject id="3" name="embededFontContainer" type="image" hidden="no" top="0.7321875" left="0.08333333333333333" width="0.8020833333333334" height="0.146875" functionHandler="up">
+				<Asset name="up" resourceRef="2" />
+		</DisplayObject>
+		<DisplayObject id="4" name="slotColor" type="image" hidden="no" top="0.03125" left="0.020833333333333332" width="0.31145833333333334" height="0.228125" functionHandler="up">
+				<Asset name="up" resourceRef="3" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

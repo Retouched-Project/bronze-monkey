@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="no" width="480" height="320" sample="linear" accelerometerEnabled="no">
+<Resources>
+		<Resource id="1" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZTMxNTFkMTFiZjliYzE4OSvCGXkAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="2" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYWY4MDRmZTJjMzU5YzdmZuYOLxAAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="3" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANDAzYmZkZGU4ZTQ2NDFiOBTzDJEAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="4" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZTAyNTJlODIzNTM3YTFlN60r6d4AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="5" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYzY2MDM5NjRiNTBmZDBjOLaDZeoAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="6" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAOGZhMDhiZTE0NTIwMDZiMZMQibUAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="7" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYzA0MGU3NDZkZWQ4MjE5Y3jrhXQAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="8" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMTA5NjNjNzI1MjlhMzM2ZjvQtQkAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="9" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMDlmMDkwZjg4MTVhYjhjNW1GRqMAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="10" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZDFkOGJjNDdhOTk5ZTVkZXwlS6YAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="11" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWM3ZTdjMTk3NjViZjUwOZgSlX8AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="12" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzg2NzM0YjRiNDEwZTZlZWRJ53MAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="13" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMTg0OWEwMTU4NmZlNGJmOepk/vcAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="14" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWEzYjUxM2QyMWQ2MmIyN2BeTD0AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="15" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMjY3NTM0ZWEwMDQ3YjM1Yx1M9lUAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="16" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYzkwODkwMDhhOWZjMjZhMlmKxUYAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+</Resources>
+<Layout>
+		<DisplayObject id="1" name="background" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="1" />
+		</DisplayObject>
+		<DisplayObject id="2" type="button" hidden="no" top="0.446875" left="0.5416666666666666" width="0.3145833333333333" height="0.471875" sample="linear" functionHandler="btnA">
+				<Asset name="up" resourceRef="2" />
+				<Asset name="down" resourceRef="3" />
+			<HitRect top="0.54375" left="0.6270833333333333" width="0.15625" height="0.325">
+			</HitRect>
+		</DisplayObject>
+		<DisplayObject id="3" type="button" hidden="no" top="0.203125" left="0.7125" width="0.3145833333333333" height="0.471875" sample="linear" functionHandler="btnB">
+				<Asset name="up" resourceRef="4" />
+				<Asset name="down" resourceRef="5" />
+			<HitRect top="0.275" left="0.7979166666666667" width="0.15625" height="0.325">
+			</HitRect>
+		</DisplayObject>
+		<DisplayObject id="4" type="button" hidden="no" top="0.0875" left="0.6270833333333333" width="0.09260416666666667" height="0.13890625" sample="linear" functionHandler="deadzone">
+				<Asset name="up" resourceRef="6" />
+				<Asset name="down" resourceRef="7" />
+			<HitRect top="0.0875" left="0.6270833333333333" width="0.09260416666666667" height="0.13890625">
+			</HitRect>
+		</DisplayObject>
+		<DisplayObject id="5" name="dpad" type="dpad" hidden="no" deadzone="0.25" top="0.234375" left="0.09166666666666666" width="0.375" height="0.5625">			<HitRect top="0.0625" left="0.025" width="0.525" height="0.88125">
+			</HitRect>
+				<Asset name="left_up" resourceRef="8" />
+				<Asset name="left" resourceRef="9" />
+				<Asset name="left_down" resourceRef="10" />
+				<Asset name="up" resourceRef="11" />
+				<Asset name="down" resourceRef="12" />
+				<Asset name="right_up" resourceRef="13" />
+				<Asset name="right" resourceRef="14" />
+				<Asset name="right_down" resourceRef="15" />
+				<Asset name="inactive" resourceRef="16" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

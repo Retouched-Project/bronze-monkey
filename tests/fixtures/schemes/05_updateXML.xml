@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="no" width="568" height="320" sample="linear" accelerometerEnabled="no">
+<Resources>
+</Resources>
+<Layout>
+		<DisplayObject id="219" name="ip5_black_bg" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="63" />
+		</DisplayObject>
+		<DisplayObject id="220" name="join_bg" type="image" hidden="no" top="0" left="0.07922535211267606" width="0.8450704225352113" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="92" />
+		</DisplayObject>
+		<DisplayObject id="221" type="button" hidden="no" top="0.571875" left="0.3538732394366197" width="0.29577464788732394" height="0.3" sample="linear" functionHandler="btn_go">
+				<Asset name="up" resourceRef="93" />
+				<Asset name="down" resourceRef="94" />
+		</DisplayObject>
+		<DisplayObject id="222" type="button" hidden="no" top="0.11875" left="0.12852112676056338" width="0.7464788732394366" height="0.7625" sample="linear" functionHandler="btn_join">
+				<Asset name="up" resourceRef="95" />
+				<Asset name="down" resourceRef="96" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="no" width="568" height="320" sample="linear" accelerometerEnabled="no">
+<Resources>
+		<Resource id="63" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZTA1MTZjZTkzMzBhYWRmOK6hlGcAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="105" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZTJlNzlkZDZjODZhOWExOeHqRSkAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="106" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="107" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzQ2Y2M4Y2U2MWFmMWI2M1DI4XgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="77" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMWFlYjM3NGYwZGEwY2M4Oes8dqoAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="78" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZjM3ZDY0MjE4NWVmZmMwMQ82/d8AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="108" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZWU0Y2E4MGQyZWJkMGEwZNZ1GOIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+</Resources>
+<Layout>
+		<DisplayObject id="368" name="ip5_black_bg" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="63" />
+		</DisplayObject>
+		<DisplayObject id="369" name="lvl_bg" type="image" hidden="no" top="0" left="0.07922535211267606" width="0.8450704225352113" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="105" />
+		</DisplayObject>
+		<DisplayObject id="370" type="button" hidden="no" top="0.09375" left="0.13556338028169015" width="0.06690140845070422" height="0.09375" sample="linear" functionHandler="lvl_1">
+				<Asset name="up" resourceRef="106" />
+				<Asset name="down" resourceRef="107" />
+		</DisplayObject>
+		<DisplayObject id="371" type="button" hidden="no" top="0.09375" left="0.22887323943661972" width="0.06690140845070422" height="0.09375" sample="linear" functionHandler="lvl_2">
+				<Asset name="up" resourceRef="106" />
+				<Asset name="down" resourceRef="107" />
+		</DisplayObject>
+		<DisplayObject id="372" type="button" hidden="no" top="0.09375" left="0.323943661971831" width="0.06690140845070422" height="0.09375" sample="linear" functionHandler="lvl_3">
+				<Asset name="up" resourceRef="106" />
+				<Asset name="down" resourceRef="107" />
+		</DisplayObject>
+		<DisplayObject id="373" type="button" hidden="no" top="0.09375" left="0.41901408450704225" width="0.06690140845070422" height="0.09375" sample="linear" functionHandler="lvl_4">
+				<Asset name="up" resourceRef="106" />
+				<Asset name="down" resourceRef="107" />
+		</DisplayObject>
+		<DisplayObject id="374" type="button" hidden="no" top="0.09375" left="0.5140845070422535" width="0.06690140845070422" height="0.09375" sample="linear" functionHandler="lvl_5">
+				<Asset name="up" resourceRef="106" />
+				<Asset name="down" resourceRef="107" />
+		</DisplayObject>
+		<DisplayObject id="375" type="button" hidden="no" top="0.09375" left="0.6091549295774648" width="0.06690140845070422" height="0.09375" sample="linear" functionHandler="lvl_6">
+				<Asset name="up" resourceRef="106" />
+				<Asset name="down" resourceRef="107" />
+		</DisplayObject>
+		<DisplayObject id="376" type="button" hidden="no" top="0.09375" left="0.704225352112676" width="0.06690140845070422" height="0.09375" sample="linear" functionHandler="lvl_7">
+				<Asset name="up" resourceRef="106" />
+				<Asset name="down" resourceRef="107" />
+		</DisplayObject>
+		<DisplayObject id="377" type="button" hidden="no" top="0.09375" left="0.7992957746478874" width="0.06690140845070422" height="0.09375" sample="linear" functionHandler="lvl_8">
+				<Asset name="up" resourceRef="106" />
+				<Asset name="down" resourceRef="107" />
+		</DisplayObject>
+		<DisplayObject id="386" type="button" hidden="no" top="0.2375" left="0.13556338028169015" width="0.06690140845070422" height="0.09375" sample="linear" functionHandler="lvl_9">
+				<Asset name="up" resourceRef="106" />
+				<Asset name="down" resourceRef="107" />
+		</DisplayObject>
+		<DisplayObject id="387" type="button" hidden="no" top="0.2375" left="0.22887323943661972" width="0.06690140845070422" height="0.09375" sample="linear" functionHandler="lvl_1">
+				<Asset name="up" resourceRef="106" />
+				<Asset name="down" resourceRef="107" />
+		</DisplayObject>
+		<DisplayObject id="410" type="button" hidden="no" top="0.81875" left="0.3890845070422535" width="0.21830985915492956" height="0.1625" sample="linear" functionHandler="btn_back_to_menu">
+				<Asset name="up" resourceRef="77" />
+				<Asset name="down" resourceRef="78" />
+		</DisplayObject>
+		<DisplayObject id="413" name="locked_10" type="image" hidden="no" top="0.2125" left="0.21654929577464788" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="414" name="locked_11" type="image" hidden="no" top="0.2125" left="0.31161971830985913" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="415" name="locked_12" type="image" hidden="no" top="0.2125" left="0.40669014084507044" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="416" name="locked_13" type="image" hidden="no" top="0.2125" left="0.5017605633802817" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="417" name="locked_14" type="image" hidden="no" top="0.2125" left="0.596830985915493" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="418" name="locked_15" type="image" hidden="no" top="0.2125" left="0.6919014084507042" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="419" name="locked_16" type="image" hidden="no" top="0.2125" left="0.7869718309859155" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="420" name="locked_17" type="image" hidden="no" top="0.35625" left="0.12147887323943662" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="421" name="locked_18" type="image" hidden="no" top="0.35625" left="0.21654929577464788" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="422" name="locked_19" type="image" hidden="no" top="0.35625" left="0.31161971830985913" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="423" name="locked_20" type="image" hidden="no" top="0.35625" left="0.40669014084507044" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="424" name="locked_21" type="image" hidden="no" top="0.35625" left="0.5017605633802817" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="425" name="locked_22" type="image" hidden="no" top="0.35625" left="0.596830985915493" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="426" name="locked_23" type="image" hidden="no" top="0.35625" left="0.6919014084507042" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="427" name="locked_24" type="image" hidden="no" top="0.35625" left="0.7869718309859155" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="435" name="locked_25" type="image" hidden="no" top="0.5" left="0.12147887323943662" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="436" name="locked_26" type="image" hidden="no" top="0.5" left="0.21654929577464788" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="437" name="locked_27" type="image" hidden="no" top="0.5" left="0.31161971830985913" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="438" name="locked_28" type="image" hidden="no" top="0.5" left="0.40669014084507044" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="439" name="locked_29" type="image" hidden="no" top="0.5" left="0.5017605633802817" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="440" name="locked_30" type="image" hidden="no" top="0.5" left="0.596830985915493" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="441" name="locked_31" type="image" hidden="no" top="0.5" left="0.6919014084507042" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="442" name="locked_32" type="image" hidden="no" top="0.5" left="0.7869718309859155" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="443" name="locked_33" type="image" hidden="no" top="0.64375" left="0.12147887323943662" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="444" name="locked_34" type="image" hidden="no" top="0.64375" left="0.21654929577464788" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="445" name="locked_35" type="image" hidden="no" top="0.64375" left="0.31161971830985913" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="446" name="locked_36" type="image" hidden="no" top="0.64375" left="0.40669014084507044" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="447" name="locked_37" type="image" hidden="no" top="0.64375" left="0.5017605633802817" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="448" name="locked_38" type="image" hidden="no" top="0.64375" left="0.596830985915493" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="449" name="locked_39" type="image" hidden="no" top="0.64375" left="0.6919014084507042" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+		<DisplayObject id="450" name="locked_40" type="image" hidden="no" top="0.64375" left="0.7869718309859155" width="0.09507042253521127" height="0.14375" functionHandler="up">
+				<Asset name="up" resourceRef="108" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

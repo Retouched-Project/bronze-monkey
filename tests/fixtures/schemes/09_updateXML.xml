@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="no" width="568" height="320" sample="linear" accelerometerEnabled="no">
+<Resources>
+		<Resource id="126" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMjAzYjY4OWFmZjhiM2QyZYtv2ogAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="119" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANWI2MTc5YjUyOTI5ODA4OZok8QAAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="120" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANDJkOGFhZDk2MzdjZGY1ZT35V0IAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="121" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANWI2MTc5YjUyOTI5ODA4OZok8QAAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="122" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANDJkOGFhZDk2MzdjZGY1ZT35V0IAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="123" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANGVkYWI1YzEwNmNmMmY5Mjz3fFAAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="123" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANGVkYWI1YzEwNmNmMmY5Mjz3fFAAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="124" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANjkyYzhlMGUzOWFmNGI2MGI6Px8AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="125" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMDY0NjczMjM1YWZkYmExYWD77mgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="127" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMGM1ZjE4NmZkYzkzZjQ3NRLj5t4AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="128" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMGMwMzE1NTNiNjVlNzkyZYDllU4AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="129" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAM2MzMjZlODRjMjdhZWNkNOVs24kAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="130" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMzQwOTE2NDlmNzIxY2QzNLIzAtsAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="131" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANjI3ZjEwODEyODhhMWFjZZdCk+IAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="132" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMmIxNWJhM2QzZjhjOWYwYSAYa3gAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="133" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAODlmNGQzZGIyOTVhOGY4ME/LW48AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="134" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMjJkZWNiY2Y2MWEzZGViZZjHRCsAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="135" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAOTA3ODQ0YmE2YzZiMTY0ZfJndlwAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+</Resources>
+<Layout>
+		<DisplayObject id="451" name="dpad_vanilla_ip5" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="126" />
+		</DisplayObject>
+		<DisplayObject id="452" type="button" hidden="no" top="0.4993750095367432" left="0.6511443769428092" width="0.1267605633802817" height="0.225" sample="linear" functionHandler="btnA">
+				<Asset name="up" resourceRef="119" />
+				<Asset name="down" resourceRef="120" />
+			<HitRect top="0.0625" left="0.6370598591549296" width="0.1783450704225352" height="0.8928125">
+			</HitRect>
+		</DisplayObject>
+		<DisplayObject id="453" type="button" hidden="no" top="0.5" left="0.8274647887323944" width="0.1267605633802817" height="0.225" sample="linear" functionHandler="btnB">
+				<Asset name="up" resourceRef="121" />
+				<Asset name="down" resourceRef="122" />
+			<HitRect top="0.0625" left="0.7975352112676056" width="0.1783450704225352" height="0.8928125">
+			</HitRect>
+		</DisplayObject>
+		<DisplayObject id="458" name="dpad" type="dpad" hidden="no" deadzone="0.25" top="0.22515625" left="0.07746478873239436" width="0.3211267605633803" height="0.56796875">			<HitRect top="0.03125" left="0.0035211267605633804" width="0.48529929577464787" height="0.95609375">
+			</HitRect>
+				<Asset name="left_up" resourceRef="127" />
+				<Asset name="left" resourceRef="128" />
+				<Asset name="left_down" resourceRef="129" />
+				<Asset name="up" resourceRef="130" />
+				<Asset name="down" resourceRef="131" />
+				<Asset name="right_up" resourceRef="132" />
+				<Asset name="right" resourceRef="133" />
+				<Asset name="right_down" resourceRef="134" />
+				<Asset name="inactive" resourceRef="135" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

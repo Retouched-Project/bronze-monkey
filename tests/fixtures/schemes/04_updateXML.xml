@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="no" width="568" height="320" sample="linear" accelerometerEnabled="no">
+<Resources>
+</Resources>
+<Layout>
+		<DisplayObject id="177" name="ip5_black_bg" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="63" />
+		</DisplayObject>
+		<DisplayObject id="178" name="menu_bg" type="image" hidden="no" top="0" left="0.07922535211267606" width="0.8450704225352113" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="65" />
+		</DisplayObject>
+		<DisplayObject id="179" type="button" hidden="no" top="0.125" left="0.5897887323943662" width="0.2887323943661972" height="0.16875" sample="linear" functionHandler="btn_play">
+				<Asset name="up" resourceRef="68" />
+				<Asset name="down" resourceRef="69" />
+		</DisplayObject>
+		<DisplayObject id="180" type="button" hidden="no" top="0.3125" left="0.5897887323943662" width="0.2887323943661972" height="0.16875" sample="linear" functionHandler="btn_scores">
+				<Asset name="up" resourceRef="70" />
+				<Asset name="down" resourceRef="71" />
+		</DisplayObject>
+		<DisplayObject id="181" type="button" hidden="no" top="0.5" left="0.5897887323943662" width="0.2887323943661972" height="0.16875" sample="linear" functionHandler="btn_help">
+				<Asset name="up" resourceRef="72" />
+				<Asset name="down" resourceRef="73" />
+		</DisplayObject>
+		<DisplayObject id="182" type="button" hidden="no" top="0.6875" left="0.5897887323943662" width="0.2887323943661972" height="0.16875" sample="linear" functionHandler="btn_credits">
+				<Asset name="up" resourceRef="74" />
+				<Asset name="down" resourceRef="75" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

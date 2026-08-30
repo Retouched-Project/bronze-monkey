@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="portrait" touchEnabled="no" width="320" height="480" sample="nearest" accelerometerEnabled="no">
+<Resources>
+		<Resource id="1" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMDQ5YzU5OWZkZDdhMTE0Y0doAV0AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+</Resources>
+<Layout>
+		<DisplayObject id="1" name="bg" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="1" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

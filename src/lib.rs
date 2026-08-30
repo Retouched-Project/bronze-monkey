@@ -56,6 +56,10 @@ pub fn base64_decode(input: &str) -> std::result::Result<Vec<u8>, base64::Decode
     BASE64_STANDARD.decode(input)
 }
 
+pub fn base64_encode(input: &[u8]) -> String {
+    BASE64_STANDARD.encode(input)
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 #[unsafe(no_mangle)]
 pub extern "C" fn bm_library_init() -> bool {

@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="portrait" touchEnabled="no" width="320" height="568" sample="linear" accelerometerEnabled="no">
+<Resources>
+		<Resource id="32" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANGQyOGFhNGQ1NDI2YzIzZT90NvYAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="33" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAOTkxMmExOWZkOGVmN2I5NvbL71cAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="34" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYjBiY2ZiZWYwMzIzYjNlNh4RV0IAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="35" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYjVlNDY5NzdjOTE4OTE4ZJjr1tQAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="36" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYjBiY2ZiZWYwMzIzYjNlNh4RV0IAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="37" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANjg5NTdjZmI4NjVhYjgzMAv7DFEAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="38" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZTVlYTNhZGU1MjkwODZjZIw/J2EAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="39" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZDk3OGM4ZmJkODliMmU1OICQjtkAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="40" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZTVlYTNhZGU1MjkwODZjZIw/J2EAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="41" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMmM0OTQxODdhYTNhMTMyM0UOPPIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="42" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZTVlYTNhZGU1MjkwODZjZIw/J2EAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="43" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMWM1MDIzOWEzZGRkYTM3Zh6sHsIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="44" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMjcwYTIxOWM0NWIzYjJjMxAI2ZEAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="45" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYzM0NmE5N2QxYzZhNTY5ZVQ4tY0AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="46" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAZDJhMzJlZTYwNmRhMDcyNEM8NbcAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="47" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYTgxODRkOThmOTcwM2E3YrRizR8AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="48" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMmE2MWJhZTUxYzQ3ZTQyNsakD9YAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="49" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMmI5ZTVkMzA3NWU4NTcwMF6hz/oAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="50" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMzY4YjMyN2ZhNzVkY2Y5MMSkfPAAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="51" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAYmY1ZmZjOWEzOTYxY2Q4N4mvZAcAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="52" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANjA4NmQ4NjRjNjZiY2RhN04a3GwAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="53" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMzU3OGYwNzc0ZDA2ZmNkYRaMQfIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="54" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMzk5NDViZDRlMjI4MDI1Y+cGwIUAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="55" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMDU2ZWNmZjlmYjg4NzkyYaOa0RQAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="56" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMGFhNjBlNjQ5NjJlNjA3Y9U1KBQAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="57" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANmJjN2I5MjQ1NGIyMmIxZRnAbdsAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="58" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAODE4NDg3MTRjYWVjYmJjMckG5OYAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="59" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANGM3MGM1YTJlYjcwYmE5YnifANgAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="60" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMTRiMTk0NTM3ZmViMjc3ZZokFT0AAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="61" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UAMGFkZjliZTcyODIzNjljOBCZKVcAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+		<Resource id="62" type="image">
+			<data><![CDATA[iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAF3RFWHRzb3VyY2UANzNkZTNmMDRmNGE0MjMzZtCAAEIAAAALSURBVHicY2AAAgAABQABel6rPwAAAABJRU5ErkJggg==]]></data>
+		</Resource>
+</Resources>
+<Layout>
+		<DisplayObject id="84" name="logo_bg_ip5" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="32" />
+		</DisplayObject>
+		<DisplayObject id="85" name="title_bg_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="33" />
+		</DisplayObject>
+		<DisplayObject id="86" type="button" hidden="yes" top="0.06690140845070422" left="0.103125" width="0.3875" height="0.21830985915492956" sample="linear" functionHandler="btn_play">
+				<Asset name="up" resourceRef="34" />
+				<Asset name="down" resourceRef="35" />
+		</DisplayObject>
+		<DisplayObject id="87" type="button" hidden="yes" top="0.06690140845070422" left="0.509375" width="0.3875" height="0.21830985915492956" sample="linear" functionHandler="btn_multiplay">
+				<Asset name="up" resourceRef="36" />
+				<Asset name="down" resourceRef="37" />
+		</DisplayObject>
+		<DisplayObject id="88" type="button" hidden="yes" top="0.7147887323943662" left="0.090625" width="0.26875" height="0.21830985915492956" sample="linear" functionHandler="btn_scores">
+				<Asset name="up" resourceRef="38" />
+				<Asset name="down" resourceRef="39" />
+		</DisplayObject>
+		<DisplayObject id="89" type="button" hidden="yes" top="0.7147887323943662" left="0.365625" width="0.26875" height="0.21830985915492956" sample="linear" functionHandler="btn_help">
+				<Asset name="up" resourceRef="40" />
+				<Asset name="down" resourceRef="41" />
+		</DisplayObject>
+		<DisplayObject id="90" type="button" hidden="yes" top="0.7147887323943662" left="0.640625" width="0.26875" height="0.21830985915492956" sample="linear" functionHandler="btn_credits">
+				<Asset name="up" resourceRef="42" />
+				<Asset name="down" resourceRef="43" />
+		</DisplayObject>
+		<DisplayObject id="91" name="bg_main_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="44" />
+		</DisplayObject>
+		<DisplayObject id="92" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="93" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="94" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+		<DisplayObject id="95" name="bg_p1_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="51" />
+		</DisplayObject>
+		<DisplayObject id="96" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="97" name="bg_p1_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="51" />
+		</DisplayObject>
+		<DisplayObject id="98" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="99" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="100" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+		<DisplayObject id="101" name="bg_p2_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="52" />
+		</DisplayObject>
+		<DisplayObject id="102" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="103" name="bg_p2_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="52" />
+		</DisplayObject>
+		<DisplayObject id="104" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="105" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="106" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+		<DisplayObject id="107" name="bg_p3_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="53" />
+		</DisplayObject>
+		<DisplayObject id="108" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="109" name="bg_p3_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="53" />
+		</DisplayObject>
+		<DisplayObject id="110" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="111" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="112" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+		<DisplayObject id="113" name="bg_p4_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="54" />
+		</DisplayObject>
+		<DisplayObject id="114" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="115" name="bg_p4_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="54" />
+		</DisplayObject>
+		<DisplayObject id="116" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="117" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="118" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+		<DisplayObject id="119" name="bg_tsb_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="55" />
+		</DisplayObject>
+		<DisplayObject id="120" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="121" name="bg_tsb_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="55" />
+		</DisplayObject>
+		<DisplayObject id="122" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="123" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="124" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+		<DisplayObject id="125" name="bg_twinshot_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="56" />
+		</DisplayObject>
+		<DisplayObject id="126" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="127" name="bg_twinshot_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="56" />
+		</DisplayObject>
+		<DisplayObject id="128" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="129" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="130" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+		<DisplayObject id="131" name="bg_viking_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="57" />
+		</DisplayObject>
+		<DisplayObject id="132" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="133" name="bg_viking_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="57" />
+		</DisplayObject>
+		<DisplayObject id="134" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="135" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="136" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+		<DisplayObject id="137" name="bg_toxic_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="58" />
+		</DisplayObject>
+		<DisplayObject id="138" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="139" name="bg_toxic_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="58" />
+		</DisplayObject>
+		<DisplayObject id="140" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="141" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="142" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+		<DisplayObject id="143" name="bg_ninja_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="59" />
+		</DisplayObject>
+		<DisplayObject id="144" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="145" name="bg_ninja_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="59" />
+		</DisplayObject>
+		<DisplayObject id="146" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="147" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="148" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+		<DisplayObject id="149" name="bg_mirror_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="60" />
+		</DisplayObject>
+		<DisplayObject id="150" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="151" name="bg_mirror_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="60" />
+		</DisplayObject>
+		<DisplayObject id="152" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="153" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="154" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+		<DisplayObject id="155" name="bg_enmey585_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="61" />
+		</DisplayObject>
+		<DisplayObject id="156" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="157" name="bg_enmey585_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="61" />
+		</DisplayObject>
+		<DisplayObject id="158" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="159" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="160" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+		<DisplayObject id="161" name="bg__otr_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="62" />
+		</DisplayObject>
+		<DisplayObject id="162" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="163" name="bg__otr_ip5" type="image" hidden="yes" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="62" />
+		</DisplayObject>
+		<DisplayObject id="164" type="button" hidden="yes" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="165" type="button" hidden="yes" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="166" type="button" hidden="yes" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

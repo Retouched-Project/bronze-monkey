@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="portrait" touchEnabled="no" width="320" height="568" sample="linear" accelerometerEnabled="no">
+<Resources>
+</Resources>
+<Layout>
+		<DisplayObject id="91" name="bg_main_ip5" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="44" />
+		</DisplayObject>
+		<DisplayObject id="92" type="button" hidden="no" top="0.3265845070422535" left="0.1921875" width="0.61203125" height="0.34533450704225355" sample="linear" functionHandler="btnA1">
+				<Asset name="up" resourceRef="45" />
+				<Asset name="down" resourceRef="46" />
+		</DisplayObject>
+		<DisplayObject id="93" type="button" hidden="no" top="0.9190140845070423" left="0" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_back">
+				<Asset name="up" resourceRef="47" />
+				<Asset name="down" resourceRef="48" />
+		</DisplayObject>
+		<DisplayObject id="94" type="button" hidden="no" top="0.9190140845070423" left="0.703125" width="0.296875" height="0.07922535211267606" sample="linear" functionHandler="button_next">
+				<Asset name="up" resourceRef="49" />
+				<Asset name="down" resourceRef="50" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

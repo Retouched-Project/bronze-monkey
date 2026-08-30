@@ -13,6 +13,7 @@ pub fn apply_update(base: &mut ControlScheme, update: ControlScheme) {
         accelerometer_enabled: _,
         width: _,
         height: _,
+        sample: _,
         resources,
         display_objects,
         options,
@@ -54,6 +55,7 @@ mod tests {
         AppResource {
             id,
             bitmap: vec![byte],
+            ..Default::default()
         }
     }
 
@@ -100,6 +102,7 @@ mod tests {
             height: 320,
             touch_enabled: true,
             accelerometer_enabled: true,
+            sample: "nearest".into(),
             resources: vec![res(1, 0xA), res(2, 0xB)],
             display_objects: vec![obj(10, "button"), obj(11, "image")],
             options: vec![],
@@ -117,6 +120,7 @@ mod tests {
         assert_eq!(base.height, 320);
         assert!(base.touch_enabled);
         assert!(base.accelerometer_enabled);
+        assert_eq!(base.sample, "nearest");
         // image #11 dropped.
         assert_eq!(base.display_objects, vec![obj(10, "button")]);
     }

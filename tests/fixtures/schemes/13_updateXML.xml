@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="portrait" touchEnabled="no" width="320" height="568" sample="linear" accelerometerEnabled="no">
+<Resources>
+</Resources>
+<Layout>
+		<DisplayObject id="85" name="title_bg_ip5" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="33" />
+		</DisplayObject>
+		<DisplayObject id="86" type="button" hidden="no" top="0.06690140845070422" left="0.103125" width="0.3875" height="0.21830985915492956" sample="linear" functionHandler="btn_play">
+				<Asset name="up" resourceRef="34" />
+				<Asset name="down" resourceRef="35" />
+		</DisplayObject>
+		<DisplayObject id="87" type="button" hidden="no" top="0.06690140845070422" left="0.509375" width="0.3875" height="0.21830985915492956" sample="linear" functionHandler="btn_multiplay">
+				<Asset name="up" resourceRef="36" />
+				<Asset name="down" resourceRef="37" />
+		</DisplayObject>
+		<DisplayObject id="88" type="button" hidden="no" top="0.7147887323943662" left="0.090625" width="0.26875" height="0.21830985915492956" sample="linear" functionHandler="btn_scores">
+				<Asset name="up" resourceRef="38" />
+				<Asset name="down" resourceRef="39" />
+		</DisplayObject>
+		<DisplayObject id="89" type="button" hidden="no" top="0.7147887323943662" left="0.365625" width="0.26875" height="0.21830985915492956" sample="linear" functionHandler="btn_help">
+				<Asset name="up" resourceRef="40" />
+				<Asset name="down" resourceRef="41" />
+		</DisplayObject>
+		<DisplayObject id="90" type="button" hidden="no" top="0.7147887323943662" left="0.640625" width="0.26875" height="0.21830985915492956" sample="linear" functionHandler="btn_credits">
+				<Asset name="up" resourceRef="42" />
+				<Asset name="down" resourceRef="43" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

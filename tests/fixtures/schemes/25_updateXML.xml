@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="no" width="480" height="320" sample="linear" accelerometerEnabled="yes">
+<Resources>
+</Resources>
+<Layout>
+		<DisplayObject id="2" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="2" />
+		</DisplayObject>
+		<DisplayObject id="3" type="button" hidden="no" top="0.821875" left="0.08125" width="0.12291666666666666" height="0.1" sample="linear" functionHandler="button_Play">
+				<Asset name="up" resourceRef="3" />
+				<Asset name="down" resourceRef="4" />
+		</DisplayObject>
+		<DisplayObject id="4" type="button" hidden="no" top="0.821875" left="0.28125" width="0.18333333333333332" height="0.0875" sample="linear" functionHandler="button_Scores">
+				<Asset name="up" resourceRef="5" />
+				<Asset name="down" resourceRef="6" />
+		</DisplayObject>
+		<DisplayObject id="5" type="button" hidden="no" top="0.821875" left="0.5333333333333333" width="0.12291666666666666" height="0.1" sample="linear" functionHandler="button_Help">
+				<Asset name="up" resourceRef="7" />
+				<Asset name="down" resourceRef="8" />
+		</DisplayObject>
+		<DisplayObject id="6" type="button" hidden="no" top="0.821875" left="0.7229166666666667" width="0.20208333333333334" height="0.0875" sample="linear" functionHandler="button_Credits">
+				<Asset name="up" resourceRef="9" />
+				<Asset name="down" resourceRef="10" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

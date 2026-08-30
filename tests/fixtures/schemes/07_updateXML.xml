@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="landscape" touchEnabled="no" width="568" height="320" sample="linear" accelerometerEnabled="no">
+<Resources>
+</Resources>
+<Layout>
+		<DisplayObject id="251" name="ip5_black_bg" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="63" />
+		</DisplayObject>
+		<DisplayObject id="252" name="bg_ready" type="image" hidden="no" top="0" left="0.07922535211267606" width="0.8450704225352113" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="101" />
+		</DisplayObject>
+		<DisplayObject id="253" type="button" hidden="no" top="0.7134375000000001" left="0.1220950704225352" width="0.21830985915492956" height="0.1625" sample="linear" functionHandler="btn_back_to_menu">
+				<Asset name="up" resourceRef="77" />
+				<Asset name="down" resourceRef="78" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>

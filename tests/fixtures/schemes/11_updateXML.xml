@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMApplicationScheme version="0.1" orientation="portrait" touchEnabled="no" width="320" height="568" sample="linear" accelerometerEnabled="no">
+<Resources>
+</Resources>
+<Layout>
+		<DisplayObject id="84" name="logo_bg_ip5" type="image" hidden="no" top="0" left="0" width="1" height="1" functionHandler="up">
+				<Asset name="up" resourceRef="32" />
+		</DisplayObject>
+</Layout>
+</BMApplicationScheme>
