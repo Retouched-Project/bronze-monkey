@@ -32,13 +32,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 impl Engine {
     pub fn make_byte_chunks(&mut self, target: &str, set_id: &str, blob: &[u8]) -> Vec<Outgoing> {
-        const CHUNK_SIZE: usize = 10240;
+        let chunk = self.max_chunk_bytes.max(1);
         let total_size = blob.len() as i32;
         let mut out = Vec::new();
         let mut start = 0usize;
         loop {
-            let len = (blob.len() - start).min(CHUNK_SIZE);
-            let chunk = BMByteChunk {
+            let len = (blob.len() - start).min(chunk);
+            let piece = BMByteChunk {
                 set_id: set_id.to_string(),
                 start_byte: start as i32,
                 chunk_size: len as i32,
@@ -50,7 +50,7 @@ impl Engine {
                 ChannelType::Bytes,
                 BMReliability::ReliableUnordered.code(),
                 PacketType::Data,
-                Object::BMByteChunk(chunk),
+                Object::BMByteChunk(piece),
             ));
             start += len;
             if start >= blob.len() {

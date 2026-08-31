@@ -69,6 +69,7 @@ pub struct Engine {
     pub(crate) sensor_pacing: pacing::SensorPacing,
     pub(crate) touch: batching::TouchBatch,
     pub(crate) schemes: schemes::SchemeLibrary,
+    pub(crate) max_chunk_bytes: usize,
     bound_continuations: HashMap<String, RpcHandler>,
     pub server_policy: ServerPolicy,
     pub game_policy: GamePolicy,
@@ -88,6 +89,7 @@ impl Engine {
             sensor_pacing: pacing::SensorPacing::default(),
             touch: batching::TouchBatch::default(),
             schemes: schemes::SchemeLibrary::default(),
+            max_chunk_bytes: crate::config::DEFAULT_MAX_CHUNK_BYTES as usize,
             bound_continuations: HashMap::new(),
             server_policy: ServerPolicy::new(),
             game_policy: GamePolicy::new(),
@@ -128,6 +130,7 @@ impl Engine {
             endpoint: config.endpoint,
         };
         self.datagrams = config.datagrams;
+        self.max_chunk_bytes = config.max_chunk_bytes as usize;
         self.server_policy.auto_approve_registration = config.approves_registrations;
         self.controller_policy.session = SessionInputs {
             automatic: config.opens_sessions,

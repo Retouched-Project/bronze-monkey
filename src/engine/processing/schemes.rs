@@ -277,6 +277,111 @@ mod tests {
     }
 
     #[test]
+    fn the_chunk_size_is_the_callers_to_choose() {
+        let scheme = format!(
+            r#"<BMApplicationScheme width="480" height="320"><Layout>{}</Layout></BMApplicationScheme>"#,
+            r#"<DisplayObject id="1" type="button" functionHandler="fire"/>"#.repeat(400)
+        );
+
+        let count = |chunk_bytes: u32| {
+            let mut game = Engine::default();
+            game.init_local_device(DeviceCore::new(
+                "game".to_string(),
+                "Game".to_string(),
+                DeviceType::Unity,
+            ));
+            game.configure(EngineConfig {
+                endpoint: Some(crate::policy::EndpointMode::Game),
+                opens_sessions: false,
+                max_chunk_bytes: chunk_bytes,
+                ..Default::default()
+            })
+            .expect("the size is allowed");
+            game.state.upsert_registry_info(BMRegistryInfo {
+                slot_id: 0,
+                app_id: "app".to_string(),
+                current_players: None,
+                max_players: None,
+                device: DeviceCore::new(
+                    "phone".to_string(),
+                    "Phone".to_string(),
+                    DeviceType::Android,
+                ),
+                device_address: BMAddress::new("10.0.0.2".to_string(), 9080, 9081),
+            });
+            game.make_byte_chunks("phone", "testXML", scheme.as_bytes())
+                .len()
+        };
+
+        let small = count(1024);
+        let default = count(crate::config::DEFAULT_MAX_CHUNK_BYTES);
+        assert!(small > default, "{small} should beat {default}");
+        assert_eq!(default, 1, "the default swallows a scheme this size whole");
+    }
+
+    #[test]
+    fn a_chunk_at_the_ceiling_fits_the_smallest_known_peer_buffer() {
+        let ceiling = (1..=200_000u32)
+            .rev()
+            .find(|n| {
+                EngineConfig {
+                    max_chunk_bytes: *n,
+                    ..Default::default()
+                }
+                .check()
+                .is_ok()
+            })
+            .expect("some size is allowed");
+
+        let mut game = Engine::default();
+        game.init_local_device(DeviceCore::new(
+            "a-game-with-a-long-identifier".to_string(),
+            "A Game With A Long Name".to_string(),
+            DeviceType::Unity,
+        ));
+        game.configure(EngineConfig {
+            endpoint: Some(crate::policy::EndpointMode::Game),
+            opens_sessions: false,
+            max_chunk_bytes: ceiling,
+            ..Default::default()
+        })
+        .expect("the ceiling is allowed");
+        game.state.upsert_registry_info(BMRegistryInfo {
+            slot_id: 0,
+            app_id: "app".to_string(),
+            current_players: None,
+            max_players: None,
+            device: DeviceCore::new(
+                "phone".to_string(),
+                "Phone".to_string(),
+                DeviceType::Android,
+            ),
+            device_address: BMAddress::new("10.0.0.2".to_string(), 9080, 9081),
+        });
+
+        let blob = vec![b'x'; ceiling as usize];
+        let packets = game.make_byte_chunks("phone", "updateXML", &blob);
+        assert_eq!(packets.len(), 1, "one chunk exactly at the ceiling");
+        let framed = packets[0].payload.len();
+        assert!(
+            framed < 98304,
+            "a chunk at the ceiling frames to {framed} bytes, past what a peer is known to read"
+        );
+    }
+
+    #[test]
+    fn a_chunk_size_of_nothing_is_refused() {
+        let mut game = Engine::default();
+        assert!(
+            game.configure(EngineConfig {
+                max_chunk_bytes: 0,
+                ..Default::default()
+            })
+            .is_err()
+        );
+    }
+
+    #[test]
     fn a_scheme_names_its_handlers_the_moment_it_is_loaded() {
         let game = game_with(Some(SCHEME));
         assert!(

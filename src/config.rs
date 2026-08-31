@@ -11,9 +11,12 @@
 //! Roles are included because they move: an app that gains a built in server
 //! says so the same way it says anything else.
 
+use crate::policy::EndpointMode;
 use serde::{Deserialize, Serialize};
 
-use crate::policy::EndpointMode;
+pub const DEFAULT_MAX_CHUNK_BYTES: u32 = 65535;
+const PEER_READ_BUFFER: usize = 98304;
+const MAX_CHUNK_CEILING: usize = PEER_READ_BUFFER - 8192;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -38,6 +41,7 @@ pub struct EngineConfig {
     /// peer accepts. It says nothing about owning a socket: a transport that
     /// relays to one elsewhere still has the path.
     pub datagrams: bool,
+    pub max_chunk_bytes: u32,
 }
 
 impl Default for EngineConfig {
@@ -52,6 +56,7 @@ impl Default for EngineConfig {
             screen_height: 0,
             approves_registrations: true,
             datagrams: false,
+            max_chunk_bytes: DEFAULT_MAX_CHUNK_BYTES,
         }
     }
 }
@@ -75,6 +80,9 @@ impl EngineConfig {
         {
             return Err(ConfigError::ScreenRequired);
         }
+        if self.max_chunk_bytes == 0 || self.max_chunk_bytes as usize > MAX_CHUNK_CEILING {
+            return Err(ConfigError::ChunkSize);
+        }
         Ok(())
     }
 }
@@ -82,6 +90,7 @@ impl EngineConfig {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConfigError {
     ScreenRequired,
+    ChunkSize,
 }
 
 impl std::fmt::Display for ConfigError {
@@ -90,6 +99,10 @@ impl std::fmt::Display for ConfigError {
             ConfigError::ScreenRequired => write!(
                 f,
                 "a controller that opens its own sessions needs a screen to ask for a scheme for"
+            ),
+            ConfigError::ChunkSize => write!(
+                f,
+                "a chunk has to hold at least one byte and fit in a message, so 1 to {MAX_CHUNK_CEILING}"
             ),
         }
     }
