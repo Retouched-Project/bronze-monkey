@@ -589,6 +589,26 @@ impl Engine {
         )
     }
 
+    /// Everything a game owes a controller the moment it can address it.
+    ///
+    /// The ack goes first, since it is the only thing that tells a controller
+    /// where to send anything at all. A game with no unreliable path then asks
+    /// for its input reliably: touch and sensors default to unreliable, and
+    /// unreliable means by datagram, so a game that cannot read one receives
+    /// none of it and sees no error anywhere.
+    pub(crate) fn introduce_to(&mut self, target: &str) -> Vec<Outgoing> {
+        let mut out = self.make_ack_packet(target);
+        if out.is_empty() {
+            return out;
+        }
+        self.state.acked_peers.insert(target.to_string());
+        if !self.datagrams {
+            let reliable = BMReliability::ReliableUnordered.code();
+            out.extend(self.make_set_reliability_for_touch(target, reliable, reliable));
+        }
+        out
+    }
+
     pub fn make_packet(
         &mut self,
         target: &str,
@@ -820,6 +840,65 @@ mod session_tests {
             None,
         ));
         eng
+    }
+
+    fn game_with_controller(datagrams: bool) -> Engine {
+        let mut eng = Engine::default();
+        eng.init_local_device(DeviceCore::new(
+            "game".to_string(),
+            "Game".to_string(),
+            DeviceType::Unity,
+        ));
+        eng.configure(EngineConfig {
+            endpoint: Some(EndpointMode::Game),
+            opens_sessions: false,
+            datagrams,
+            ..Default::default()
+        })
+        .unwrap();
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new(
+                "phone".to_string(),
+                "Phone".to_string(),
+                DeviceType::Android,
+            ),
+            None,
+        ));
+        eng
+    }
+
+    #[test]
+    fn a_game_that_cannot_take_datagrams_asks_for_its_input_reliably() {
+        let mut eng = game_with_controller(false);
+        let greeting = eng.introduce_to("phone");
+        assert_eq!(
+            methods_of(&greeting),
+            [methods::SET_RELIABILITY_FOR_TOUCH],
+            "input defaults to unreliable, which is a datagram we could not read"
+        );
+        assert_eq!(
+            invoke_of(&greeting[1]),
+            format!("{} [I32(1), I32(1)]", methods::SET_RELIABILITY_FOR_TOUCH),
+            "touch and sensors both have to come back on the stream"
+        );
+    }
+
+    #[test]
+    fn a_game_that_can_take_datagrams_is_left_to_ask_for_itself() {
+        let mut eng = game_with_controller(true);
+        let greeting = eng.introduce_to("phone");
+        assert_eq!(greeting.len(), 1, "the ack, and nothing unasked for");
+        assert!(methods_of(&greeting).is_empty());
+    }
+
+    #[test]
+    fn a_peer_we_cannot_address_is_not_recorded_as_greeted() {
+        let mut eng = game_with_controller(false);
+        assert!(eng.introduce_to("stranger").is_empty());
+        assert!(
+            !eng.state.acked_peers.contains("stranger"),
+            "a greeting that never went out must not stop a later one"
+        );
     }
 
     fn methods_of(outgoings: &[crate::engine::events::Outgoing]) -> Vec<String> {

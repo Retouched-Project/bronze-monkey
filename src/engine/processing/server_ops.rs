@@ -210,11 +210,11 @@ mod tests {
         joined(&mut game, "phone", DeviceType::Android);
 
         let ping = ping_from("phone");
-        assert_eq!(
-            game.process_incoming(&ping, &Default::default())
+        assert!(
+            !game
+                .process_incoming(&ping, &Default::default())
                 .outgoings
-                .len(),
-            1,
+                .is_empty(),
             "the first ping is answered"
         );
         assert!(
@@ -226,11 +226,11 @@ mod tests {
 
         game.peer_gone("phone");
         joined(&mut game, "phone", DeviceType::Android);
-        assert_eq!(
-            game.process_incoming(&ping, &Default::default())
+        assert!(
+            !game
+                .process_incoming(&ping, &Default::default())
                 .outgoings
-                .len(),
-            1,
+                .is_empty(),
             "a controller that came back is owed a fresh ack"
         );
     }

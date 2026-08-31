@@ -2,6 +2,7 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 use super::Engine;
+use crate::codec::externals::bm_reliability::BMReliability;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_invoke::BMInvoke;
 use crate::codec::object::Object;
@@ -248,7 +249,16 @@ impl Engine {
                 target,
                 touch,
                 sensors,
-            } => self.make_set_reliability_for_touch(&target, touch, sensors),
+            } => {
+                let unreliable = BMReliability::Unreliable.code();
+                if !self.datagrams && (touch == unreliable || sensors == unreliable) {
+                    log::warn!(
+                        "asking '{target}' for unreliable input leaves it nowhere to send: \
+                         this endpoint has no unreliable path to read one on"
+                    );
+                }
+                self.make_set_reliability_for_touch(&target, touch, sensors)
+            }
             Command::SetControlMode { target, mode, text } => {
                 self.make_set_control_mode(&target, mode, text.as_deref())
             }
@@ -287,8 +297,7 @@ impl Engine {
                 if target.is_empty() {
                     return Err(EmitError::EmptyTarget);
                 }
-                self.state.acked_peers.insert(target.clone());
-                self.make_ack_packet(&target)
+                self.introduce_to(&target)
             }
             Command::ControlSchemeParsed { target } => {
                 let device_id = self.local_device_id();

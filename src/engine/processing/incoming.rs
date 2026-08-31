@@ -86,11 +86,8 @@ impl Engine {
 
         if self.roles.game() {
             if !self.state.acked_peers.contains(&id) {
-                let ack = self.make_ack_packet(&id);
-                if !ack.is_empty() {
-                    self.state.acked_peers.insert(id.clone());
-                    out.outgoings.extend(ack);
-                }
+                let greeting = self.introduce_to(&id);
+                out.outgoings.extend(greeting);
             }
         } else {
             out.outgoings
