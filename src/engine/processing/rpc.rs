@@ -328,6 +328,7 @@ impl Engine {
             engine, inv, out, ..
         } = ctx;
         for info in engine.collect_registry_infos(&inv.params) {
+            engine.state.upsert_registry_info(info.clone());
             out.events.push(Event::DeviceConnectRequested { info });
         }
     }

@@ -370,6 +370,96 @@ mod tests {
     }
 
     #[test]
+    fn a_game_can_introduce_itself_before_being_asked() {
+        let mut game = game_with(None);
+        let out = game
+            .emit(
+                Command::Introduce {
+                    target: "phone".to_string(),
+                },
+                None,
+            )
+            .expect("a known peer");
+        assert_eq!(out.outgoings.len(), 1, "the ack should have gone out");
+
+        // Having introduced itself, it must not ack again when pinged.
+        let ping = {
+            let mut phone = Engine::default();
+            phone.init_local_device(DeviceCore::new(
+                "phone".to_string(),
+                "Phone".to_string(),
+                DeviceType::Android,
+            ));
+            phone.push_registry_update(DeviceRecord::new(
+                DeviceCore::new("game".to_string(), "Game".to_string(), DeviceType::Unity),
+                None,
+            ));
+            phone.make_ping_packet("game").remove(0).message().to_vec()
+        };
+        let pinged = game.process_incoming(&ping, &Default::default());
+        assert!(
+            pinged.outgoings.is_empty(),
+            "the ping should not draw a second ack"
+        );
+    }
+
+    #[test]
+    fn a_connect_request_leaves_the_device_addressable() {
+        let mut game = game_with(None);
+        let request = {
+            let mut server = Engine::default();
+            server.init_local_device(DeviceCore::new(
+                "reg".to_string(),
+                "Registry".to_string(),
+                DeviceType::Server,
+            ));
+            server.push_registry_update(DeviceRecord::new(
+                DeviceCore::new("game".to_string(), "Game".to_string(), DeviceType::Unity),
+                None,
+            ));
+            let info = BMRegistryInfo {
+                slot_id: 0,
+                app_id: "app".to_string(),
+                current_players: None,
+                max_players: None,
+                device: DeviceCore::new(
+                    "tablet".to_string(),
+                    "Tablet".to_string(),
+                    DeviceType::Android,
+                ),
+                device_address: BMAddress::new("10.0.0.9".to_string(), 9080, 9081),
+            };
+            server
+                .make_message_invoke(
+                    "game",
+                    crate::engine::methods::DEVICE_CONNECT_REQUESTED,
+                    None,
+                    vec![crate::codec::messages::bm_encoding::Value::Object(
+                        crate::codec::object::Object::BMRegistryInfo(info),
+                    )],
+                )
+                .remove(0)
+                .message()
+                .to_vec()
+        };
+
+        game.process_incoming(&request, &Default::default());
+        let out = game
+            .emit(
+                Command::Introduce {
+                    target: "tablet".to_string(),
+                },
+                None,
+            )
+            .expect("the device was named to us");
+        assert_eq!(
+            out.outgoings.len(),
+            1,
+            "a device we were told about should be addressable"
+        );
+    }
+
+    #[test]
     fn a_chunk_size_of_nothing_is_refused() {
         let mut game = Engine::default();
         assert!(

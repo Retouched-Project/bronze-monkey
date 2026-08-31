@@ -283,6 +283,13 @@ impl Engine {
                 self.schemes.assign(&device, index);
                 Vec::new()
             }
+            Command::Introduce { target } => {
+                if target.is_empty() {
+                    return Err(EmitError::EmptyTarget);
+                }
+                self.state.acked_peers.insert(target.clone());
+                self.make_ack_packet(&target)
+            }
             Command::ControlSchemeParsed { target } => {
                 let device_id = self.local_device_id();
                 self.make_on_control_scheme_parsed(&target, &device_id)

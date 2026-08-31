@@ -497,6 +497,9 @@ pub enum Command {
         device: String,
         index: u32,
     },
+    Introduce {
+        target: String,
+    },
     ControlSchemeParsed {
         target: String,
     },
