@@ -180,6 +180,7 @@ impl BMEnginePy {
         Ok(pythonize(py, &out)?)
     }
 
+    #[pyo3(signature = (command, now_ms = None))]
     fn emit<'py>(
         &self,
         py: Python<'py>,
@@ -230,6 +231,7 @@ impl BMEnginePy {
 }
 
 #[pyfunction]
+#[pyo3(signature = (current = None, minimum = None))]
 fn handshake<'py>(
     py: Python<'py>,
     current: Option<(u8, u8, u16)>,
