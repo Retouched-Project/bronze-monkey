@@ -198,6 +198,7 @@ pub enum Event {
         width: i32,
         height: i32,
         requester: String,
+        answered: bool,
     },
     ControlSchemeParsed {
         sender: String,
@@ -302,6 +303,7 @@ pub enum EmitError {
     UnknownDevice { device_id: String },
     NotRegistered,
     Encode(String),
+    BadScheme(String),
 }
 
 impl std::fmt::Display for EmitError {
@@ -315,6 +317,7 @@ impl std::fmt::Display for EmitError {
                 write!(f, "nothing registered to introduce ourselves with")
             }
             EmitError::Encode(e) => write!(f, "the object would not encode: {e}"),
+            EmitError::BadScheme(e) => write!(f, "the control scheme would not parse: {e}"),
         }
     }
 }
@@ -484,6 +487,15 @@ pub enum Command {
         target: String,
         #[serde(with = "serde_bytes")]
         xml: Vec<u8>,
+    },
+    LoadScheme {
+        index: u32,
+        #[serde(with = "serde_bytes")]
+        xml: Vec<u8>,
+    },
+    AssignScheme {
+        device: String,
+        index: u32,
     },
     ControlSchemeParsed {
         target: String,

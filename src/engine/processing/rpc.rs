@@ -415,11 +415,27 @@ impl Engine {
         let height = ctx.param_i32(0).unwrap_or(0);
         let width = ctx.param_i32(1).unwrap_or(0);
         let requester = ctx.param_str(2);
+        let sender = ctx.sender();
+
+        let served = ctx
+            .engine
+            .schemes
+            .for_device(&requester)
+            .map(|(_, stored)| stored.full_xml());
+        let answered = served.is_some();
+        if let Some(xml) = served {
+            let chunks =
+                ctx.engine
+                    .make_byte_chunks(&sender, crate::controls::CONTROL_SCHEME_SET_ID, &xml);
+            ctx.out.outgoings.extend(chunks);
+        }
+
         ctx.push_event(Event::ControlSchemeRequested {
-            sender: ctx.sender(),
+            sender,
             width,
             height,
             requester,
+            answered,
         });
     }
 

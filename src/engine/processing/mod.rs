@@ -7,6 +7,7 @@ mod commands;
 mod incoming;
 mod pacing;
 mod rpc;
+mod schemes;
 mod server_ops;
 mod time;
 
@@ -67,6 +68,7 @@ pub struct Engine {
     pub(crate) ping_at: HashMap<String, u64>,
     pub(crate) sensor_pacing: pacing::SensorPacing,
     pub(crate) touch: batching::TouchBatch,
+    pub(crate) schemes: schemes::SchemeLibrary,
     bound_continuations: HashMap<String, RpcHandler>,
     pub server_policy: ServerPolicy,
     pub game_policy: GamePolicy,
@@ -85,6 +87,7 @@ impl Engine {
             ping_at: HashMap::new(),
             sensor_pacing: pacing::SensorPacing::default(),
             touch: batching::TouchBatch::default(),
+            schemes: schemes::SchemeLibrary::default(),
             bound_continuations: HashMap::new(),
             server_policy: ServerPolicy::new(),
             game_policy: GamePolicy::new(),

@@ -266,6 +266,23 @@ impl Engine {
                 self.make_request_xml(&target, width, height, &requester)
             }
             Command::SendControlScheme { target, xml } => self.send_control_scheme(&target, &xml),
+            Command::LoadScheme { index, xml } => {
+                if let Err(e) = self.schemes.load(index, &xml) {
+                    return Err(EmitError::BadScheme(e));
+                }
+                // Every handler the scheme names becomes dispatchable, so a
+                // button cannot arrive as silence for want of a registration.
+                let handlers = self.schemes.button_handlers();
+                self.register_button_handlers(handlers);
+                Vec::new()
+            }
+            Command::AssignScheme { device, index } => {
+                if device.is_empty() {
+                    return Err(EmitError::EmptyTarget);
+                }
+                self.schemes.assign(&device, index);
+                Vec::new()
+            }
             Command::ControlSchemeParsed { target } => {
                 let device_id = self.local_device_id();
                 self.make_on_control_scheme_parsed(&target, &device_id)

@@ -109,6 +109,7 @@ impl Engine {
         self.state.acked_peers.remove(device_id);
         self.input_paths.remove(device_id);
         self.ping_at.remove(device_id);
+        self.schemes.forget_device(device_id);
 
         let Some(rec) = self.state.registry.remove(device_id) else {
             return out;
