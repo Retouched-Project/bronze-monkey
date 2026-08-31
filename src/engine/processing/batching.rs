@@ -226,7 +226,7 @@ mod tests {
     use crate::config::EngineConfig;
     use crate::devices::device_core::DeviceCore;
     use crate::engine::device_registry::DeviceRecord;
-    use crate::engine::events::{Command, ProcessOutput};
+    use crate::engine::events::{Command, ProcessOutput, Sensor};
     use crate::policy::EndpointMode;
     use crate::types::device_type::DeviceType;
 
@@ -696,6 +696,44 @@ mod tests {
                 );
             }
             other => panic!("expected a touch batch, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_sensor_can_be_retimed_without_being_re_enabled() {
+        #[derive(serde::Serialize)]
+        struct Configure {
+            #[serde(rename = "type")]
+            kind: &'static str,
+            target: &'static str,
+            sensor: &'static str,
+            enabled: Option<bool>,
+            interval_ms: Option<i32>,
+        }
+
+        let bytes = rmp_serde::to_vec_named(&Configure {
+            kind: "ConfigureSensor",
+            target: "phone",
+            sensor: "Touch",
+            enabled: None,
+            interval_ms: Some(32),
+        })
+        .unwrap();
+
+        let cmd: Command = rmp_serde::from_slice(&bytes).expect("reads as a command");
+        match cmd {
+            Command::ConfigureSensor {
+                target,
+                sensor,
+                enabled,
+                interval_ms,
+            } => {
+                assert_eq!(target, "phone");
+                assert_eq!(sensor, Sensor::Touch);
+                assert_eq!(enabled, None, "leaving touch alone must not switch it off");
+                assert_eq!(interval_ms, Some(32));
+            }
+            other => panic!("expected a sensor setting, got {other:?}"),
         }
     }
 
