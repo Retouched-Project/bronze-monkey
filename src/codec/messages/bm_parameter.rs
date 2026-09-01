@@ -31,7 +31,20 @@ impl BMParameter {
     }
 
     pub fn write_to(&self, out: &mut BMStream<Vec<u8>>) -> Result<()> {
-        BMEncoding::encode(&self.value, out)
+        match Self::narrowed(&self.value) {
+            Some(narrow) => BMEncoding::encode(&narrow, out),
+            None => BMEncoding::encode(&self.value, out),
+        }
+    }
+
+    fn narrowed(value: &Value) -> Option<Value> {
+        Some(match *value {
+            Value::I16(v) => Value::I32(v as i32),
+            Value::U16(v) => Value::I32(v as i32),
+            Value::U32(v) => Value::I32(v as i32),
+            Value::F64(v) => Value::F32(v as f32),
+            _ => return None,
+        })
     }
 }
 
@@ -54,8 +67,22 @@ mod tests {
     fn scalar_value_round_trips() {
         assert!(matches!(round_trip(Value::I32(-9)), Value::I32(-9)));
         assert!(matches!(round_trip(Value::Bool(true)), Value::Bool(true)));
-        assert!(matches!(round_trip(Value::F64(2.5)), Value::F64(v) if v == 2.5));
+        assert!(matches!(round_trip(Value::F32(2.5)), Value::F32(v) if v == 2.5));
         assert!(matches!(round_trip(Value::String("x".into())), Value::String(s) if s == "x"));
+    }
+
+    #[test]
+    fn a_value_too_wide_to_dispatch_is_narrowed_to_one_that_is_not() {
+        assert!(matches!(round_trip(Value::F64(0.032)), Value::F32(v) if v == 0.032_f32));
+        assert!(matches!(round_trip(Value::U32(3)), Value::I32(3)));
+        assert!(matches!(round_trip(Value::U16(65535)), Value::I32(65535)));
+        assert!(matches!(round_trip(Value::I16(-7)), Value::I32(-7)));
+    }
+
+    #[test]
+    fn narrowing_an_integer_keeps_every_bit() {
+        assert!(matches!(round_trip(Value::U32(u32::MAX)), Value::I32(-1)));
+        assert!(matches!(round_trip(Value::U32(i32::MAX as u32)), Value::I32(v) if v == i32::MAX));
     }
 
     #[test]

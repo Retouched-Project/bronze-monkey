@@ -361,7 +361,7 @@ impl Engine {
     ) -> Vec<Outgoing> {
         let mut params = vec![Value::Bool(enabled)];
         if let Some(interval) = interval_seconds {
-            params.push(Value::F64(interval));
+            params.push(Value::F32(interval as f32));
         }
         self.make_message_invoke(target, methods::ENABLE_ACCELEROMETER, None, params)
     }
@@ -384,7 +384,7 @@ impl Engine {
             target,
             methods::SET_TOUCH_INTERVAL,
             None,
-            vec![Value::F64(interval_seconds)],
+            vec![Value::F32(interval_seconds as f32)],
         )
     }
 
@@ -402,7 +402,7 @@ impl Engine {
             target,
             methods::SET_GYRO_INTERVAL,
             None,
-            vec![Value::F64(interval_seconds)],
+            vec![Value::F32(interval_seconds as f32)],
         )
     }
 
@@ -424,7 +424,7 @@ impl Engine {
             target,
             methods::SET_ORIENTATION_INTERVAL,
             None,
-            vec![Value::F64(interval_seconds)],
+            vec![Value::F32(interval_seconds as f32)],
         )
     }
 
@@ -450,7 +450,7 @@ impl Engine {
             target,
             methods::SET_CAPABILITIES,
             None,
-            vec![Value::U32(capabilities as u32)],
+            vec![Value::I32(capabilities as i32)],
         )
     }
 
@@ -812,6 +812,7 @@ impl Engine {
 
 #[cfg(test)]
 mod session_tests {
+    use crate::codec::messages::bm_encoding::Value;
     use crate::config::EngineConfig;
     use crate::devices::device_core::DeviceCore;
     use crate::engine::device_registry::DeviceRecord;
@@ -820,6 +821,7 @@ mod session_tests {
     use crate::engine::processing::Engine;
     use crate::engine::protocol::deserialize_message;
     use crate::policy::EndpointMode;
+    use crate::types::control_mode::ControlMode;
     use crate::types::device_type::DeviceType;
 
     fn controller_with_game(game: &str) -> Engine {
@@ -865,6 +867,110 @@ mod session_tests {
             None,
         ));
         eng
+    }
+
+    #[test]
+    fn every_interval_goes_out_as_a_float() {
+        let mut eng = game_with_controller(false);
+        let sent = [
+            eng.make_set_touch_interval("phone", 0.032),
+            eng.make_set_gyro_interval("phone", 0.1),
+            eng.make_set_orientation_interval("phone", 0.1),
+            eng.make_enable_accelerometer("phone", true, Some(0.1)),
+        ];
+        for outgoings in sent {
+            let invoke = invoke_of(&outgoings[0]);
+            assert!(
+                invoke.contains("F32("),
+                "an interval must cross as a float, got {invoke}"
+            );
+        }
+    }
+
+    fn param_tags(outgoing: &crate::engine::events::Outgoing) -> String {
+        let mut pkt = crate::codec::externals::bm_packet::BMPacket::default();
+        deserialize_message(outgoing.message(), &mut pkt).expect("an outgoing holds a message");
+        let msg = pkt.message.expect("and the message holds an object");
+        let mut cur = crate::codec::bm_stream::BMStream::view(msg.as_slice());
+        let invoke = match crate::codec::object::Object::decode(&mut cur).expect("which decodes") {
+            crate::codec::object::Object::BMInvoke(inv) => inv,
+            other => panic!("expected an invoke, got {other:?}"),
+        };
+        let tags: Vec<&str> = invoke
+            .params
+            .iter()
+            .map(|p| match p {
+                Value::String(_) => "String",
+                Value::Bool(_) => "Bool",
+                Value::I16(_) => "I16",
+                Value::U16(_) => "U16",
+                Value::I32(_) => "I32",
+                Value::U32(_) => "U32",
+                Value::F32(_) => "F32",
+                Value::F64(_) => "F64",
+                Value::Object(_) => "Object",
+            })
+            .collect();
+        format!("{}({})", invoke.method, tags.join(", "))
+    }
+
+    #[test]
+    fn every_numeric_rpc_sends_the_types_its_handler_declares() {
+        let mut eng = game_with_controller(false);
+        let sent = [
+            // enableAccelerometer(boolean) and (boolean, float)
+            eng.make_enable_accelerometer("phone", true, None),
+            eng.make_enable_accelerometer("phone", true, Some(0.1)),
+            // enableTouch(boolean), setTouchInterval(float)
+            eng.make_enable_touch("phone", true),
+            eng.make_set_touch_interval("phone", 0.032),
+            // enableGyro(boolean), setGyroInterval(float)
+            eng.make_enable_gyro("phone", true),
+            eng.make_set_gyro_interval("phone", 0.1),
+            // enableOrientation(boolean), setOrientationInterval(float)
+            eng.make_enable_orientation("phone", true),
+            eng.make_set_orientation_interval("phone", 0.1),
+            // setReliabilityForTouch(int, int)
+            eng.make_set_reliability_for_touch("phone", 1, 1),
+            // setCapabilities, read as a uint by a game
+            eng.make_set_capabilities("phone", 3),
+            // SetControlMode(int) and (int, String)
+            eng.make_set_control_mode("phone", ControlMode::Gamepad, None),
+            eng.make_set_control_mode("phone", ControlMode::Wait, Some("hold on")),
+            // RequestXML(int, int, string)
+            eng.make_request_xml("phone", 320, 480, "me"),
+        ];
+
+        let on_the_wire: Vec<String> = sent.iter().map(|o| param_tags(&o[0])).collect();
+        assert_eq!(
+            on_the_wire,
+            [
+                "enableAccelerometer(Bool)",
+                "enableAccelerometer(Bool, F32)",
+                "enableTouch(Bool)",
+                "setTouchInterval(F32)",
+                "enableGyro(Bool)",
+                "setGyroInterval(F32)",
+                "enableOrientation(Bool)",
+                "setOrientationInterval(F32)",
+                "setReliabilityForTouch(I32, I32)",
+                "setCapabilities(I32)",
+                "SetControlMode(I32)",
+                "SetControlMode(I32, String)",
+                "RequestXML(I32, I32, String)",
+            ]
+        );
+    }
+
+    #[test]
+    fn a_capabilities_mask_goes_out_as_a_plain_int() {
+        let mut eng = game_with_controller(false);
+        let invoke = invoke_of(&eng.make_set_capabilities("phone", 3)[0]);
+        assert_eq!(
+            invoke,
+            format!("{} [I32(3)]", methods::SET_CAPABILITIES),
+            "a mask must cross as an int"
+        );
     }
 
     #[test]

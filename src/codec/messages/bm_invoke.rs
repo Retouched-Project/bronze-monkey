@@ -102,7 +102,7 @@ mod tests {
         assert!(matches!(decoded.params[0], Value::I32(-3)));
         assert!(matches!(&decoded.params[1], Value::String(s) if s == "hi"));
         assert!(matches!(decoded.params[2], Value::Bool(true)));
-        assert!(matches!(decoded.params[3], Value::F64(v) if v == 1.25));
+        assert!(matches!(decoded.params[3], Value::F32(v) if v == 1.25));
     }
 
     #[test]

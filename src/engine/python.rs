@@ -791,10 +791,15 @@ fn py_to_value(obj: &Bound<'_, PyAny>) -> PyResult<Value> {
     }
     if let Ok(i) = obj.cast::<PyInt>() {
         let val: i64 = i.extract()?;
-        if val >= i32::MIN as i64 && val <= i32::MAX as i64 {
-            return Ok(Value::I32(val as i32));
+        if let Ok(signed) = i32::try_from(val) {
+            return Ok(Value::I32(signed));
         }
-        return Ok(Value::F64(val as f64));
+        if let Ok(unsigned) = u32::try_from(val) {
+            return Ok(Value::U32(unsigned));
+        }
+        return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+            "{val} does not fit in the 32 bits a parameter carries"
+        )));
     }
     if let Ok(f) = obj.cast::<PyFloat>() {
         return Ok(Value::F64(f.extract()?));
