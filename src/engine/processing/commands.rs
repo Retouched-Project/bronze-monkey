@@ -15,10 +15,10 @@ use crate::types::packet_type::PacketType;
 impl Engine {
     /// Turns a command into what goes on the wire.
     ///
-    /// An error means the call itself was wrong, and never that the session
-    /// cannot use it right now: a send to a peer that has since left comes
-    /// back as no outgoings at all, since a race between input and a
-    /// departure is ordinary protocol life.
+    /// A command naming a peer the engine does not have is refused. A
+    /// departure takes the peer with it, so this covers a send that arrived
+    /// after one as well as a name that was never right, and does not try to
+    /// tell them apart.
     ///
     /// The answer is shaped like any other, because a command can start
     /// something the clock has to finish: whatever it schedules is named here
@@ -31,18 +31,24 @@ impl Engine {
         let mut out = ProcessOutput::new();
         let now = now_ms.map(|now_ms| self.set_clock(now_ms));
 
+        if let Some(target) = Self::target_of(&cmd) {
+            if target.is_empty() {
+                return Err(EmitError::EmptyTarget);
+            }
+            if self.state.registry.get(target).is_none() {
+                return Err(EmitError::UnknownDevice {
+                    device_id: target.to_string(),
+                });
+            }
+        }
+
         let outgoings = match cmd {
             Command::Raw {
                 target,
                 channel,
                 reliability,
                 payload,
-            } => {
-                if target.is_empty() {
-                    return Err(EmitError::EmptyTarget);
-                }
-                vec![self.dispatch(target, channel, reliability, payload)]
-            }
+            } => vec![self.dispatch(target, channel, reliability, payload)],
             Command::SendObject {
                 target,
                 object,
@@ -293,12 +299,7 @@ impl Engine {
                 self.schemes.assign(&device, index);
                 Vec::new()
             }
-            Command::Introduce { target } => {
-                if target.is_empty() {
-                    return Err(EmitError::EmptyTarget);
-                }
-                self.introduce_to(&target)
-            }
+            Command::Introduce { target } => self.introduce_to(&target),
             Command::ControlSchemeParsed { target } => {
                 let device_id = self.local_device_id();
                 self.make_on_control_scheme_parsed(&target, &device_id)
@@ -332,6 +333,62 @@ impl Engine {
         }
         out.next_time_ms = self.next_deadline();
         Ok(out)
+    }
+
+    /// Who a command is addressed to, for the commands addressed to anyone.
+    ///
+    /// Exhaustive by design. A command added without a line here does not
+    /// compile.
+    fn target_of(cmd: &Command) -> Option<&str> {
+        match cmd {
+            Command::ConfigureSensor { target, .. }
+            | Command::ConnectToHost { target, .. }
+            | Command::ControlSchemeParsed { target, .. }
+            | Command::Introduce { target, .. }
+            | Command::Invoke { target, .. }
+            | Command::Pause { target, .. }
+            | Command::Ping { target, .. }
+            | Command::PromptTrialUpsell { target, .. }
+            | Command::Raw { target, .. }
+            | Command::Register { target, .. }
+            | Command::Relay { target, .. }
+            | Command::ReportConnectionFailed { target, .. }
+            | Command::RequestControlScheme { target, .. }
+            | Command::RequestCookie { target, .. }
+            | Command::RequestHostList { target, .. }
+            | Command::SendAccel { target, .. }
+            | Command::SendButton { target, .. }
+            | Command::SendControlScheme { target, .. }
+            | Command::SendCookie { target, .. }
+            | Command::SendDPad { target, .. }
+            | Command::SendGyro { target, .. }
+            | Command::SendKeyString { target, .. }
+            | Command::SendMenuEvent { target, .. }
+            | Command::SendNavigation { target, .. }
+            | Command::SendObject { target, .. }
+            | Command::SendOrientation { target, .. }
+            | Command::SendTouch { target, .. }
+            | Command::SetCapabilities { target, .. }
+            | Command::SetControlMode { target, .. }
+            | Command::SetHostVisible { target, .. }
+            | Command::SetReliability { target, .. }
+            | Command::StoreCookie { target, .. }
+            | Command::TouchEvent { target, .. }
+            | Command::Unregister { target, .. }
+            | Command::UpdateHostInfo { target, .. }
+            | Command::UpdateWallet { target, .. }
+            | Command::Vibrate { target, .. }
+            | Command::WaitForNewHost { target, .. } => Some(target),
+
+            // Nothing leaves for a named peer, so there is nobody to be wrong
+            // about.
+            Command::ApproveRegistration { .. }
+            | Command::AssignScheme { .. }
+            | Command::DeclareTouch { .. }
+            | Command::DenyRegistration { .. }
+            | Command::LoadScheme { .. }
+            | Command::PeerGone { .. } => None,
+        }
     }
 
     fn configure_sensor(
@@ -605,8 +662,15 @@ mod tests {
         let mut eng = engine_with_peer("game1");
         let listed = registry_info("game1", DeviceType::Unity);
         eng.state.upsert_registry_info(listed);
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new(
+                "server".to_string(),
+                "Registry".to_string(),
+                DeviceType::Server,
+            ),
+            None,
+        ));
 
-        // Nothing registered yet, so there is no way to say who we are.
         let refused = eng.emit(
             Command::ConnectToHost {
                 target: "server".to_string(),
@@ -620,14 +684,6 @@ mod tests {
             "it cannot invent a registration, and says so"
         );
 
-        eng.push_registry_update(DeviceRecord::new(
-            DeviceCore::new(
-                "server".to_string(),
-                "Registry".to_string(),
-                DeviceType::Server,
-            ),
-            None,
-        ));
         eng.emit(
             Command::Register {
                 target: "server".to_string(),
@@ -681,10 +737,12 @@ mod tests {
         );
     }
 
-    /// A send racing a departure is not a mistake: the wire would have
-    /// dropped it, so it comes back as nothing to send rather than an error.
+    /// A departure takes the peer with it, so a send that arrives after one is
+    /// addressed to nobody and is told so. A caller that was racing a
+    /// disconnect can ignore this; a caller with a stale device id cannot
+    /// afford to.
     #[test]
-    fn a_send_to_a_departed_peer_is_dropped_not_refused() {
+    fn a_send_to_a_departed_peer_is_refused() {
         let mut eng = engine_with_peer("game1");
         eng.peer_gone("game1");
         let out = eng.emit(
@@ -696,7 +754,48 @@ mod tests {
             },
             None,
         );
-        assert!(out.unwrap().outgoings.is_empty());
+        assert_eq!(
+            out.unwrap_err(),
+            EmitError::UnknownDevice {
+                device_id: "game1".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn a_send_to_a_peer_that_was_never_here_is_refused() {
+        let mut eng = engine_with_peer("game1");
+        let out = eng.emit(
+            Command::Introduce {
+                target: "stranger".to_string(),
+            },
+            None,
+        );
+        assert_eq!(
+            out.unwrap_err(),
+            EmitError::UnknownDevice {
+                device_id: "stranger".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn a_peer_that_comes_back_is_addressable_again() {
+        let mut eng = engine_with_peer("game1");
+        eng.peer_gone("game1");
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new("game1".to_string(), "Game".to_string(), DeviceType::Unity),
+            None,
+        ));
+        let out = eng
+            .emit(
+                Command::Vibrate {
+                    target: "game1".to_string(),
+                },
+                None,
+            )
+            .expect("it is here again");
+        assert!(!out.outgoings.is_empty());
     }
 
     #[test]
