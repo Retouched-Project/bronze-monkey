@@ -179,6 +179,16 @@ mod tests {
         assert_eq!(lib.button_handlers(), vec!["jump"]);
     }
 
+    fn phone_core() -> DeviceCore {
+        let mut core = DeviceCore::new(
+            "phone".to_string(),
+            "Phone".to_string(),
+            DeviceType::Android,
+        );
+        core.address = Some(BMAddress::new("10.0.0.2".to_string(), 9080, 9081));
+        core
+    }
+
     fn game_with(scheme: Option<&[u8]>) -> Engine {
         let mut game = Engine::default();
         game.init_local_device(DeviceCore::new(
@@ -374,13 +384,27 @@ mod tests {
         let mut game = game_with(None);
         let out = game
             .emit(
-                Command::Introduce {
-                    target: "phone".to_string(),
+                Command::PeerReachable {
+                    device: phone_core(),
                 },
                 None,
             )
-            .expect("a known peer");
+            .expect("a peer we just named");
         assert!(!out.outgoings.is_empty(), "the ack should have gone out");
+
+        // And saying it again must not repeat the introduction.
+        let again = game
+            .emit(
+                Command::PeerReachable {
+                    device: phone_core(),
+                },
+                None,
+            )
+            .expect("saying it twice is not an error");
+        assert!(
+            again.outgoings.is_empty(),
+            "a second report should not draw a second ack"
+        );
 
         // Having introduced itself, it must not ack again when pinged.
         let ping = {
@@ -446,16 +470,13 @@ mod tests {
         game.process_incoming(&request, &Default::default());
         let out = game
             .emit(
-                Command::Introduce {
+                Command::Vibrate {
                     target: "tablet".to_string(),
                 },
                 None,
             )
-            .expect("the device was named to us");
-        assert!(
-            !out.outgoings.is_empty(),
-            "a device we were told about should be addressable"
-        );
+            .expect("a device we were told about should be addressable");
+        assert!(!out.outgoings.is_empty());
     }
 
     #[test]

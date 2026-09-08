@@ -299,7 +299,7 @@ impl Engine {
                 self.schemes.assign(&device, index);
                 Vec::new()
             }
-            Command::Introduce { target } => self.introduce_to(&target),
+            Command::PeerReachable { device } => self.peer_reachable(device),
             Command::ControlSchemeParsed { target } => {
                 let device_id = self.local_device_id();
                 self.make_on_control_scheme_parsed(&target, &device_id)
@@ -344,7 +344,6 @@ impl Engine {
             Command::ConfigureSensor { target, .. }
             | Command::ConnectToHost { target, .. }
             | Command::ControlSchemeParsed { target, .. }
-            | Command::Introduce { target, .. }
             | Command::Invoke { target, .. }
             | Command::Pause { target, .. }
             | Command::Ping { target, .. }
@@ -381,13 +380,15 @@ impl Engine {
             | Command::WaitForNewHost { target, .. } => Some(target),
 
             // Nothing leaves for a named peer, so there is nobody to be wrong
-            // about.
+            // about. `PeerReachable` names one but is how the engine hears of
+            // it, so it cannot be asked to know it already.
             Command::ApproveRegistration { .. }
             | Command::AssignScheme { .. }
             | Command::DeclareTouch { .. }
             | Command::DenyRegistration { .. }
             | Command::LoadScheme { .. }
-            | Command::PeerGone { .. } => None,
+            | Command::PeerGone { .. }
+            | Command::PeerReachable { .. } => None,
         }
     }
 
@@ -766,7 +767,7 @@ mod tests {
     fn a_send_to_a_peer_that_was_never_here_is_refused() {
         let mut eng = engine_with_peer("game1");
         let out = eng.emit(
-            Command::Introduce {
+            Command::Vibrate {
                 target: "stranger".to_string(),
             },
             None,
@@ -777,6 +778,52 @@ mod tests {
                 device_id: "stranger".to_string()
             }
         );
+    }
+
+    /// A controller is named to a game twice, once by the registry and once by
+    /// the consumer that dialled it. The second naming must not cost the first
+    /// one's registration, or reporting the dial fails would find nothing.
+    #[test]
+    fn reporting_a_peer_again_keeps_what_was_registered_about_it() {
+        let mut eng = engine_with_peer("server");
+        let listed = registry_info("phone", DeviceType::Android);
+        eng.state.upsert_registry_info(listed);
+
+        eng.emit(
+            Command::PeerReachable {
+                device: DeviceCore::new(
+                    "phone".to_string(),
+                    "Phone".to_string(),
+                    DeviceType::Android,
+                ),
+            },
+            None,
+        )
+        .expect("a peer we already had a listing for");
+
+        assert!(
+            eng.registry_info_of("phone").is_some(),
+            "the listing has to survive being named again"
+        );
+    }
+
+    /// Naming a peer is how the engine hears of it, so this is the one command
+    /// that cannot be asked to name one it already knows.
+    #[test]
+    fn reporting_a_peer_is_not_held_to_knowing_it_already() {
+        let mut eng = engine_with_peer("game1");
+        eng.emit(
+            Command::PeerReachable {
+                device: DeviceCore::new(
+                    "newcomer".to_string(),
+                    "Newcomer".to_string(),
+                    DeviceType::Android,
+                ),
+            },
+            None,
+        )
+        .expect("a peer the engine has never heard of is the whole point");
+        assert!(eng.registry().get("newcomer").is_some());
     }
 
     #[test]

@@ -6,7 +6,6 @@ use crate::controls::assembler::SchemeAssembler;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
-use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::{Arrival, Command};
 use crate::types::device_type::DeviceType;
 use console_error_panic_hook;
@@ -136,27 +135,6 @@ impl BmEngineWasm {
             reliable_port,
         });
         self.inner.init_local_device(core);
-        Ok(())
-    }
-
-    pub fn declare_peer(
-        &mut self,
-        id: &str,
-        name: &str,
-        type_code: i32,
-        address: &str,
-        unreliable_port: i32,
-        reliable_port: i32,
-    ) -> Result<(), JsError> {
-        let dt = DeviceType::for_value(type_code).map_err(|e| JsError::new(&e.to_string()))?;
-        let mut core = DeviceCore::new(id.to_string(), name.to_string(), dt);
-        core.address = Some(BMAddress {
-            address: address.to_string(),
-            unreliable_port,
-            reliable_port,
-        });
-        let record = DeviceRecord::new(core, None);
-        self.inner.push_registry_update(record);
         Ok(())
     }
 

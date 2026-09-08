@@ -20,6 +20,7 @@ use crate::codec::messages::touch::Touch;
 use crate::codec::messages::touch_set::TouchSet;
 use crate::codec::object::Object;
 use crate::devices::device_core::DeviceCore;
+use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::{Outgoing, Via};
 use crate::engine::methods;
 use crate::engine::protocol::serialize_message;
@@ -589,14 +590,24 @@ impl Engine {
         )
     }
 
-    /// Everything a game owes a controller the moment it can address it.
-    ///
-    /// The ack goes first, since it is the only thing that tells a controller
-    /// where to send anything at all. A game with no unreliable path then asks
-    /// for its input reliably: touch and sensors default to unreliable, and
-    /// unreliable means by datagram, so a game that cannot read one receives
-    /// none of it and sees no error anywhere.
+    pub(crate) fn peer_reachable(&mut self, device: DeviceCore) -> Vec<Outgoing> {
+        let is_controller = device.device_type.is_controller();
+        let id = device.device_id.clone();
+        // Merged rather than replaced, since a peer named twice must not lose
+        // the registration or the address it was learned with the first time.
+        self.push_registry_update(DeviceRecord::new(device, None));
+
+        if self.roles.game() && is_controller {
+            self.introduce_to(&id)
+        } else {
+            Vec::new()
+        }
+    }
+
     pub(crate) fn introduce_to(&mut self, target: &str) -> Vec<Outgoing> {
+        if self.state.acked_peers.contains(target) {
+            return Vec::new();
+        }
         let mut out = self.make_ack_packet(target);
         if out.is_empty() {
             return out;
@@ -971,6 +982,36 @@ mod session_tests {
             format!("{} [I32(3)]", methods::SET_CAPABILITIES),
             "a mask must cross as an int"
         );
+    }
+
+    /// Only a game meeting a controller owes anything. A registry speaks first
+    /// itself, so a game that greeted one would be talking over it.
+    #[test]
+    fn reaching_a_peer_that_is_not_a_controller_says_nothing() {
+        let mut eng = game_with_controller(false);
+        let out = eng.peer_reachable(DeviceCore::new(
+            "reg".to_string(),
+            "Registry".to_string(),
+            DeviceType::Server,
+        ));
+        assert!(out.is_empty(), "a registry is spoken to, not greeted");
+        assert!(
+            eng.state.registry.get("reg").is_some(),
+            "but it still has to be addressable"
+        );
+    }
+
+    /// A controller never speaks first, whoever it just reached.
+    #[test]
+    fn a_controller_reaching_a_peer_says_nothing() {
+        let mut eng = controller_with_game("game1");
+        let out = eng.peer_reachable(DeviceCore::new(
+            "game2".to_string(),
+            "Game".to_string(),
+            DeviceType::Unity,
+        ));
+        assert!(out.is_empty());
+        assert!(eng.state.registry.get("game2").is_some());
     }
 
     #[test]

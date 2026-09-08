@@ -7,7 +7,6 @@ use crate::config::EngineConfig;
 use crate::controls::assembler::{SchemeAssembler, SchemeOffer};
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::device_core::DeviceCore;
-use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::{Arrival, Command};
 use crate::engine::processing::Engine;
 use crate::link::crossdomain::Sniffer;
@@ -150,25 +149,6 @@ pub unsafe extern "C" fn bm_engine_init_local_device(
             Err(_) => return false,
         };
         engine.init_local_device(core);
-        true
-    })
-}
-
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn bm_engine_declare_peer(
-    ptr_engine: *mut Engine,
-    mp_ptr: *const u8,
-    mp_len: usize,
-) -> bool {
-    catch_bool(|| {
-        let Some(engine) = engine_mut(ptr_engine) else {
-            return false;
-        };
-        let core: DeviceCore = match rmp_serde::from_slice(in_slice(mp_ptr, mp_len)) {
-            Ok(c) => c,
-            Err(_) => return false,
-        };
-        engine.registry_mut().upsert(DeviceRecord::new(core, None));
         true
     })
 }

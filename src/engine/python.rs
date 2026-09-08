@@ -19,7 +19,7 @@ use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
-use crate::engine::events::{Arrival, Command, Outgoing};
+use crate::engine::events::{Arrival, Command};
 use crate::engine::processing::Engine;
 use crate::engine::protocol::{
     deserialize_packet as protocol_deserialize_packet, serialize_packet,
@@ -130,11 +130,6 @@ impl BMEnginePy {
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))
     }
 
-    fn peer_gone<'py>(&self, py: Python<'py>, device_id: String) -> PyResult<Bound<'py, PyList>> {
-        let actions = self.inner.write().unwrap().peer_gone(&device_id);
-        outgoings_to_py(py, actions)
-    }
-
     /// Everyone waiting to be let in, for a caller that lists them rather than
     /// answering the moment they arrive.
     fn pending_registrations<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
@@ -206,27 +201,6 @@ impl BMEnginePy {
 
     fn clear_button_handlers(&self) {
         self.inner.write().unwrap().clear_button_handlers();
-    }
-
-    fn declare_peer(
-        &self,
-        device_id: String,
-        device_name: String,
-        device_type: i32,
-        address: String,
-        unreliable_port: i32,
-        reliable_port: i32,
-    ) -> PyResult<()> {
-        let dt = device_type_from_code(device_type)?;
-        let mut eng = self.inner.write().unwrap();
-        let mut core = DeviceCore::new(device_id, device_name, dt);
-        core.address = Some(BMAddress {
-            address,
-            unreliable_port,
-            reliable_port,
-        });
-        eng.registry_mut().upsert(DeviceRecord::new(core, None));
-        Ok(())
     }
 }
 
@@ -616,14 +590,6 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("PACKET_TYPE_KEEP_ALIVE", PacketType::KeepAlive.code())?;
     m.add("__actions__", PyList::empty(py))?;
     Ok(())
-}
-
-fn outgoings_to_py<'py>(py: Python<'py>, outgoings: Vec<Outgoing>) -> PyResult<Bound<'py, PyList>> {
-    let items = outgoings
-        .iter()
-        .map(|o| pythonize(py, o).map_err(PyErr::from))
-        .collect::<PyResult<Vec<_>>>()?;
-    Ok(PyList::new(py, items)?)
 }
 
 fn value_to_py(py: Python<'_>, v: &Value) -> PyResult<Py<PyAny>> {

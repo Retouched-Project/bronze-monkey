@@ -85,10 +85,8 @@ impl Engine {
         };
 
         if self.roles.game() {
-            if !self.state.acked_peers.contains(&id) {
-                let greeting = self.introduce_to(&id);
-                out.outgoings.extend(greeting);
-            }
+            let greeting = self.introduce_to(&id);
+            out.outgoings.extend(greeting);
         } else {
             out.outgoings
                 .extend(self.make_echo(&id, pkt, arrival.datagram));

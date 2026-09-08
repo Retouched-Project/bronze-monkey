@@ -5,6 +5,7 @@ use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::touch::Touch;
 use crate::codec::object::Object;
+use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
 use crate::types::control_mode::ControlMode;
 use serde::{Deserialize, Serialize};
@@ -497,8 +498,8 @@ pub enum Command {
         device: String,
         index: u32,
     },
-    Introduce {
-        target: String,
+    PeerReachable {
+        device: DeviceCore,
     },
     ControlSchemeParsed {
         target: String,
