@@ -281,7 +281,12 @@ impl Engine {
                 let requester = self.local_device_id();
                 self.make_request_xml(&target, width, height, &requester)
             }
-            Command::SendControlScheme { target, xml } => self.send_control_scheme(&target, &xml),
+            Command::SendControlScheme { target, xml } => {
+                self.send_scheme_document(&target, crate::controls::CONTROL_SCHEME_SET_ID, &xml)
+            }
+            Command::UpdateScheme { target, xml } => {
+                self.send_scheme_document(&target, crate::controls::UPDATE_SCHEME_SET_ID, &xml)
+            }
             Command::LoadScheme { index, xml } => {
                 if let Err(e) = self.schemes.load(index, &xml) {
                     return Err(EmitError::BadScheme(e));
@@ -358,6 +363,7 @@ impl Engine {
             | Command::SendAccel { target, .. }
             | Command::SendButton { target, .. }
             | Command::SendControlScheme { target, .. }
+            | Command::UpdateScheme { target, .. }
             | Command::SendCookie { target, .. }
             | Command::SendDPad { target, .. }
             | Command::SendGyro { target, .. }
@@ -439,7 +445,7 @@ impl Engine {
         out
     }
 
-    fn send_control_scheme(&mut self, target: &str, xml: &[u8]) -> Vec<Outgoing> {
+    fn send_scheme_document(&mut self, target: &str, set_id: &str, xml: &[u8]) -> Vec<Outgoing> {
         let mut parser = BMApplicationSchemeParser::new();
         match parser.parse(xml) {
             Ok(scheme) => {
@@ -451,9 +457,9 @@ impl Engine {
                     .collect();
                 self.register_button_handlers(handlers);
             }
-            Err(e) => log::warn!("control scheme parse failed, sending anyway: {e}"),
+            Err(e) => log::warn!("{set_id} would not parse, sending it anyway: {e}"),
         }
-        self.make_byte_chunks(target, crate::controls::CONTROL_SCHEME_SET_ID, xml)
+        self.make_byte_chunks(target, set_id, xml)
     }
 
     fn default_channel_for_object(object: &Object) -> i32 {

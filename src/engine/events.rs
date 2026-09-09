@@ -489,6 +489,11 @@ pub enum Command {
         #[serde(with = "serde_bytes")]
         xml: Vec<u8>,
     },
+    UpdateScheme {
+        target: String,
+        #[serde(with = "serde_bytes")]
+        xml: Vec<u8>,
+    },
     LoadScheme {
         index: u32,
         #[serde(with = "serde_bytes")]

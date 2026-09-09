@@ -246,6 +246,75 @@ mod tests {
             .to_vec()
     }
 
+    /// The set id a chunk went out under, which is the only thing telling a
+    /// controller whether to replace its layout or merge into it.
+    fn chunk_set_id(outgoing: &crate::engine::events::Outgoing) -> String {
+        let mut pkt = crate::codec::externals::bm_packet::BMPacket::default();
+        crate::engine::protocol::deserialize_message(outgoing.message(), &mut pkt)
+            .expect("an outgoing holds a message");
+        let msg = pkt.message.expect("and the message holds an object");
+        let mut cur = crate::codec::bm_stream::BMStream::view(msg.as_slice());
+        match crate::codec::object::Object::decode(&mut cur).expect("which decodes") {
+            crate::codec::object::Object::BMByteChunk(chunk) => chunk.set_id,
+            other => panic!("expected a byte chunk, got {other:?}"),
+        }
+    }
+
+    /// A game answering a request sends a whole scheme; a game changing the
+    /// layout mid play sends an update. The two are the same transport and
+    /// differ only by the set id, so nothing else distinguishes them.
+    #[test]
+    fn an_update_goes_out_under_its_own_set_id() {
+        let mut game = game_with(Some(SCHEME));
+
+        let full = game
+            .process_incoming(&request_from("phone"), &Default::default())
+            .outgoings;
+        assert_eq!(
+            chunk_set_id(&full[0]),
+            crate::controls::CONTROL_SCHEME_SET_ID
+        );
+
+        let update = game
+            .emit(
+                Command::UpdateScheme {
+                    target: "phone".to_string(),
+                    xml: OTHER.to_vec(),
+                },
+                None,
+            )
+            .expect("a known peer")
+            .outgoings;
+        assert_eq!(
+            chunk_set_id(&update[0]),
+            crate::controls::UPDATE_SCHEME_SET_ID
+        );
+    }
+
+    /// An update introduces the buttons a game did not have before, so its
+    /// handlers have to become dispatchable or the new controls arrive as
+    /// silence.
+    #[test]
+    fn an_update_names_its_handlers_too() {
+        let mut game = game_with(Some(SCHEME));
+        assert!(!game.game_policy.button_handlers.contains("jump"));
+
+        game.emit(
+            Command::UpdateScheme {
+                target: "phone".to_string(),
+                xml: OTHER.to_vec(),
+            },
+            None,
+        )
+        .expect("a known peer");
+
+        assert!(game.game_policy.button_handlers.contains("jump"));
+        assert!(
+            game.game_policy.button_handlers.contains("fire"),
+            "and the ones already known are not lost"
+        );
+    }
+
     #[test]
     fn a_game_holding_a_scheme_answers_the_request_itself() {
         let mut game = game_with(Some(SCHEME));
