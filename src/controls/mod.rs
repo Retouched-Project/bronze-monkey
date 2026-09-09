@@ -2,6 +2,7 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 pub mod assembler;
+pub mod builder;
 pub mod merge;
 pub mod parser;
 pub mod writer;
