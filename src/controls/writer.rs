@@ -164,11 +164,13 @@ fn num(v: f32) -> String {
 
 /// Opaque colours go out as the bare six hex the endpoints write, and only a
 /// real alpha forces the eight hex form.
+/// An alpha of zero is read as none given rather than as invisible.
+/// Honouring the zero hands a controller `#00rrggbb`,
+/// which parses as fully transparent and draws nothing.
 fn color(color: i32) -> String {
     let c = color as u32;
-    if c >> 24 == 0xFF {
-        format!("{:06x}", c & 0x00FF_FFFF)
-    } else {
-        format!("{:08x}", c)
+    match c >> 24 {
+        0x00 | 0xFF => format!("{:06x}", c & 0x00FF_FFFF),
+        _ => format!("{:08x}", c),
     }
 }

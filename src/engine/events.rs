@@ -5,6 +5,8 @@ use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::touch::Touch;
 use crate::codec::object::Object;
+use crate::controls::Screen;
+use crate::controls::builder::Rect;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
 use crate::types::control_mode::ControlMode;
@@ -200,6 +202,7 @@ pub enum Event {
         height: i32,
         requester: String,
         answered: bool,
+        index: Option<u32>,
     },
     ControlSchemeParsed {
         sender: String,
@@ -498,10 +501,141 @@ pub enum Command {
         index: u32,
         #[serde(with = "serde_bytes")]
         xml: Vec<u8>,
+        #[serde(default)]
+        for_screen: Option<Screen>,
     },
     AssignScheme {
         device: String,
         index: u32,
+    },
+    BeginScheme {
+        index: u32,
+        width: i32,
+        height: i32,
+        orientation: String,
+        touch_enabled: bool,
+        accelerometer_enabled: bool,
+        sample: String,
+        #[serde(default)]
+        for_screen: Option<Screen>,
+    },
+    AddImage {
+        index: u32,
+        name: String,
+        rect: Rect,
+        #[serde(with = "serde_bytes")]
+        artwork: Vec<u8>,
+    },
+    AddButton {
+        index: u32,
+        name: String,
+        handler: String,
+        rect: Rect,
+        #[serde(with = "serde_bytes")]
+        up: Vec<u8>,
+        #[serde(with = "serde_bytes")]
+        down: Vec<u8>,
+    },
+    AddDPad {
+        index: u32,
+        name: String,
+        handler: String,
+        rect: Rect,
+        states: Vec<serde_bytes::ByteBuf>,
+        deadzone: f32,
+        radial: bool,
+    },
+    AddText {
+        index: u32,
+        name: String,
+        rect: Rect,
+        text: String,
+        size: f32,
+        color: i32,
+    },
+    SetRect {
+        index: u32,
+        name: String,
+        rect: Rect,
+    },
+    SetHitRect {
+        index: u32,
+        name: String,
+        rect: Rect,
+    },
+    SetObjectHidden {
+        index: u32,
+        name: String,
+        hidden: bool,
+    },
+    SetObjectPage {
+        index: u32,
+        name: String,
+        page: i32,
+    },
+    ShowPage {
+        index: u32,
+        page: i32,
+    },
+    SetSamplingMode {
+        index: u32,
+        name: String,
+        mode: String,
+    },
+    ClearHitRect {
+        index: u32,
+        name: String,
+    },
+    SetColor {
+        index: u32,
+        name: String,
+        color: i32,
+    },
+    SetTextSize {
+        index: u32,
+        name: String,
+        size: f32,
+    },
+    SetDeadzone {
+        index: u32,
+        name: String,
+        deadzone: f32,
+    },
+    SetRadial {
+        index: u32,
+        name: String,
+        radial: bool,
+    },
+    RemoveMenuOption {
+        index: u32,
+        title: String,
+    },
+    SetObjectText {
+        index: u32,
+        name: String,
+        text: String,
+    },
+    ReplaceArtwork {
+        index: u32,
+        name: String,
+        asset: String,
+        #[serde(with = "serde_bytes")]
+        artwork: Vec<u8>,
+    },
+    RemoveObject {
+        index: u32,
+        name: String,
+    },
+    AddMenuOption {
+        index: u32,
+        title: String,
+        event: String,
+        close_on_select: bool,
+        icon: i32,
+    },
+    SendSchemeUpdate {
+        target: String,
+        index: Option<u32>,
     },
     PeerReachable {
         device: DeviceCore,

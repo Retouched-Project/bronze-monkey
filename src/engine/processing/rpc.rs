@@ -421,10 +421,10 @@ impl Engine {
         let served = ctx
             .engine
             .schemes
-            .for_device(&requester)
-            .map(|(_, stored)| stored.full_xml());
+            .take_full_for_request(&requester, width, height);
         let answered = served.is_some();
-        if let Some(xml) = served {
+        let index = served.as_ref().map(|(index, _)| *index);
+        if let Some((_, xml)) = served {
             let chunks =
                 ctx.engine
                     .make_byte_chunks(&sender, crate::controls::CONTROL_SCHEME_SET_ID, &xml);
@@ -437,6 +437,7 @@ impl Engine {
             height,
             requester,
             answered,
+            index,
         });
     }
 

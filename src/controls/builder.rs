@@ -11,6 +11,7 @@
 
 use crate::controls::parser::{DEFAULT_DEADZONE, DEFAULT_SAMPLING_MODE};
 use crate::controls::{AppResource, ContextMenuOption, ControlAsset, ControlScheme, DisplayObject};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -31,7 +32,7 @@ pub const DPAD_STATES: [&str; 9] = [
 
 /// A rectangle in design pixels, which is what a game thinks in. Normalised to
 /// the fractions the wire carries when the object is added.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Rect {
     pub left: f32,
     pub top: f32,
@@ -50,9 +51,11 @@ impl Rect {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct SchemeBuilder {
     scheme: ControlScheme,
     by_content: HashMap<u64, Vec<i32>>,
+    pages: HashMap<String, i32>,
     next_resource: i32,
     next_object: i32,
 }
@@ -78,8 +81,41 @@ impl SchemeBuilder {
                 ..Default::default()
             },
             by_content: HashMap::new(),
+            pages: HashMap::new(),
             next_resource: 1,
             next_object: 1,
+        }
+    }
+
+    /// Takes over a scheme that already exists, so a document that arrived as
+    /// bytes can be changed the same way as one built here.
+    ///
+    /// Ids carry on past the highest already in use rather than restarting,
+    /// since something in the document is referencing every one of them.
+    pub fn from_scheme(scheme: ControlScheme) -> Self {
+        let mut by_content: HashMap<u64, Vec<i32>> = HashMap::new();
+        for res in &scheme.resources {
+            by_content
+                .entry(hash_of(&res.bitmap))
+                .or_default()
+                .push(res.id);
+        }
+        let next_resource = scheme.resources.iter().map(|r| r.id).max().unwrap_or(0) + 1;
+        let next_object = scheme
+            .display_objects
+            .iter()
+            .map(|o| o.id)
+            .max()
+            .unwrap_or(0)
+            + 1;
+        let mut scheme = scheme;
+        scheme.changed_resources = scheme.resources.iter().map(|r| r.id).collect();
+        Self {
+            scheme,
+            by_content,
+            pages: HashMap::new(),
+            next_resource,
+            next_object,
         }
     }
 
@@ -161,6 +197,20 @@ impl SchemeBuilder {
         Ok(())
     }
 
+    /// Moves or resizes an object. Together with hiding one, this is the whole
+    /// of what an update is allowed to change about a layout.
+    pub fn set_rect(&mut self, name: &str, rect: Rect) -> Result<(), String> {
+        let (width, height) = self.design_size();
+        let object = self.object_mut(name)?;
+        object.left = rect.left / width;
+        object.top = rect.top / height;
+        object.width = rect.width / width;
+        object.height = rect.height / height;
+        Ok(())
+    }
+
+    /// Widens what counts as a press without changing what is drawn, which is
+    /// how the corpus builds hit areas bigger than their artwork.
     pub fn set_hit_rect(&mut self, name: &str, rect: Rect) -> Result<(), String> {
         let (width, height) = self.design_size();
         let object = self.object_mut(name)?;
@@ -172,9 +222,70 @@ impl SchemeBuilder {
         Ok(())
     }
 
+    /// Forgets a hit rect, so what counts as a press goes back to what is
+    /// drawn. The document simply stops carrying one.
+    pub fn clear_hit_rect(&mut self, name: &str) -> Result<(), String> {
+        let object = self.object_mut(name)?;
+        object.has_hit_rect = false;
+        object.hit_left = 0.0;
+        object.hit_top = 0.0;
+        object.hit_width = 0.0;
+        object.hit_height = 0.0;
+        Ok(())
+    }
+
+    pub fn set_color(&mut self, name: &str, color: i32) -> Result<(), String> {
+        self.object_mut(name)?.color = color;
+        Ok(())
+    }
+
+    /// Given in design pixels and normalised, exactly as it is when the object
+    /// is first added.
+    pub fn set_text_size(&mut self, name: &str, size: f32) -> Result<(), String> {
+        let height = self.scheme.height as f32;
+        self.object_mut(name)?.text_size = size / height;
+        Ok(())
+    }
+
+    pub fn set_deadzone(&mut self, name: &str, deadzone: f32) -> Result<(), String> {
+        self.object_mut(name)?.deadzone = deadzone;
+        Ok(())
+    }
+
+    /// Whether a dpad reads as a wheel rather than eight sectors.
+    pub fn set_radial(&mut self, name: &str, radial: bool) -> Result<(), String> {
+        self.object_mut(name)?.radial = radial;
+        Ok(())
+    }
+
     pub fn set_hidden(&mut self, name: &str, hidden: bool) -> Result<(), String> {
         self.object_mut(name)?.hidden = hidden;
         Ok(())
+    }
+
+    pub fn set_sampling_mode(&mut self, name: &str, mode: &str) -> Result<(), String> {
+        self.object_mut(name)?.sampling_mode = mode.to_string();
+        Ok(())
+    }
+
+    /// Sugar over building a scheme.
+    /// It is a set of display objects with the `hidden` attribute toggled.
+    pub fn set_page(&mut self, name: &str, page: i32) -> Result<(), String> {
+        self.object_mut(name)?;
+        self.pages.insert(name.to_string(), page);
+        Ok(())
+    }
+
+    /// Shows one page and hides the others, which is all a page ever is.
+    ///
+    /// Objects filed under no page are left alone, so a background stays put
+    /// across every page rather than needing to be filed under all of them.
+    pub fn show_page(&mut self, page: i32) {
+        for object in &mut self.scheme.display_objects {
+            if let Some(filed) = self.pages.get(&object.name) {
+                object.hidden = *filed != page;
+            }
+        }
     }
 
     pub fn set_text(&mut self, name: &str, text: &str) -> Result<(), String> {
@@ -202,9 +313,6 @@ impl SchemeBuilder {
             .find(|a| a.name == asset_name)
             .ok_or_else(|| format!("object '{name}' has no asset '{asset_name}'"))?;
         slot.resource_ref = id;
-        if !self.scheme.changed_resources.contains(&id) {
-            self.scheme.changed_resources.push(id);
-        }
         Ok(())
     }
 
@@ -214,6 +322,7 @@ impl SchemeBuilder {
     pub fn remove(&mut self, name: &str) -> Result<(), String> {
         let before = self.scheme.display_objects.len();
         self.scheme.display_objects.retain(|o| o.name != name);
+        self.pages.remove(name);
         if self.scheme.display_objects.len() == before {
             return Err(format!("no object named '{name}'"));
         }
@@ -227,6 +336,22 @@ impl SchemeBuilder {
             event: event.to_string(),
             close_on_select,
         });
+    }
+
+    /// Drops every option under this title. Refused when nothing matches,
+    /// since a menu that silently kept an entry a game asked to remove
+    /// is worse than being told.
+    ///
+    /// An update carries the whole menu or clears it, so removing the last one
+    /// leaves a scheme that takes the menu away rather than one that leaves it
+    /// alone.
+    pub fn remove_menu_option(&mut self, title: &str) -> Result<(), String> {
+        let before = self.scheme.options.len();
+        self.scheme.options.retain(|o| o.title != title);
+        if self.scheme.options.len() == before {
+            return Err(format!("no menu option titled '{title}'"));
+        }
+        Ok(())
     }
 
     /// Every handler the scheme names, which is what stops a button the game
@@ -322,6 +447,7 @@ impl SchemeBuilder {
             r#type: "image".to_string(),
         });
         self.by_content.entry(hash).or_default().push(id);
+        self.scheme.changed_resources.push(id);
         id
     }
 }
@@ -401,12 +527,197 @@ mod tests {
             )
             .unwrap();
             b.set_hidden("fire", true).unwrap();
+            // The scheme has been served, so its artwork is no longer waiting.
+            b.clear_changed();
             crate::controls::writer::write_update(b.scheme()).len()
         }
 
         let small = update_for(RED);
         let large = update_for(&vec![0xA5; 600 * 1024]);
         assert_eq!(small, large);
+    }
+
+    /// Moving is the other half of what an update can do, and it must not
+    /// disturb the hit area, which a game set separately for its own reasons.
+    #[test]
+    fn moving_an_object_leaves_the_hit_area_where_it_was_put() {
+        let mut b = builder();
+        b.add_button(
+            "fire",
+            "onFire",
+            Rect::new(340.0, 30.0, 120.0, 70.0),
+            RED,
+            BLUE,
+        )
+        .unwrap();
+        b.set_hit_rect("fire", Rect::new(330.0, 20.0, 140.0, 90.0))
+            .unwrap();
+
+        b.set_rect("fire", Rect::new(20.0, 30.0, 120.0, 70.0))
+            .unwrap();
+
+        let object = &b.scheme().display_objects[0];
+        assert_eq!(object.left, 20.0 / 480.0);
+        assert_eq!(object.width, 0.25);
+        assert_eq!(
+            object.hit_left,
+            330.0 / 480.0,
+            "the hit area is not dragged along"
+        );
+    }
+
+    /// A page is a set of objects with `hidden` toggled and nothing more, so
+    /// asking for one must not leave a trace of the idea in the document.
+    #[test]
+    fn a_page_is_only_ever_hidden_flags() {
+        let mut b = builder();
+        b.add_image("bg", Rect::new(0.0, 0.0, 480.0, 320.0), RED)
+            .unwrap();
+        b.add_button("fire", "onFire", Rect::new(0.0, 0.0, 10.0, 10.0), RED, BLUE)
+            .unwrap();
+        b.add_button(
+            "jump",
+            "onJump",
+            Rect::new(20.0, 0.0, 10.0, 10.0),
+            RED,
+            BLUE,
+        )
+        .unwrap();
+        b.set_page("fire", 1).unwrap();
+        b.set_page("jump", 2).unwrap();
+
+        b.show_page(2);
+
+        let objects = &b.scheme().display_objects;
+        assert!(!objects[0].hidden, "a background is filed under no page");
+        assert!(objects[1].hidden);
+        assert!(!objects[2].hidden);
+
+        let xml = crate::controls::writer::write_full(b.scheme());
+        assert!(!xml.contains("page"), "pages are ours, not the protocol's");
+    }
+
+    #[test]
+    fn filing_an_object_that_is_not_there_is_refused() {
+        let mut b = builder();
+        assert!(b.set_page("ghost", 1).is_err());
+        assert!(b.set_sampling_mode("ghost", "nearest").is_err());
+    }
+
+    #[test]
+    fn an_object_can_be_sampled_differently_from_the_scheme() {
+        let mut b = builder();
+        b.add_image("bg", Rect::new(0.0, 0.0, 10.0, 10.0), RED)
+            .unwrap();
+        assert_eq!(b.scheme().display_objects[0].sampling_mode, "linear");
+        b.set_sampling_mode("bg", "nearest").unwrap();
+        assert_eq!(b.scheme().display_objects[0].sampling_mode, "nearest");
+    }
+
+    /// Pointing an object at artwork the controller was already sent must not
+    /// send it again. This is what lets a game swap between a set of pictures
+    /// it shipped up front for the price of a layout.
+    #[test]
+    fn re_using_artwork_already_sent_costs_no_artwork() {
+        let mut b = builder();
+        b.add_image("one", Rect::new(0.0, 0.0, 10.0, 10.0), RED)
+            .unwrap();
+        b.add_image("two", Rect::new(20.0, 0.0, 10.0, 10.0), BLUE)
+            .unwrap();
+        b.clear_changed(); // both went out with the scheme
+
+        b.replace_artwork("one", "up", BLUE).unwrap();
+
+        assert_eq!(b.scheme().display_objects[0].assets[0].resource_ref, 2);
+        assert_eq!(b.scheme().resources.len(), 2, "nothing new was stored");
+        assert!(
+            b.scheme().changed_resources.is_empty(),
+            "and nothing is waiting to be sent"
+        );
+    }
+
+    #[test]
+    fn a_hit_rect_can_be_taken_away_again() {
+        let mut b = builder();
+        b.add_button("fire", "onFire", Rect::new(0.0, 0.0, 10.0, 10.0), RED, BLUE)
+            .unwrap();
+        b.set_hit_rect("fire", Rect::new(0.0, 0.0, 40.0, 40.0))
+            .unwrap();
+        assert!(crate::controls::writer::write_full(b.scheme()).contains("<HitRect"));
+
+        b.clear_hit_rect("fire").unwrap();
+        assert!(
+            !crate::controls::writer::write_full(b.scheme()).contains("<HitRect"),
+            "the document stops carrying one, which is how it is expressed"
+        );
+    }
+
+    #[test]
+    fn what_a_text_was_given_can_be_changed_afterwards() {
+        let mut b = builder();
+        b.add_text(
+            "score",
+            Rect::new(0.0, 0.0, 100.0, 32.0),
+            "0",
+            32.0,
+            0xF0F0F0,
+        )
+        .unwrap();
+        b.set_text("score", "10").unwrap();
+        b.set_color("score", 0x40E0D0).unwrap();
+        b.set_text_size("score", 16.0).unwrap();
+
+        let object = &b.scheme().display_objects[0];
+        assert_eq!(object.text, "10");
+        assert_eq!(object.color, 0x40E0D0);
+        assert_eq!(object.text_size, 0.05, "16 of 320 design pixels");
+    }
+
+    #[test]
+    fn a_dpad_can_be_retuned_after_it_is_added() {
+        let mut b = builder();
+        let art: [&[u8]; 9] = [RED, BLUE, RED, BLUE, RED, BLUE, RED, BLUE, RED];
+        b.add_dpad(
+            "pad",
+            "onPad",
+            Rect::new(0.0, 0.0, 100.0, 100.0),
+            art,
+            0.25,
+            false,
+        )
+        .unwrap();
+        b.set_deadzone("pad", 0.4).unwrap();
+        b.set_radial("pad", true).unwrap();
+
+        let object = &b.scheme().display_objects[0];
+        assert_eq!(object.deadzone, 0.4);
+        assert!(object.radial);
+    }
+
+    /// An update carries the whole menu or clears it, so a game that cannot
+    /// remove an option cannot change its menu at all.
+    #[test]
+    fn a_menu_option_is_removed_by_the_title_that_names_it() {
+        let mut b = builder();
+        b.add_menu_option("Quit", "quit", true, 0);
+        b.add_menu_option("Help", "help", false, 1);
+
+        b.remove_menu_option("Quit").unwrap();
+        let titles: Vec<&str> = b
+            .scheme()
+            .options
+            .iter()
+            .map(|o| o.title.as_str())
+            .collect();
+        assert_eq!(titles, vec!["Help"]);
+
+        assert!(
+            b.remove_menu_option("Quit").is_err(),
+            "removing what is not there is worth being told about"
+        );
+
+        b.remove_menu_option("Help").unwrap();
+        assert!(b.scheme().options.is_empty(), "and the last one can go too");
     }
 
     #[test]
@@ -427,6 +738,7 @@ mod tests {
         b.add_image("two", Rect::new(20.0, 0.0, 10.0, 10.0), RED)
             .unwrap();
         assert_eq!(b.scheme().resources.len(), 1);
+        b.clear_changed(); // the scheme has been served once
 
         b.replace_artwork("one", "up", BLUE).unwrap();
 
@@ -444,10 +756,12 @@ mod tests {
         let mut b = builder();
         b.add_image("one", Rect::new(0.0, 0.0, 10.0, 10.0), RED)
             .unwrap();
-        assert!(
-            b.scheme().changed_resources.is_empty(),
-            "nothing changed yet"
+        assert_eq!(
+            b.scheme().changed_resources,
+            vec![1],
+            "artwork nobody has been sent is waiting to go"
         );
+        b.clear_changed(); // the scheme has been served once
 
         b.replace_artwork("one", "up", BLUE).unwrap();
         assert_eq!(b.scheme().changed_resources, vec![2]);
@@ -485,6 +799,46 @@ mod tests {
         assert_eq!(names, DPAD_STATES.to_vec());
         assert_eq!(object.deadzone, 0.3);
         assert!(object.radial);
+    }
+
+    /// A colour given without an alpha byte must not go out as transparent.
+    /// The controller reads eight hex as ARGB, so `0x00rrggbb` draws nothing at
+    /// all, which is how a label goes missing with everything else correct.
+    #[test]
+    fn a_colour_with_no_alpha_is_opaque_rather_than_invisible() {
+        let mut b = builder();
+        b.add_text(
+            "plain",
+            Rect::new(0.0, 0.0, 100.0, 30.0),
+            "hi",
+            22.0,
+            0xF0F0F0,
+        )
+        .unwrap();
+        b.add_text("opaque", Rect::new(0.0, 40.0, 100.0, 30.0), "hi", 22.0, -1)
+            .unwrap();
+        b.add_text(
+            "faded",
+            Rect::new(0.0, 80.0, 100.0, 30.0),
+            "hi",
+            22.0,
+            0x80F0F0F0u32 as i32,
+        )
+        .unwrap();
+
+        let xml = crate::controls::writer::write_full(b.scheme());
+        assert!(
+            xml.contains(r#"color="f0f0f0""#),
+            "no alpha given, so none sent"
+        );
+        assert!(
+            xml.contains(r#"color="ffffff""#),
+            "fully opaque loses its alpha too"
+        );
+        assert!(
+            xml.contains(r#"color="80f0f0f0""#),
+            "a real alpha is the only thing that keeps the long form"
+        );
     }
 
     #[test]
@@ -579,6 +933,7 @@ mod tests {
             BLUE,
         )
         .unwrap();
+        b.clear_changed(); // the scheme has been served once
         b.replace_artwork("bg", "up", b"a-third-picture").unwrap();
 
         let update = crate::controls::writer::write_update(b.scheme());

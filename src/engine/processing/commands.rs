@@ -6,6 +6,7 @@ use crate::codec::externals::bm_reliability::BMReliability;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::bm_invoke::BMInvoke;
 use crate::codec::object::Object;
+use crate::controls::builder::SchemeBuilder;
 use crate::controls::parser::BMApplicationSchemeParser;
 use crate::engine::events::{Command, EmitError, Outgoing, ProcessOutput, Sensor};
 use crate::engine::methods;
@@ -287,8 +288,12 @@ impl Engine {
             Command::UpdateScheme { target, xml } => {
                 self.send_scheme_document(&target, crate::controls::UPDATE_SCHEME_SET_ID, &xml)
             }
-            Command::LoadScheme { index, xml } => {
-                if let Err(e) = self.schemes.load(index, &xml) {
+            Command::LoadScheme {
+                index,
+                xml,
+                for_screen,
+            } => {
+                if let Err(e) = self.schemes.load(index, &xml, for_screen) {
                     return Err(EmitError::BadScheme(e));
                 }
                 // Every handler the scheme names becomes dispatchable, so a
@@ -303,6 +308,190 @@ impl Engine {
                 }
                 self.schemes.assign(&device, index);
                 Vec::new()
+            }
+            Command::BeginScheme {
+                index,
+                width,
+                height,
+                orientation,
+                touch_enabled,
+                accelerometer_enabled,
+                sample,
+                for_screen,
+            } => {
+                self.schemes.begin(
+                    index,
+                    SchemeBuilder::new(
+                        width,
+                        height,
+                        &orientation,
+                        touch_enabled,
+                        accelerometer_enabled,
+                        &sample,
+                    ),
+                    for_screen,
+                );
+                Vec::new()
+            }
+            Command::AddImage {
+                index,
+                name,
+                rect,
+                artwork,
+            } => {
+                self.edit_scheme(index, |b| b.add_image(&name, rect, &artwork))?;
+                Vec::new()
+            }
+            Command::AddButton {
+                index,
+                name,
+                handler,
+                rect,
+                up,
+                down,
+            } => {
+                self.edit_scheme(index, |b| b.add_button(&name, &handler, rect, &up, &down))?;
+                Vec::new()
+            }
+            Command::AddDPad {
+                index,
+                name,
+                handler,
+                rect,
+                states,
+                deadzone,
+                radial,
+            } => {
+                let refs: Vec<&[u8]> = states.iter().map(|s| s.as_slice()).collect();
+                let count = refs.len();
+                let states: [&[u8]; 9] = refs.as_slice().try_into().map_err(|_| {
+                    EmitError::BadScheme(format!("a dpad needs nine states, got {count}"))
+                })?;
+                self.edit_scheme(index, |b| {
+                    b.add_dpad(&name, &handler, rect, states, deadzone, radial)
+                })?;
+                Vec::new()
+            }
+            Command::AddText {
+                index,
+                name,
+                rect,
+                text,
+                size,
+                color,
+            } => {
+                self.edit_scheme(index, |b| b.add_text(&name, rect, &text, size, color))?;
+                Vec::new()
+            }
+            Command::SetRect { index, name, rect } => {
+                self.edit_scheme(index, |b| b.set_rect(&name, rect))?;
+                Vec::new()
+            }
+            Command::SetHitRect { index, name, rect } => {
+                self.edit_scheme(index, |b| b.set_hit_rect(&name, rect))?;
+                Vec::new()
+            }
+            Command::SetObjectHidden {
+                index,
+                name,
+                hidden,
+            } => {
+                self.edit_scheme(index, |b| b.set_hidden(&name, hidden))?;
+                Vec::new()
+            }
+            Command::SetObjectPage { index, name, page } => {
+                self.edit_scheme(index, |b| b.set_page(&name, page))?;
+                Vec::new()
+            }
+            Command::ShowPage { index, page } => {
+                self.edit_scheme(index, |b| {
+                    b.show_page(page);
+                    Ok(())
+                })?;
+                Vec::new()
+            }
+            Command::SetSamplingMode { index, name, mode } => {
+                self.edit_scheme(index, |b| b.set_sampling_mode(&name, &mode))?;
+                Vec::new()
+            }
+            Command::ClearHitRect { index, name } => {
+                self.edit_scheme(index, |b| b.clear_hit_rect(&name))?;
+                Vec::new()
+            }
+            Command::SetColor { index, name, color } => {
+                self.edit_scheme(index, |b| b.set_color(&name, color))?;
+                Vec::new()
+            }
+            Command::SetTextSize { index, name, size } => {
+                self.edit_scheme(index, |b| b.set_text_size(&name, size))?;
+                Vec::new()
+            }
+            Command::SetDeadzone {
+                index,
+                name,
+                deadzone,
+            } => {
+                self.edit_scheme(index, |b| b.set_deadzone(&name, deadzone))?;
+                Vec::new()
+            }
+            Command::SetRadial {
+                index,
+                name,
+                radial,
+            } => {
+                self.edit_scheme(index, |b| b.set_radial(&name, radial))?;
+                Vec::new()
+            }
+            Command::RemoveMenuOption { index, title } => {
+                self.edit_scheme(index, |b| b.remove_menu_option(&title))?;
+                Vec::new()
+            }
+            Command::SetObjectText { index, name, text } => {
+                self.edit_scheme(index, |b| b.set_text(&name, &text))?;
+                Vec::new()
+            }
+            Command::ReplaceArtwork {
+                index,
+                name,
+                asset,
+                artwork,
+            } => {
+                self.edit_scheme(index, |b| b.replace_artwork(&name, &asset, &artwork))?;
+                Vec::new()
+            }
+            Command::RemoveObject { index, name } => {
+                self.edit_scheme(index, |b| b.remove(&name))?;
+                Vec::new()
+            }
+            Command::AddMenuOption {
+                index,
+                title,
+                event,
+                close_on_select,
+                icon,
+            } => {
+                self.edit_scheme(index, |b| {
+                    b.add_menu_option(&title, &event, close_on_select, icon);
+                    Ok(())
+                })?;
+                Vec::new()
+            }
+            Command::SendSchemeUpdate { target, index } => {
+                // Without an index this goes to whichever scheme the device is
+                // already holding, since sending it an update to a different
+                // one would merge a layout into a document it never received.
+                let index = index
+                    .or_else(|| self.schemes.index_for_device(&target))
+                    .ok_or_else(|| {
+                        EmitError::BadScheme(format!("no scheme is being served to '{target}'"))
+                    })?;
+                let xml = self
+                    .schemes
+                    .take_update(index)
+                    .map_err(EmitError::BadScheme)?;
+                // No parse on the way out: the handlers were registered as the
+                // scheme was built, so there is nothing here left to learn.
+                self.make_byte_chunks(&target, crate::controls::UPDATE_SCHEME_SET_ID, &xml)
             }
             Command::PeerReachable { device } => self.peer_reachable(device),
             Command::ControlSchemeParsed { target } => {
@@ -363,6 +552,7 @@ impl Engine {
             | Command::SendAccel { target, .. }
             | Command::SendButton { target, .. }
             | Command::SendControlScheme { target, .. }
+            | Command::SendSchemeUpdate { target, .. }
             | Command::UpdateScheme { target, .. }
             | Command::SendCookie { target, .. }
             | Command::SendDPad { target, .. }
@@ -388,13 +578,34 @@ impl Engine {
             // Nothing leaves for a named peer, so there is nobody to be wrong
             // about. `PeerReachable` names one but is how the engine hears of
             // it, so it cannot be asked to know it already.
-            Command::ApproveRegistration { .. }
+            Command::AddButton { .. }
+            | Command::AddDPad { .. }
+            | Command::AddImage { .. }
+            | Command::AddMenuOption { .. }
+            | Command::AddText { .. }
+            | Command::ApproveRegistration { .. }
             | Command::AssignScheme { .. }
+            | Command::BeginScheme { .. }
             | Command::DeclareTouch { .. }
             | Command::DenyRegistration { .. }
             | Command::LoadScheme { .. }
             | Command::PeerGone { .. }
-            | Command::PeerReachable { .. } => None,
+            | Command::PeerReachable { .. }
+            | Command::RemoveObject { .. }
+            | Command::ReplaceArtwork { .. }
+            | Command::SetHitRect { .. }
+            | Command::SetObjectHidden { .. }
+            | Command::SetObjectPage { .. }
+            | Command::SetObjectText { .. }
+            | Command::SetRect { .. }
+            | Command::ClearHitRect { .. }
+            | Command::RemoveMenuOption { .. }
+            | Command::SetColor { .. }
+            | Command::SetDeadzone { .. }
+            | Command::SetRadial { .. }
+            | Command::SetSamplingMode { .. }
+            | Command::SetTextSize { .. }
+            | Command::ShowPage { .. } => None,
         }
     }
 
@@ -445,6 +656,23 @@ impl Engine {
         out
     }
 
+    /// Applies one change to a scheme the game is building.
+    ///
+    /// Every edit re-registers the handlers the library now names, so a button
+    /// added mid game is dispatchable the moment it exists rather than once
+    /// somebody remembers to declare it.
+    fn edit_scheme(
+        &mut self,
+        index: u32,
+        change: impl FnOnce(&mut SchemeBuilder) -> Result<(), String>,
+    ) -> Result<(), EmitError> {
+        let builder = self.schemes.edit(index).map_err(EmitError::BadScheme)?;
+        change(builder).map_err(EmitError::BadScheme)?;
+        let handlers = self.schemes.button_handlers();
+        self.register_button_handlers(handlers);
+        Ok(())
+    }
+
     fn send_scheme_document(&mut self, target: &str, set_id: &str, xml: &[u8]) -> Vec<Outgoing> {
         let mut parser = BMApplicationSchemeParser::new();
         match parser.parse(xml) {
@@ -487,6 +715,84 @@ mod tests {
     use crate::engine::protocol::deserialize_message;
     use crate::link::framing::Framer;
     use crate::types::device_type::DeviceType;
+
+    #[test]
+    fn a_scheme_command_survives_the_encoding_the_bindings_use() {
+        use crate::controls::builder::Rect;
+
+        let sent = Command::AddDPad {
+            index: 2,
+            name: "pad".to_string(),
+            handler: "onPad".to_string(),
+            rect: Rect::new(20.0, 40.0, 160.0, 160.0),
+            states: (0..9)
+                .map(|i| serde_bytes::ByteBuf::from(vec![i as u8; 4]))
+                .collect(),
+            deadzone: 0.3,
+            radial: true,
+        };
+
+        let bytes = rmp_serde::to_vec_named(&sent).expect("a command encodes");
+        let back: Command = rmp_serde::from_slice(&bytes).expect("and reads back");
+
+        match back {
+            Command::AddDPad {
+                index,
+                name,
+                rect,
+                states,
+                deadzone,
+                radial,
+                ..
+            } => {
+                assert_eq!(index, 2);
+                assert_eq!(name, "pad");
+                assert_eq!(rect, Rect::new(20.0, 40.0, 160.0, 160.0));
+                assert_eq!(states.len(), 9);
+                assert_eq!(states[3].as_slice(), &[3u8; 4]);
+                assert_eq!(deadzone, 0.3);
+                assert!(radial);
+            }
+            other => panic!("came back as something else: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_scheme_command_without_a_screen_still_reads() {
+        #[derive(serde::Serialize)]
+        struct NoScreen {
+            r#type: &'static str,
+            index: u32,
+            width: i32,
+            height: i32,
+            orientation: &'static str,
+            touch_enabled: bool,
+            accelerometer_enabled: bool,
+            sample: &'static str,
+        }
+
+        let bytes = rmp_serde::to_vec_named(&NoScreen {
+            r#type: "BeginScheme",
+            index: 0,
+            width: 480,
+            height: 320,
+            orientation: "landscape",
+            touch_enabled: true,
+            accelerometer_enabled: false,
+            sample: "linear",
+        })
+        .expect("encodes");
+
+        match rmp_serde::from_slice::<Command>(&bytes).expect("reads as a command") {
+            Command::BeginScheme {
+                width, for_screen, ..
+            } => {
+                assert_eq!(width, 480);
+                assert!(for_screen.is_none());
+            }
+            other => panic!("came back as something else: {other:?}"),
+        }
+    }
 
     fn engine_with_peer(peer: &str) -> Engine {
         let mut eng = Engine::default();
