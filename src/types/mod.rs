@@ -4,5 +4,6 @@
 pub mod channel_type;
 pub mod control_mode;
 pub mod device_type;
+pub(crate) mod named;
 pub mod packet_type;
 pub mod touch_state;

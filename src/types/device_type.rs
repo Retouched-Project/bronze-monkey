@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use serde::{Deserialize, Serialize};
+use crate::types::named::reads_as_its_name;
+use serde::Serialize;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Default, Serialize, Deserialize)]
-#[serde(into = "i32", try_from = "i32")]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Default, Serialize)]
 pub enum DeviceType {
     #[default]
     Any,
@@ -16,6 +16,18 @@ pub enum DeviceType {
     Palm,
     Server,
 }
+
+reads_as_its_name!(
+    DeviceType,
+    DeviceType::Any => "Any",
+    DeviceType::Unity => "Unity",
+    DeviceType::IPhone => "IPhone" | "iPhone",
+    DeviceType::Flash => "Flash",
+    DeviceType::Android => "Android",
+    DeviceType::Native => "Native",
+    DeviceType::Palm => "Palm",
+    DeviceType::Server => "Server",
+);
 
 impl From<DeviceType> for i32 {
     fn from(value: DeviceType) -> Self {
@@ -100,6 +112,19 @@ impl DeviceType {
         )
     }
 
+    pub fn name(self) -> &'static str {
+        match self {
+            DeviceType::Any => "Any",
+            DeviceType::Unity => "Unity",
+            DeviceType::IPhone => "IPhone",
+            DeviceType::Flash => "Flash",
+            DeviceType::Android => "Android",
+            DeviceType::Native => "Native",
+            DeviceType::Palm => "Palm",
+            DeviceType::Server => "Server",
+        }
+    }
+
     pub fn label(self) -> &'static str {
         match self {
             DeviceType::Any => "ANY",
@@ -122,6 +147,14 @@ impl std::fmt::Display for DeviceType {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_name_is_what_crosses() {
+        for kind in DeviceType::ALL {
+            let wrote: String = rmp_serde::from_slice(&rmp_serde::to_vec(&kind).unwrap()).unwrap();
+            assert_eq!(wrote, kind.name(), "{kind:?}");
+        }
+    }
+
     use super::*;
 
     #[test]

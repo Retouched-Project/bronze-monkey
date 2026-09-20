@@ -122,12 +122,15 @@ impl BmEngineWasm {
         &mut self,
         id: &str,
         name: &str,
-        type_code: i32,
+        type_name: String,
         address: &str,
         unreliable_port: i32,
         reliable_port: i32,
     ) -> Result<(), JsError> {
-        let dt = DeviceType::for_value(type_code).map_err(|e| JsError::new(&e.to_string()))?;
+        let dt = DeviceType::ALL
+            .into_iter()
+            .find(|kind| kind.name() == type_name)
+            .ok_or_else(|| JsError::new(&format!("unknown device type '{type_name}'")))?;
         let mut core = DeviceCore::new(id.to_string(), name.to_string(), dt);
         core.address = Some(BMAddress {
             address: address.to_string(),
@@ -173,7 +176,7 @@ impl BmEngineWasm {
             js_sys::Reflect::set(
                 &obj,
                 &"deviceType".into(),
-                &record.core.device_type.code().into(),
+                &record.core.device_type.name().into(),
             )
             .unwrap();
             if let Some(addr) = &record.core.address {
@@ -420,29 +423,6 @@ impl HandshakerWasm {
     pub fn reset(&mut self) {
         self.inner.reset();
     }
-}
-
-/// The device type codes, for callers building a frame by hand. The engine
-/// surface never asks for one.
-#[wasm_bindgen(js_name = deviceTypeCodes)]
-pub fn device_type_codes() -> Result<JsValue, JsError> {
-    let obj = js_sys::Object::new();
-    for kind in DeviceType::ALL {
-        js_sys::Reflect::set(&obj, &kind.label().into(), &kind.code().into())
-            .map_err(|_| JsError::new("could not build the device type table"))?;
-    }
-    Ok(obj.into())
-}
-
-/// The packet type codes, for callers building a frame by hand.
-#[wasm_bindgen(js_name = packetTypeCodes)]
-pub fn packet_type_codes() -> Result<JsValue, JsError> {
-    let obj = js_sys::Object::new();
-    for kind in crate::types::packet_type::PacketType::ALL {
-        js_sys::Reflect::set(&obj, &kind.label().into(), &kind.code().into())
-            .map_err(|_| JsError::new("could not build the packet type table"))?;
-    }
-    Ok(obj.into())
 }
 
 /// Whether these bytes open a cross domain policy request.

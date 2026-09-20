@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use serde::{Deserialize, Serialize};
+use crate::types::named::reads_as_its_name;
+use serde::Serialize;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
-#[serde(into = "i32", try_from = "i32")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Serialize)]
 pub enum PacketType {
     #[default]
     Data = 0,
@@ -14,6 +14,16 @@ pub enum PacketType {
     Analysis = 4,
     KeepAlive = 5,
 }
+
+reads_as_its_name!(
+    PacketType,
+    PacketType::Data => "Data",
+    PacketType::Ping => "Ping",
+    PacketType::Ack => "Ack",
+    PacketType::Echo => "Echo",
+    PacketType::Analysis => "Analysis",
+    PacketType::KeepAlive => "KeepAlive",
+);
 
 impl PacketType {
     /// Every packet type, for callers that publish the whole table.
@@ -25,6 +35,17 @@ impl PacketType {
         PacketType::Analysis,
         PacketType::KeepAlive,
     ];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            PacketType::Data => "Data",
+            PacketType::Ping => "Ping",
+            PacketType::Ack => "Ack",
+            PacketType::Echo => "Echo",
+            PacketType::Analysis => "Analysis",
+            PacketType::KeepAlive => "KeepAlive",
+        }
+    }
 
     pub fn label(&self) -> &'static str {
         match self {
@@ -85,6 +106,14 @@ impl std::error::Error for PacketTypeError {}
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_name_is_what_crosses() {
+        for kind in PacketType::ALL {
+            let wrote: String = rmp_serde::from_slice(&rmp_serde::to_vec(&kind).unwrap()).unwrap();
+            assert_eq!(wrote, kind.name(), "{kind:?}");
+        }
+    }
+
     use super::*;
 
     #[test]

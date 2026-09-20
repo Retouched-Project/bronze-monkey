@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
+use crate::types::named::reads_as_its_name;
 use serde::{Deserialize, Serialize};
 
 pub mod controller;
@@ -11,9 +12,7 @@ pub use controller::{ControllerPolicy, InputReliability, SessionInputs, Viewport
 pub use game::GamePolicy;
 pub use server::ServerPolicy;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(into = "i32", try_from = "i32")]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "pyo3", pyo3::pyclass(eq, eq_int, from_py_object))]
 #[repr(i32)]
 pub enum EndpointMode {
@@ -21,8 +20,21 @@ pub enum EndpointMode {
     Controller = 2,
 }
 
+reads_as_its_name!(
+    EndpointMode,
+    EndpointMode::Game => "Game",
+    EndpointMode::Controller => "Controller",
+);
+
 impl EndpointMode {
     pub const NONE_CODE: i32 = 0;
+
+    pub fn name(self) -> &'static str {
+        match self {
+            EndpointMode::Game => "Game",
+            EndpointMode::Controller => "Controller",
+        }
+    }
 
     pub fn code(self) -> i32 {
         self as i32
@@ -139,11 +151,11 @@ mod tests {
     }
 
     #[test]
-    fn a_role_crosses_a_binding_as_its_code() {
+    fn a_role_crosses_a_binding_as_its_name() {
         for mode in [EndpointMode::Game, EndpointMode::Controller] {
             let bytes = rmp_serde::to_vec(&mode).expect("a role serialises");
-            let as_code: i32 = rmp_serde::from_slice(&bytes).expect("as a plain number");
-            assert_eq!(as_code, mode.code());
+            let wrote: String = rmp_serde::from_slice(&bytes).expect("as its name");
+            assert_eq!(wrote, mode.name());
 
             let back: EndpointMode = rmp_serde::from_slice(&bytes).expect("and reads back");
             assert_eq!(back, mode);
@@ -151,8 +163,8 @@ mod tests {
     }
 
     #[test]
-    fn a_role_out_of_range_is_refused_at_the_boundary() {
-        let bytes = rmp_serde::to_vec(&7i32).unwrap();
+    fn a_role_nobody_has_heard_of_is_refused_at_the_boundary() {
+        let bytes = rmp_serde::to_vec("Referee").unwrap();
         assert!(rmp_serde::from_slice::<EndpointMode>(&bytes).is_err());
     }
 

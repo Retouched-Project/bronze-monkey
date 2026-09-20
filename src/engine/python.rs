@@ -62,15 +62,22 @@ fn generate_app_id() -> String {
     crate::identity::generate_app_id()
 }
 
-fn device_type_from_code(code: i32) -> PyResult<DeviceType> {
-    DeviceType::for_value(code)
-        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))
+fn device_type_named(name: &str) -> PyResult<DeviceType> {
+    DeviceType::ALL
+        .into_iter()
+        .find(|kind| kind.name() == name)
+        .ok_or_else(|| {
+            pyo3::exceptions::PyValueError::new_err(format!("unknown device type '{name}'"))
+        })
 }
 
-fn packet_type_from_code(code: i32) -> PyResult<PacketType> {
-    PacketType::from_i32(code).ok_or_else(|| {
-        PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("unknown packet type: {code}"))
-    })
+fn packet_type_named(name: &str) -> PyResult<PacketType> {
+    PacketType::ALL
+        .into_iter()
+        .find(|kind| kind.name() == name)
+        .ok_or_else(|| {
+            pyo3::exceptions::PyValueError::new_err(format!("unknown packet type '{name}'"))
+        })
 }
 
 #[pyclass]
@@ -91,9 +98,9 @@ impl BMEnginePy {
         &self,
         device_id: String,
         device_name: String,
-        device_type: i32,
+        device_type: String,
     ) -> PyResult<()> {
-        let dt = device_type_from_code(device_type)?;
+        let dt = device_type_named(&device_type)?;
         let mut eng = self.inner.write().unwrap();
         eng.init_local_device(DeviceCore::new(device_id, device_name, dt));
         Ok(())
@@ -103,12 +110,12 @@ impl BMEnginePy {
         &self,
         device_id: String,
         device_name: String,
-        device_type: i32,
+        device_type: String,
         address: String,
         unreliable_port: i32,
         reliable_port: i32,
     ) -> PyResult<()> {
-        let dt = device_type_from_code(device_type)?;
+        let dt = device_type_named(&device_type)?;
         let mut eng = self.inner.write().unwrap();
         let mut core = DeviceCore::new(device_id, device_name, dt);
         core.address = Some(BMAddress {
@@ -227,8 +234,8 @@ fn serialize_invoke_packet<'py>(
     device_id: String,
     device_name: String,
     channel: i32,
-    packet_type_code: i32,
-    device_type_code: i32,
+    packet_type: String,
+    device_type: String,
 ) -> PyResult<Bound<'py, PyBytes>> {
     let mut rust_params = Vec::new();
     for p in params.iter() {
@@ -251,8 +258,8 @@ fn serialize_invoke_packet<'py>(
         channel,
         timestamp: now_ms_f64(),
         rtt: 0.0,
-        packet_type: packet_type_from_code(packet_type_code)?,
-        device_type: device_type_from_code(device_type_code)?,
+        packet_type: packet_type_named(&packet_type)?,
+        device_type: device_type_named(&device_type)?,
         device_name,
         device_id,
         message: Some(message_bytes),
@@ -271,12 +278,12 @@ fn serialize_device_packet<'py>(
     py: Python<'py>,
     device_id: String,
     device_name: String,
-    device_type_code: i32,
+    device_type: String,
     sequence: i32,
     channel: i32,
-    packet_type_code: i32,
+    packet_type: String,
 ) -> PyResult<Bound<'py, PyBytes>> {
-    let device_type = device_type_from_code(device_type_code)?;
+    let device_type = device_type_named(&device_type)?;
     let class_id = registry::class_id_for_device_type(device_type);
 
     let core = DeviceCore::new(device_id.clone(), device_name.clone(), device_type);
@@ -295,7 +302,7 @@ fn serialize_device_packet<'py>(
         channel,
         timestamp: now_ms_f64(),
         rtt: 0.0,
-        packet_type: packet_type_from_code(packet_type_code)?,
+        packet_type: packet_type_named(&packet_type)?,
         device_type,
         device_name,
         device_id,
@@ -320,8 +327,8 @@ fn deserialize_packet_dict<'py>(py: Python<'py>, data: &[u8]) -> PyResult<Bound<
     d.set_item("channel", pkt.channel)?;
     d.set_item("timestamp", pkt.timestamp)?;
     d.set_item("rtt", pkt.rtt)?;
-    d.set_item("packet_type", pkt.packet_type.code())?;
-    d.set_item("device_type", pkt.device_type.code())?;
+    d.set_item("packet_type", pkt.packet_type.name())?;
+    d.set_item("device_type", pkt.device_type.name())?;
     d.set_item("device_id", pkt.device_id.clone())?;
     d.set_item("device_name", pkt.device_name.clone())?;
     if let Some(msg) = pkt.message.as_ref() {
@@ -335,24 +342,6 @@ fn deserialize_packet_dict<'py>(py: Python<'py>, data: &[u8]) -> PyResult<Bound<
                 d.set_item("message_error", e.to_string())?;
             }
         }
-    }
-    Ok(d)
-}
-
-#[pyfunction]
-fn get_device_type_codes<'py>(py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-    let d = PyDict::new(py);
-    for kind in DeviceType::ALL {
-        d.set_item(kind.label(), kind.code())?;
-    }
-    Ok(d)
-}
-
-#[pyfunction]
-fn get_packet_type_codes<'py>(py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-    let d = PyDict::new(py);
-    for kind in PacketType::ALL {
-        d.set_item(kind.label(), kind.code())?;
     }
     Ok(d)
 }
@@ -565,29 +554,10 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(take_logs, m)?)?;
     m.add_function(wrap_pyfunction!(generate_device_id, m)?)?;
     m.add_function(wrap_pyfunction!(generate_app_id, m)?)?;
-    m.add_function(wrap_pyfunction!(get_device_type_codes, m)?)?;
-    m.add_function(wrap_pyfunction!(get_packet_type_codes, m)?)?;
     m.add_function(wrap_pyfunction!(parse_control_scheme_xml, m)?)?;
     m.add_function(wrap_pyfunction!(version_info, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add("MAX_MESSAGE_LEN", crate::link::framing::MAX_MESSAGE_LEN)?;
-    m.add("DEVICE_TYPE_ANY", DeviceType::Any.code())?;
-    m.add("DEVICE_TYPE_UNITY", DeviceType::Unity.code())?;
-    m.add("DEVICE_TYPE_IPHONE", DeviceType::IPhone.code())?;
-    m.add("DEVICE_TYPE_FLASH", DeviceType::Flash.code())?;
-    m.add("DEVICE_TYPE_ANDROID", DeviceType::Android.code())?;
-    m.add("DEVICE_TYPE_NATIVE", DeviceType::Native.code())?;
-    m.add("DEVICE_TYPE_PALM", DeviceType::Palm.code())?;
-    m.add("DEVICE_TYPE_SERVER", DeviceType::Server.code())?;
-    m.add("ENDPOINT_MODE_NONE", EndpointMode::NONE_CODE)?;
-    m.add("ENDPOINT_MODE_GAME", EndpointMode::Game.code())?;
-    m.add("ENDPOINT_MODE_CONTROLLER", EndpointMode::Controller.code())?;
-    m.add("PACKET_TYPE_DATA", PacketType::Data.code())?;
-    m.add("PACKET_TYPE_PING", PacketType::Ping.code())?;
-    m.add("PACKET_TYPE_ACK", PacketType::Ack.code())?;
-    m.add("PACKET_TYPE_ECHO", PacketType::Echo.code())?;
-    m.add("PACKET_TYPE_ANALYSIS", PacketType::Analysis.code())?;
-    m.add("PACKET_TYPE_KEEP_ALIVE", PacketType::KeepAlive.code())?;
     m.add("__actions__", PyList::empty(py))?;
     Ok(())
 }
@@ -684,7 +654,7 @@ fn device_core_to_py(py: Python<'_>, dev: &DeviceCore) -> PyResult<Py<PyAny>> {
     let d = PyDict::new(py);
     d.set_item("id", dev.device_id.clone())?;
     d.set_item("name", dev.device_name.clone())?;
-    d.set_item("device_type", dev.device_type.code())?;
+    d.set_item("device_type", dev.device_type.name())?;
     if let Some(addr) = dev.address.as_ref() {
         d.set_item("address", address_to_py(py, addr)?)?;
     }
@@ -833,8 +803,11 @@ fn dict_to_registry_info(d: &Bound<'_, PyDict>) -> PyResult<BMRegistryInfo> {
     let dev_dict = dev_any.cast::<PyDict>()?.clone();
     let dev_id = opt_string(dev_dict.get_item("id")?)?.unwrap_or_default();
     let dev_name = opt_string(dev_dict.get_item("name")?)?.unwrap_or_default();
-    let dev_type_code = opt_i32(dev_dict.get_item("device_type")?)?.unwrap_or(0);
-    let dev_type = device_type_from_code(dev_type_code)?;
+    let dev_type_name: String = match dev_dict.get_item("device_type")? {
+        Some(v) => v.extract()?,
+        None => "Any".to_string(),
+    };
+    let dev_type = device_type_named(&dev_type_name)?;
 
     let addr_any = d
         .get_item("device_address")?

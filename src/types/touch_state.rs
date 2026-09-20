@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use serde::{Deserialize, Serialize};
+use crate::types::named::reads_as_its_name;
+use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum TouchState {
     Began = 1,
     Moved = 2,
@@ -11,6 +12,15 @@ pub enum TouchState {
     Ended = 4,
     Cancelled = 5,
 }
+
+reads_as_its_name!(
+    TouchState,
+    TouchState::Began => "Began",
+    TouchState::Moved => "Moved",
+    TouchState::Stationary => "Stationary",
+    TouchState::Ended => "Ended",
+    TouchState::Cancelled => "Cancelled",
+);
 
 impl TouchState {
     pub fn from_value(v: i32) -> Option<Self> {
