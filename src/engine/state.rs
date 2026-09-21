@@ -16,6 +16,7 @@ pub struct EngineState {
     pub(crate) invoke_counter: i32,
     pub(crate) used_slots: HashSet<i16>,
     pub(crate) acked_peers: HashSet<String>,
+    pub(crate) peers_answered: HashSet<String>,
 }
 
 impl EngineState {
@@ -29,6 +30,7 @@ impl EngineState {
             invoke_counter: 1,
             used_slots: HashSet::new(),
             acked_peers: HashSet::new(),
+            peers_answered: HashSet::new(),
         }
     }
 

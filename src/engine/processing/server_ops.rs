@@ -107,6 +107,7 @@ impl Engine {
         self.server_policy.hidden_hosts.remove(device_id);
         self.server_policy.pending_registrations.remove(device_id);
         self.state.acked_peers.remove(device_id);
+        self.state.peers_answered.remove(device_id);
         self.input_paths.remove(device_id);
         self.ping_at.remove(device_id);
         self.schemes.forget_device(device_id);

@@ -170,6 +170,10 @@ impl Engine {
         let Some(record) = self.state.registry.get(&pkt.device_id).cloned() else {
             return;
         };
+        if !self.state.peers_answered.insert(pkt.device_id.clone()) {
+            log::debug!("'{}' acked again, already answered", pkt.device_id);
+            return;
+        }
         out.events.push(Event::PeerConnected { record, udp_port });
 
         // The ack is a game saying it is ready to be talked to, and it arrives
@@ -617,6 +621,85 @@ mod tests {
             Some(9049),
             "a later packet must not erase where the peer can be reached"
         );
+    }
+
+    fn controller_opening_sessions(game: &str) -> Engine {
+        let mut eng = controller_knowing(game);
+        eng.configure(EngineConfig {
+            endpoint: Some(EndpointMode::Controller),
+            opens_sessions: true,
+            screen_width: 1080,
+            screen_height: 2160,
+            ..Default::default()
+        })
+        .unwrap();
+        eng
+    }
+
+    fn greetings(out: &ProcessOutput) -> usize {
+        out.events
+            .iter()
+            .filter(|e| matches!(e, Event::PeerConnected { .. }))
+            .count()
+    }
+
+    #[test]
+    fn an_ack_repeated_until_it_is_answered_opens_one_session() {
+        let mut eng = controller_opening_sessions("game");
+
+        let first = eng.process_incoming(&game_acking("game", 9049), &Arrival::default());
+        assert_eq!(greetings(&first), 1);
+        assert!(
+            !first.outgoings.is_empty(),
+            "the first ack should open the session"
+        );
+
+        for copy in 0..8 {
+            let again = eng.process_incoming(
+                &game_acking("game", 9049),
+                &Arrival {
+                    datagram: true,
+                    ..Default::default()
+                },
+            );
+            assert_eq!(greetings(&again), 0, "copy {copy} announced the peer again");
+            assert!(
+                again.outgoings.is_empty(),
+                "copy {copy} asked for the scheme again"
+            );
+        }
+    }
+
+    #[test]
+    fn a_repeated_ack_still_moves_the_port_it_names() {
+        let mut eng = controller_opening_sessions("game");
+        eng.process_incoming(&game_acking("game", 9049), &Arrival::default());
+        eng.process_incoming(&game_acking("game", 9051), &Arrival::default());
+
+        assert_eq!(
+            address_of(&eng, "game").map(|a| a.unreliable_port),
+            Some(9051)
+        );
+    }
+
+    #[test]
+    fn a_peer_that_left_is_greeted_again_when_it_comes_back() {
+        let mut eng = controller_opening_sessions("game");
+        eng.process_incoming(&game_acking("game", 9080), &Arrival::default());
+        eng.peer_gone("game");
+
+        eng.push_registry_update(DeviceRecord::new(
+            DeviceCore::new("game".to_string(), "Game".to_string(), DeviceType::Unity),
+            None,
+        ));
+        let back = eng.process_incoming(&game_acking("game", 9080), &Arrival::default());
+
+        assert_eq!(
+            greetings(&back),
+            1,
+            "a fresh connection is a fresh greeting"
+        );
+        assert!(!back.outgoings.is_empty(), "and opens the session again");
     }
 
     /// A host list says what a host claims about itself. None of it reaches the
