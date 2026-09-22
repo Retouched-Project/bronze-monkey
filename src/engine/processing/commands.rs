@@ -57,8 +57,7 @@ impl Engine {
                 reliability,
             } => {
                 let channel = channel.unwrap_or_else(|| Self::default_channel_for_object(&object));
-                let reliability =
-                    reliability.unwrap_or_else(|| self.reliability_for(&target, channel));
+                let reliability = reliability.unwrap_or_else(|| self.reliability_for(channel));
                 let msg = match self.build_object_bytes(object) {
                     Ok(m) => m,
                     Err(e) => return Err(EmitError::Encode(e.to_string())),
@@ -172,7 +171,7 @@ impl Engine {
                 self.take_touch_events(&target, events, &mut out.next_send_ms)
             }
             Command::SendTouch { target, touches } => {
-                let reliability = self.reliability_for(&target, ChannelType::Touch.value());
+                let reliability = self.reliability_for(ChannelType::Touch.value());
                 self.make_touch_set(&target, touches, reliability)
             }
             Command::SendAccel { target, x, y, z } => {
@@ -181,8 +180,7 @@ impl Engine {
                 if !paced.send {
                     Vec::new()
                 } else {
-                    let reliability =
-                        self.reliability_for(&target, ChannelType::Acceleration.value());
+                    let reliability = self.reliability_for(ChannelType::Acceleration.value());
                     self.make_accel(&target, x, y, z, reliability)
                 }
             }
@@ -192,7 +190,7 @@ impl Engine {
                 if !paced.send {
                     Vec::new()
                 } else {
-                    let reliability = self.reliability_for(&target, ChannelType::Gyro.value());
+                    let reliability = self.reliability_for(ChannelType::Gyro.value());
                     self.make_gyro(&target, x as f32, y as f32, z as f32, reliability)
                 }
             }
@@ -202,8 +200,7 @@ impl Engine {
                 if !paced.send {
                     Vec::new()
                 } else {
-                    let reliability =
-                        self.reliability_for(&target, ChannelType::Orientation.value());
+                    let reliability = self.reliability_for(ChannelType::Orientation.value());
                     self.make_orientation(
                         &target,
                         x as f32,

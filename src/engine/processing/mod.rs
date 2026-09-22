@@ -259,7 +259,7 @@ impl Engine {
         }
     }
 
-    pub fn reliability_for(&self, _target: &str, channel: i32) -> i32 {
+    pub fn reliability_for(&self, channel: i32) -> i32 {
         let tracked = &self.controller_policy.input_reliability;
         let requested = match ChannelType::from_i32(channel) {
             Some(ChannelType::Touch) => tracked.touch,

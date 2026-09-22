@@ -173,7 +173,7 @@ impl Engine {
         }
         let touches: Vec<Touch> = self.touch.pending.values().cloned().collect();
         let target = self.touch.target.clone();
-        let reliability = self.reliability_for(&target, ChannelType::Touch.value());
+        let reliability = self.reliability_for(ChannelType::Touch.value());
 
         self.touch.last_flush_ms = self.clock_ms;
         self.touch.unreported = false;
@@ -197,8 +197,8 @@ impl Engine {
     /// game that lost the datagram is not left holding a stale position for as
     /// long as the finger lasts.
     pub(crate) fn touch_repeat_due(&self) -> Option<u64> {
-        let unreliable = self.reliability_for(&self.touch.target, ChannelType::Touch.value())
-            == BMReliability::Unreliable.code();
+        let unreliable =
+            self.reliability_for(ChannelType::Touch.value()) == BMReliability::Unreliable.code();
         if self.touch.pending.is_empty() || !unreliable {
             return None;
         }
