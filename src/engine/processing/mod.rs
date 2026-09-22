@@ -58,7 +58,7 @@ impl<'a> RpcContext<'a> {
 
 pub(crate) type RpcHandler = fn(&mut RpcContext);
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct Engine {
     pub(crate) state: EngineState,
     pub(crate) roles: ActiveRoles,
@@ -74,6 +74,12 @@ pub struct Engine {
     pub server_policy: ServerPolicy,
     pub game_policy: GamePolicy,
     pub controller_policy: ControllerPolicy,
+}
+
+impl Default for Engine {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Engine {

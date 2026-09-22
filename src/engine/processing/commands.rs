@@ -792,7 +792,7 @@ mod tests {
     }
 
     fn engine_with_peer(peer: &str) -> Engine {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             "local".to_string(),
             "Local".to_string(),

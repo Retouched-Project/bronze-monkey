@@ -366,7 +366,7 @@ mod tests {
 
     /// A game that will answer with an ack naming the port it listens on.
     fn game_acking(from: &str, unreliable_port: i32) -> Vec<u8> {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         let mut core = DeviceCore::new(from.to_string(), "Game".to_string(), DeviceType::Unity);
         core.address = Some(BMAddress::new("0.0.0.0".to_string(), unreliable_port, 0));
         eng.init_local_device(core);
@@ -384,7 +384,7 @@ mod tests {
     }
 
     fn controller_knowing(game: &str) -> Engine {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             "me".to_string(),
             "Me".to_string(),
@@ -410,7 +410,7 @@ mod tests {
     /// Any ordinary message from a peer. It names the sender in its header and
     /// carries no address at all.
     fn plain_packet_from(peer: &str) -> Vec<u8> {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             peer.to_string(),
             "Game".to_string(),
@@ -429,7 +429,7 @@ mod tests {
     /// A ping carries a peer's address so the other side can reach it, and one
     /// that came unreliably is asking whether that path works in reverse.
     fn ping_from(peer: &str) -> Vec<u8> {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             peer.to_string(),
             "Game".to_string(),
@@ -522,7 +522,7 @@ mod tests {
     }
 
     fn peer_of(id: &str, kind: DeviceType, role: EndpointMode) -> Engine {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(id.to_string(), id.to_string(), kind));
         eng.configure(EngineConfig {
             endpoint: Some(role),
@@ -534,7 +534,7 @@ mod tests {
     }
 
     fn invoke_from(peer: &str, method: &str, state: &str) -> Vec<u8> {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             peer.to_string(),
             peer.to_string(),

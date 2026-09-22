@@ -92,7 +92,7 @@ mod tests {
     use crate::types::packet_type::PacketType;
 
     fn game() -> Engine {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             "game".to_string(),
             "Game".to_string(),
@@ -116,7 +116,7 @@ mod tests {
     }
 
     fn ping_from(controller: &str) -> Vec<u8> {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             controller.to_string(),
             "Phone".to_string(),

@@ -836,7 +836,7 @@ mod session_tests {
     use crate::types::device_type::DeviceType;
 
     fn controller_with_game(game: &str) -> Engine {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             "local".to_string(),
             "Local".to_string(),
@@ -856,7 +856,7 @@ mod session_tests {
     }
 
     fn game_with_controller(datagrams: bool) -> Engine {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             "game".to_string(),
             "Game".to_string(),
@@ -1140,7 +1140,7 @@ mod session_tests {
     /// Building a fake ack the way a game sends one, so the automatic path can
     /// be exercised without a socket.
     fn ack_from(game: &str) -> Vec<u8> {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             game.to_string(),
             "Game".to_string(),

@@ -688,7 +688,7 @@ mod tests {
     }
 
     fn game_with(scheme: Option<&[u8]>) -> Engine {
-        let mut game = Engine::default();
+        let mut game = Engine::new();
         game.init_local_device(DeviceCore::new(
             "game".to_string(),
             "Game".to_string(),
@@ -728,7 +728,7 @@ mod tests {
 
     /// What a controller puts on the wire when it asks for a layout.
     fn request_from(peer: &str) -> Vec<u8> {
-        let mut phone = Engine::default();
+        let mut phone = Engine::new();
         phone.init_local_device(DeviceCore::new(
             peer.to_string(),
             "Phone".to_string(),
@@ -862,7 +862,7 @@ mod tests {
         );
 
         let count = |chunk_bytes: u32| {
-            let mut game = Engine::default();
+            let mut game = Engine::new();
             game.init_local_device(DeviceCore::new(
                 "game".to_string(),
                 "Game".to_string(),
@@ -911,7 +911,7 @@ mod tests {
             })
             .expect("some size is allowed");
 
-        let mut game = Engine::default();
+        let mut game = Engine::new();
         game.init_local_device(DeviceCore::new(
             "a-game-with-a-long-identifier".to_string(),
             "A Game With A Long Name".to_string(),
@@ -976,7 +976,7 @@ mod tests {
 
         // Having introduced itself, it must not ack again when pinged.
         let ping = {
-            let mut phone = Engine::default();
+            let mut phone = Engine::new();
             phone.init_local_device(DeviceCore::new(
                 "phone".to_string(),
                 "Phone".to_string(),
@@ -999,7 +999,7 @@ mod tests {
     fn a_connect_request_leaves_the_device_addressable() {
         let mut game = game_with(None);
         let request = {
-            let mut server = Engine::default();
+            let mut server = Engine::new();
             server.init_local_device(DeviceCore::new(
                 "reg".to_string(),
                 "Registry".to_string(),
@@ -1049,7 +1049,7 @@ mod tests {
 
     #[test]
     fn a_chunk_size_of_nothing_is_refused() {
-        let mut game = Engine::default();
+        let mut game = Engine::new();
         assert!(
             game.configure(EngineConfig {
                 max_chunk_bytes: 0,

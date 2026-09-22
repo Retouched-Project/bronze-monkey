@@ -6,7 +6,7 @@ use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::{DeviceRecord, DeviceRegistry};
 use std::collections::{HashMap, HashSet};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct EngineState {
     pub(crate) registry: DeviceRegistry,
     pub(crate) seq_by_channel: HashMap<i32, i32>,
@@ -17,6 +17,12 @@ pub struct EngineState {
     pub(crate) used_slots: HashSet<i16>,
     pub(crate) acked_peers: HashSet<String>,
     pub(crate) peers_answered: HashSet<String>,
+}
+
+impl Default for EngineState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl EngineState {

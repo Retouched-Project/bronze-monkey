@@ -166,7 +166,7 @@ mod tests {
     use crate::types::device_type::DeviceType;
 
     fn controller() -> Engine {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             "phone".to_string(),
             "Phone".to_string(),

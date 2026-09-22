@@ -172,7 +172,7 @@ mod tests {
     use crate::types::device_type::DeviceType;
 
     fn registry_server() -> Engine {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             "reg".to_string(),
             "Registry".to_string(),
@@ -203,7 +203,7 @@ mod tests {
     /// or it waits at the first step of the session forever.
     #[test]
     fn a_game_acks_a_controller_that_comes_back() {
-        let mut game = Engine::default();
+        let mut game = Engine::new();
         game.init_local_device(DeviceCore::new(
             "game".to_string(),
             "Game".to_string(),
@@ -295,7 +295,7 @@ mod tests {
     }
 
     fn register_from(id: &str) -> Vec<u8> {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             id.to_string(),
             id.to_string(),
@@ -457,7 +457,7 @@ mod tests {
 
     /// A ping, as a controller sends one.
     fn ping_from(peer: &str) -> Vec<u8> {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             peer.to_string(),
             "Phone".to_string(),

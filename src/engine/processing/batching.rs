@@ -231,7 +231,7 @@ mod tests {
     use crate::types::device_type::DeviceType;
 
     fn controller() -> Engine {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             "phone".to_string(),
             "Phone".to_string(),
@@ -563,7 +563,7 @@ mod tests {
     /// Nothing has said touch is wanted, so nothing is sent.
     #[test]
     fn touch_is_not_sent_until_something_asks_for_it() {
-        let mut eng = Engine::default();
+        let mut eng = Engine::new();
         eng.init_local_device(DeviceCore::new(
             "phone".to_string(),
             "Phone".to_string(),
