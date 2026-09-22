@@ -71,15 +71,10 @@ impl EngineState {
         id
     }
 
-    pub(crate) fn allocate_slot(&mut self) -> i16 {
-        let mut candidate = 1i16;
-        loop {
-            if !self.used_slots.contains(&candidate) {
-                self.used_slots.insert(candidate);
-                return candidate;
-            }
-            candidate = candidate.wrapping_add(1);
-        }
+    pub(crate) fn allocate_slot(&mut self) -> Option<i16> {
+        let free = (1..=i16::MAX).find(|slot| !self.used_slots.contains(slot))?;
+        self.used_slots.insert(free);
+        Some(free)
     }
 
     pub(crate) fn upsert_registry_info(&mut self, mut info: BMRegistryInfo) {
@@ -139,6 +134,38 @@ mod tests {
     use super::*;
     use crate::devices::bm_address::BMAddress;
     use crate::types::device_type::DeviceType;
+
+    #[test]
+    fn slots_keep_being_handed_out_past_the_fifteen_that_have_colours() {
+        let mut state = EngineState::new();
+        let handed: Vec<i16> = (0..40).map(|_| state.allocate_slot().unwrap()).collect();
+
+        assert_eq!(handed, (1..=40).collect::<Vec<i16>>());
+    }
+
+    #[test]
+    fn an_allocated_slot_is_never_zero_or_negative_however_many_are_taken() {
+        let mut state = EngineState::new();
+        state.used_slots = (1..i16::MAX).collect();
+
+        assert_eq!(state.allocate_slot(), Some(i16::MAX));
+        assert_eq!(
+            state.allocate_slot(),
+            None,
+            "a full registry must refuse rather than wrap"
+        );
+    }
+
+    #[test]
+    fn a_released_slot_is_handed_out_again() {
+        let mut state = EngineState::new();
+        for _ in 0..5 {
+            state.allocate_slot().unwrap();
+        }
+        state.used_slots.remove(&3);
+
+        assert_eq!(state.allocate_slot(), Some(3));
+    }
 
     fn registered(id: &str, kind: DeviceType) -> DeviceRecord {
         let device = DeviceCore::new(id.to_string(), id.to_string(), kind);

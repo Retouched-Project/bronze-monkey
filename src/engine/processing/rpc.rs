@@ -47,7 +47,14 @@ impl Engine {
                 {
                     engine.state.used_slots.remove(&existing);
                 }
-                info.slot_id = engine.state.allocate_slot();
+                match engine.state.allocate_slot() {
+                    Some(slot) => info.slot_id = slot,
+                    None => log::error!(
+                        "no slot left for '{}': a registry holds at most {}",
+                        dev_id,
+                        i16::MAX
+                    ),
+                }
             } else {
                 info.slot_id = 0;
             }

@@ -31,7 +31,14 @@ impl Engine {
             {
                 self.state.used_slots.remove(&existing);
             }
-            info.slot_id = self.state.allocate_slot();
+            match self.state.allocate_slot() {
+                Some(slot) => info.slot_id = slot,
+                None => log::error!(
+                    "no slot left for '{}': a registry holds at most {}",
+                    dev_id,
+                    i16::MAX
+                ),
+            }
         } else {
             info.slot_id = 0;
         }
@@ -314,6 +321,21 @@ mod tests {
             .remove(0)
             .message()
             .to_vec()
+    }
+
+    #[test]
+    fn a_controller_registers_without_a_slot_and_keeps_none() {
+        let mut eng = registry_server();
+        eng.process_incoming(&register_from("phone"), &Default::default());
+
+        let info = eng
+            .registry_info_of("phone")
+            .expect("the controller should be on record");
+        assert_eq!(info.slot_id, 0, "a controller is not a host");
+        assert!(
+            eng.state.used_slots.is_empty(),
+            "registering a controller must not take a slot from the games"
+        );
     }
 
     fn waiting_ids(out: &crate::engine::events::ProcessOutput) -> Vec<String> {
