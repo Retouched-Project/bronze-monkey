@@ -141,7 +141,7 @@ impl Engine {
         Ok(())
     }
 
-    pub(crate) fn resolve_handler(&self, method: &str) -> Option<RpcHandler> {
+    pub(crate) fn resolve_named(&self, method: &str) -> Option<RpcHandler> {
         if let Some(handler) = self.bound_continuations.get(method) {
             return Some(*handler);
         }
@@ -161,6 +161,26 @@ impl Engine {
             return Some(handler);
         }
         None
+    }
+
+    pub(crate) fn resolve_handler(&self, inv: &ReceivedInvoke) -> Option<RpcHandler> {
+        if let Some(handler) = self.resolve_named(&inv.method) {
+            return Some(handler);
+        }
+        if self.roles.game() && self.claims_as_button(inv) {
+            return Some(Engine::rpc_button);
+        }
+        None
+    }
+
+    fn claims_as_button(&self, inv: &ReceivedInvoke) -> bool {
+        if !self.game_policy.button_handlers.contains(&inv.method) {
+            return false;
+        }
+        matches!(
+            self.param_string(&inv.params, 0).as_deref(),
+            Some(crate::engine::methods::BUTTON_DOWN) | Some(crate::engine::methods::BUTTON_UP)
+        )
     }
 
     fn reply_method(return_method: Option<&str>) -> Option<&str> {
@@ -215,7 +235,7 @@ impl Engine {
     }
 
     fn bind_continuation(&mut self, return_method: &str, handler: RpcHandler) {
-        if return_method.is_empty() || self.resolve_handler(return_method).is_some() {
+        if return_method.is_empty() || self.resolve_named(return_method).is_some() {
             return;
         }
         self.bound_continuations

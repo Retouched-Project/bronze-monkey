@@ -597,6 +597,31 @@ impl Engine {
         out
     }
 
+    pub(crate) fn rpc_control_config(ctx: &mut RpcContext) {
+        let Some(cfg) = ctx.engine.parse_control_rpc(ctx.inv) else {
+            return;
+        };
+        ctx.engine.note_sensor_config(&cfg);
+        ctx.push_event(Event::ControlConfig(cfg));
+    }
+
+    pub(crate) fn rpc_set_reliability_for_touch(ctx: &mut RpcContext) {
+        let touch = ctx.param_i32(0);
+        let sensors = ctx.param_i32(1);
+        ctx.engine.set_input_reliability(touch, sensors);
+    }
+
+    pub(crate) fn rpc_button(ctx: &mut RpcContext) {
+        let pressed = ctx.param_str(0) == methods::BUTTON_DOWN;
+        let sender = ctx.sender();
+        let handler = ctx.inv.method.clone();
+        ctx.push_event(Event::Button {
+            sender,
+            handler,
+            pressed,
+        });
+    }
+
     pub(super) fn parse_control_rpc(&self, inv: &ReceivedInvoke) -> Option<ControlConfig> {
         let mut touch_enabled = None;
         let mut accel_enabled = None;

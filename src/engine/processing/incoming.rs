@@ -10,7 +10,6 @@ use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
 use crate::engine::events::{Arrival, Event, ProcessOutput};
-use crate::engine::methods;
 use crate::engine::protocol::deserialize_message;
 use crate::types::packet_type::PacketType;
 
@@ -313,55 +312,24 @@ impl Engine {
         out: &mut ProcessOutput,
     ) {
         log::debug!("rx invoke method={}", inv.method);
-        let mut claimed = false;
 
-        if self.roles.controller() {
-            if inv.method == methods::SET_RELIABILITY_FOR_TOUCH {
-                // Transport config: tracked internally, never surfaced to the consumer.
-                let touch = self.param_i32(&inv.params, 0);
-                let sensors = self.param_i32(&inv.params, 1);
-                self.set_input_reliability(touch, sensors);
-                claimed = true;
-            } else if let Some(cfg) = self.parse_control_rpc(&inv) {
-                self.note_sensor_config(&cfg);
-                out.events.push(Event::ControlConfig(cfg));
-                claimed = true;
-            }
-        }
-
-        if let Some(handler) = self.resolve_handler(&inv.method) {
-            let mut ctx = super::RpcContext {
-                engine: self,
-                inv: &inv,
-                sender_id: sender_id.as_deref(),
-                out,
-            };
-            handler(&mut ctx);
-            claimed = true;
-        }
-
-        if !claimed
-            && self.roles.game()
-            && self.game_policy.button_handlers.contains(&inv.method)
-            && let Some(state) = self.param_string(&inv.params, 0)
-            && (state == methods::BUTTON_DOWN || state == methods::BUTTON_UP)
-        {
-            out.events.push(Event::Button {
-                sender: sender_id.clone().unwrap_or_default(),
-                handler: inv.method.clone(),
-                pressed: state == methods::BUTTON_DOWN,
-            });
-            claimed = true;
-        }
-
-        if !claimed {
+        let Some(handler) = self.resolve_handler(&inv) else {
             out.events.push(Event::Invoke {
                 sender: sender_id,
                 method: inv.method,
                 return_method: inv.return_method,
                 params: inv.params,
             });
-        }
+            return;
+        };
+
+        let mut ctx = super::RpcContext {
+            engine: self,
+            inv: &inv,
+            sender_id: sender_id.as_deref(),
+            out,
+        };
+        handler(&mut ctx);
     }
 
     pub fn push_registry_update(&mut self, mut record: DeviceRecord) -> Option<Event> {
@@ -392,6 +360,7 @@ mod tests {
     use crate::codec::externals::bm_registry_info::BMRegistryInfo;
     use crate::config::EngineConfig;
     use crate::engine::events::Via;
+    use crate::engine::methods;
     use crate::policy::EndpointMode;
     use crate::types::device_type::DeviceType;
 
@@ -586,6 +555,48 @@ mod tests {
         .remove(0)
         .message()
         .to_vec()
+    }
+
+    #[test]
+    fn every_control_method_the_table_claims_is_one_the_parser_reads() {
+        let control = [
+            methods::ENABLE_ACCELEROMETER,
+            methods::ENABLE_TOUCH,
+            methods::SET_TOUCH_INTERVAL,
+            methods::ENABLE_GYRO,
+            methods::SET_GYRO_INTERVAL,
+            methods::ENABLE_ORIENTATION,
+            methods::SET_ORIENTATION_INTERVAL,
+            methods::SET_CONTROL_MODE,
+            methods::WAIT_FOR_NEW_HOST,
+            methods::ON_PORTAL_ID,
+        ];
+
+        for method in control {
+            let mut eng = controller_knowing("game");
+            let out = eng.process_incoming(&invoke_from("me", method, "1"), &Arrival::default());
+            assert!(
+                out.events
+                    .iter()
+                    .any(|e| matches!(e, Event::ControlConfig(_))),
+                "{method} is claimed but read as nothing"
+            );
+        }
+    }
+
+    #[test]
+    fn an_unclaimed_method_is_handed_on_rather_than_swallowed() {
+        let mut eng = controller_knowing("game");
+        let out = eng.process_incoming(
+            &invoke_from("me", "somethingNobodyImplements", "1"),
+            &Arrival::default(),
+        );
+        assert!(
+            out.events
+                .iter()
+                .any(|e| matches!(e, Event::Invoke { method, .. } if method == "somethingNobodyImplements")),
+            "an unknown method should arrive as a raw invoke"
+        );
     }
 
     #[test]

@@ -62,6 +62,17 @@ impl ControllerPolicy {
         Some(match method {
             methods::DEFAULT_RETURN_REGISTER => Engine::rpc_on_register_reply,
             methods::DEFAULT_RETURN_LIST => Engine::rpc_on_list,
+            methods::SET_RELIABILITY_FOR_TOUCH => Engine::rpc_set_reliability_for_touch,
+            methods::ENABLE_ACCELEROMETER
+            | methods::ENABLE_TOUCH
+            | methods::SET_TOUCH_INTERVAL
+            | methods::ENABLE_GYRO
+            | methods::SET_GYRO_INTERVAL
+            | methods::ENABLE_ORIENTATION
+            | methods::SET_ORIENTATION_INTERVAL
+            | methods::SET_CONTROL_MODE
+            | methods::WAIT_FOR_NEW_HOST
+            | methods::ON_PORTAL_ID => Engine::rpc_control_config,
             methods::ON_HOST_CONNECTED => Engine::rpc_on_host_connected,
             methods::ON_HOST_UPDATE => Engine::rpc_host_updated,
             methods::ON_HOST_DISCONNECTED => Engine::rpc_on_host_disconnected,
