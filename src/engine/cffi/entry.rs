@@ -152,7 +152,10 @@ pub unsafe extern "C" fn bm_engine_init_local_device(
         };
         let core: DeviceCore = match rmp_serde::from_slice(in_slice(mp_ptr, mp_len)) {
             Ok(c) => c,
-            Err(_) => return false,
+            Err(e) => {
+                crate::set_last_error(e);
+                return false;
+            }
         };
         engine.init_local_device(core);
         true
@@ -181,7 +184,10 @@ pub unsafe extern "C" fn bm_engine_process_incoming(
             0 => Arrival::default(),
             _ => match rmp_serde::from_slice(in_slice(arrival, arrival_len)) {
                 Ok(a) => a,
-                Err(_) => return false,
+                Err(e) => {
+                    crate::set_last_error(e);
+                    return false;
+                }
             },
         };
         let out = engine.process_incoming(in_slice(payload, payload_len), &arrival);
@@ -404,7 +410,10 @@ pub unsafe extern "C" fn bm_controls_parse_xml(
         let mut parser = BMApplicationSchemeParser::new();
         let scheme = match parser.parse(in_slice(xml_ptr, xml_len)) {
             Ok(s) => s,
-            Err(_) => return false,
+            Err(e) => {
+                crate::set_last_error(e);
+                return false;
+            }
         };
         let mut buf = Vec::new();
         if scheme.encode(&mut buf).is_err() {
