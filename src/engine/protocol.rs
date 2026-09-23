@@ -106,9 +106,8 @@ pub fn deserialize_message(payload: &[u8], pkt: &mut BMPacket) -> Result<()> {
     let pkt_type_code = body.read_int()?;
     let dev_type_code = body.read_int()?;
 
-    pkt.packet_type = PacketType::from_i32(pkt_type_code).ok_or("Invalid packet type")?;
-    pkt.device_type =
-        DeviceType::for_value(dev_type_code).map_err(|e| format!("Invalid DeviceType: {}", e))?;
+    pkt.packet_type = PacketType::from_code(pkt_type_code)?;
+    pkt.device_type = DeviceType::from_code(dev_type_code)?;
 
     pkt.device_id = body
         .read_utf()

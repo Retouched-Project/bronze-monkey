@@ -4,12 +4,13 @@
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::{DeviceRecord, DeviceRegistry};
+use crate::types::channel_type::ChannelType;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub struct EngineState {
     pub(crate) registry: DeviceRegistry,
-    pub(crate) seq_by_channel: HashMap<i32, i32>,
+    pub(crate) seq_by_channel: HashMap<ChannelType, i32>,
     pub(crate) local_device: Option<DeviceCore>,
     pub(crate) local_info: Option<BMRegistryInfo>,
     pub(crate) chunk_buffers: HashMap<String, Vec<u8>>,
@@ -60,7 +61,7 @@ impl EngineState {
         self.local_device = Some(core);
     }
 
-    pub(crate) fn next_sequence(&mut self, channel: i32) -> i32 {
+    pub(crate) fn next_sequence(&mut self, channel: ChannelType) -> i32 {
         let entry = self.seq_by_channel.entry(channel).or_insert(0);
         let current = *entry;
         *entry = entry.wrapping_add(1);

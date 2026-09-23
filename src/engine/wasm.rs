@@ -7,6 +7,7 @@ use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::events::{Arrival, Command};
+use crate::logging::LogLevel;
 use crate::types::device_type::DeviceType;
 use console_error_panic_hook;
 use js_sys;
@@ -70,16 +71,22 @@ pub fn version_info() -> Result<JsValue, JsError> {
 }
 
 #[wasm_bindgen]
-pub fn configure_logging(level: u8, capacity: u32) -> bool {
-    crate::logging::install(crate::logging::LogConfig {
-        level: crate::logging::level_filter_from_u8(level),
+pub fn configure_logging(
+    #[wasm_bindgen(unchecked_param_type = "LogLevel")] level: i32,
+    capacity: u32,
+) -> Result<bool, JsError> {
+    Ok(crate::logging::install(crate::logging::LogConfig {
+        level: LogLevel::from_code(level)?,
         capacity: capacity as usize,
-    })
+    }))
 }
 
 #[wasm_bindgen]
-pub fn set_log_level(level: u8) {
-    crate::logging::set_level(crate::logging::level_filter_from_u8(level));
+pub fn set_log_level(
+    #[wasm_bindgen(unchecked_param_type = "LogLevel")] level: i32,
+) -> Result<(), JsError> {
+    crate::logging::set_level(LogLevel::from_code(level)?);
+    Ok(())
 }
 
 #[wasm_bindgen]
@@ -122,15 +129,12 @@ impl BmEngineWasm {
         &mut self,
         id: &str,
         name: &str,
-        type_name: String,
+        #[wasm_bindgen(unchecked_param_type = "DeviceType")] device_type: i32,
         address: &str,
         unreliable_port: i32,
         reliable_port: i32,
     ) -> Result<(), JsError> {
-        let dt = DeviceType::ALL
-            .into_iter()
-            .find(|kind| kind.name() == type_name)
-            .ok_or_else(|| JsError::new(&format!("unknown device type '{type_name}'")))?;
+        let dt = DeviceType::from_code(device_type)?;
         let mut core = DeviceCore::new(id.to_string(), name.to_string(), dt);
         core.address = Some(BMAddress {
             address: address.to_string(),
@@ -388,12 +392,11 @@ impl HandshakerWasm {
     /// different build.
     #[wasm_bindgen(constructor)]
     pub fn new(
-        role: i32,
+        #[wasm_bindgen(unchecked_param_type = "LinkRole")] role: i32,
         current: Option<Vec<u16>>,
         minimum: Option<Vec<u16>>,
     ) -> Result<HandshakerWasm, JsError> {
-        let role = crate::link::negotiation::LinkRole::from_code(role)
-            .ok_or_else(|| JsError::new("unknown link role"))?;
+        let role = crate::link::negotiation::LinkRole::from_code(role)?;
         let inner = match (version_from(current)?, version_from(minimum)?) {
             (Some(current), Some(minimum)) => crate::link::negotiation::Handshaker::with_version(
                 role,

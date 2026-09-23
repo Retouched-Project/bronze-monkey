@@ -147,7 +147,7 @@ mod tests {
             BM_CLASS_ID_SERVER_DEVICE,
             BM_CLASS_ID_FLASH_DEVICE,
         ];
-        for kind in DeviceType::ALL {
+        for &kind in DeviceType::ALL {
             let id = class_id_for_device_type(kind);
             assert!(
                 device_classes.contains(&id),

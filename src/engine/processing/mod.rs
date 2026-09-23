@@ -12,6 +12,7 @@ mod server_ops;
 mod time;
 
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+use crate::codec::externals::bm_reliability::BMReliability;
 use crate::codec::messages::bm_encoding::Value;
 use crate::config::{ConfigError, EngineConfig};
 use crate::devices::device_core::DeviceCore;
@@ -256,7 +257,11 @@ impl Engine {
         self.reset_touch();
     }
 
-    pub(crate) fn set_input_reliability(&mut self, touch: Option<i32>, sensors: Option<i32>) {
+    pub(crate) fn set_input_reliability(
+        &mut self,
+        touch: Option<BMReliability>,
+        sensors: Option<BMReliability>,
+    ) {
         if let Some(touch) = touch {
             self.controller_policy.input_reliability.touch = Some(touch);
         }
@@ -265,11 +270,11 @@ impl Engine {
         }
     }
 
-    pub fn reliability_for(&self, channel: i32) -> i32 {
+    pub fn reliability_for(&self, channel: ChannelType) -> BMReliability {
         let tracked = &self.controller_policy.input_reliability;
-        let requested = match ChannelType::from_i32(channel) {
-            Some(ChannelType::Touch) => tracked.touch,
-            Some(ChannelType::Acceleration | ChannelType::Gyro | ChannelType::Orientation) => {
+        let requested = match channel {
+            ChannelType::Touch => tracked.touch,
+            ChannelType::Acceleration | ChannelType::Gyro | ChannelType::Orientation => {
                 tracked.sensors
             }
             _ => None,

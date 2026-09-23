@@ -486,6 +486,23 @@ mod tests {
         );
     }
 
+    #[test]
+    fn a_ping_on_a_channel_we_do_not_know_is_not_echoed() {
+        let mut eng = controller_knowing("game");
+        eng.process_incoming(&game_acking("game", 9049), &Arrival::default());
+
+        let mut ping = BMPacket::default();
+        deserialize_message(&ping_from("game"), &mut ping).expect("a ping is a message");
+        ping.channel = 42;
+        let ping = crate::engine::protocol::serialize_message(&ping).unwrap();
+
+        assert!(
+            eng.process_incoming(&ping, &Arrival::default())
+                .outgoings
+                .is_empty()
+        );
+    }
+
     /// A game recognises a button by the handler name its scheme gave it, and
     /// a controller has no business doing so.
     #[test]

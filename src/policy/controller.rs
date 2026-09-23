@@ -7,13 +7,14 @@
 //! reliability the game requested via setReliabilityForTouch, applied when the
 //! controller emits touch/sensor packets.
 
+use crate::codec::externals::bm_reliability::BMReliability;
 use crate::engine::methods;
 use crate::engine::processing::{Engine, RpcHandler};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct InputReliability {
-    pub touch: Option<i32>,
-    pub sensors: Option<i32>,
+    pub touch: Option<BMReliability>,
+    pub sensors: Option<BMReliability>,
 }
 
 /// The screen a game is asked to lay a control scheme out for.

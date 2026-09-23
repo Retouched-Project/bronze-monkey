@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::types::named::reads_as_its_name;
+use crate::types::coded::crosses_as_its_code;
 use serde::{Deserialize, Serialize};
 
 pub mod controller;
@@ -12,75 +12,13 @@ pub use controller::{ControllerPolicy, InputReliability, SessionInputs, Viewport
 pub use game::GamePolicy;
 pub use server::ServerPolicy;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[cfg_attr(feature = "pyo3", pyo3::pyclass(eq, eq_int, from_py_object))]
-#[repr(i32)]
-pub enum EndpointMode {
-    Game = 1,
-    Controller = 2,
-}
-
-reads_as_its_name!(
-    EndpointMode,
-    EndpointMode::Game => "Game",
-    EndpointMode::Controller => "Controller",
-);
-
-impl EndpointMode {
-    pub const NONE_CODE: i32 = 0;
-
-    pub fn name(self) -> &'static str {
-        match self {
-            EndpointMode::Game => "Game",
-            EndpointMode::Controller => "Controller",
-        }
-    }
-
-    pub fn code(self) -> i32 {
-        self as i32
-    }
-
-    /// Reads a code that is allowed to say "no endpoint role at all".
-    pub fn from_code(v: i32) -> Result<Option<Self>, EndpointModeError> {
-        match v {
-            Self::NONE_CODE => Ok(None),
-            other => Self::try_from(other).map(Some),
-        }
+crosses_as_its_code! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum EndpointMode {
+        Game = 1,
+        Controller = 2,
     }
 }
-
-impl From<EndpointMode> for i32 {
-    fn from(value: EndpointMode) -> Self {
-        value.code()
-    }
-}
-
-impl TryFrom<i32> for EndpointMode {
-    type Error = EndpointModeError;
-
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
-        match value {
-            1 => Ok(EndpointMode::Game),
-            2 => Ok(EndpointMode::Controller),
-            _ => Err(EndpointModeError::OutOfRange(value)),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum EndpointModeError {
-    OutOfRange(i32),
-}
-
-impl std::fmt::Display for EndpointModeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            EndpointModeError::OutOfRange(v) => write!(f, "EndpointMode out of range: {v}"),
-        }
-    }
-}
-
-impl std::error::Error for EndpointModeError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct ActiveRoles {
@@ -128,50 +66,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn each_endpoint_role_survives_a_round_trip() {
-        for mode in [EndpointMode::Game, EndpointMode::Controller] {
-            assert_eq!(EndpointMode::from_code(mode.code()), Ok(Some(mode)));
-        }
-    }
-
-    #[test]
-    fn taking_no_endpoint_role_has_a_code_of_its_own() {
-        assert_eq!(EndpointMode::from_code(EndpointMode::NONE_CODE), Ok(None));
-    }
-
-    #[test]
-    fn an_unreadable_code_is_refused_rather_than_dropped() {
-        for code in [-1, 3, 99] {
-            assert_eq!(
-                EndpointMode::from_code(code),
-                Err(EndpointModeError::OutOfRange(code)),
-                "{code} should not have been accepted"
-            );
-        }
-    }
-
-    #[test]
-    fn a_role_crosses_a_binding_as_its_name() {
-        for mode in [EndpointMode::Game, EndpointMode::Controller] {
-            let bytes = rmp_serde::to_vec(&mode).expect("a role serialises");
-            let wrote: String = rmp_serde::from_slice(&bytes).expect("as its name");
-            assert_eq!(wrote, mode.name());
-
-            let back: EndpointMode = rmp_serde::from_slice(&bytes).expect("and reads back");
-            assert_eq!(back, mode);
-        }
-    }
-
-    #[test]
-    fn a_role_nobody_has_heard_of_is_refused_at_the_boundary() {
-        let bytes = rmp_serde::to_vec("Referee").unwrap();
-        assert!(rmp_serde::from_slice::<EndpointMode>(&bytes).is_err());
-    }
-
-    #[test]
     fn no_role_at_all_is_absence_rather_than_a_number() {
         let bytes = rmp_serde::to_vec(&None::<EndpointMode>).unwrap();
         let back: Option<EndpointMode> = rmp_serde::from_slice(&bytes).unwrap();
         assert_eq!(back, None);
+
+        let zero = rmp_serde::to_vec(&0).unwrap();
+        assert!(rmp_serde::from_slice::<Option<EndpointMode>>(&zero).is_err());
     }
 }

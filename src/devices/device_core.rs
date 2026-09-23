@@ -30,8 +30,7 @@ impl DeviceCore {
 
     pub fn read_from<B: AsRef<[u8]>>(input: &mut BMStream<B>) -> Result<Self> {
         let type_int = input.read_int()?;
-        let device_type = DeviceType::for_value(type_int)
-            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })?;
+        let device_type = DeviceType::from_code(type_int)?;
         let device_id = input.read_utf()?;
         let device_name = input.read_utf()?;
         Ok(Self {

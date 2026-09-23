@@ -7,6 +7,7 @@ use crate::codec::bm_stream::BMStream;
 use crate::codec::externals::bm_array::BMArray;
 use crate::codec::externals::bm_packet::BMPacket;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+use crate::codec::externals::bm_reliability::BMReliability;
 use crate::codec::externals::bm_version::BMVersion;
 use crate::codec::externals::handshake::handshake_bytes;
 use crate::codec::externals::registry;
@@ -19,14 +20,20 @@ use crate::controls::parser::BMApplicationSchemeParser;
 use crate::devices::bm_address::BMAddress;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
-use crate::engine::events::{Arrival, Command};
+use crate::engine::events::{Arrival, Command, Sensor, TouchPhase};
 use crate::engine::processing::Engine;
 use crate::engine::protocol::{
     deserialize_packet as protocol_deserialize_packet, serialize_packet,
 };
+use crate::link::negotiation::{LinkRole, VersionCheck};
+use crate::logging::LogLevel;
 use crate::policy::EndpointMode;
+use crate::types::channel_type::ChannelType;
+use crate::types::coded::UnknownCode;
+use crate::types::control_mode::ControlMode;
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
+use crate::types::touch_state::TouchState;
 use prost::Message;
 use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyBytes, PyDict, PyFloat, PyInt, PyList, PyModule, PyString};
@@ -35,16 +42,17 @@ use std::sync::RwLock;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[pyfunction]
-fn configure_logging(level: u8, capacity: usize) -> bool {
-    crate::logging::install(crate::logging::LogConfig {
-        level: crate::logging::level_filter_from_u8(level),
+fn configure_logging(level: i32, capacity: usize) -> PyResult<bool> {
+    Ok(crate::logging::install(crate::logging::LogConfig {
+        level: LogLevel::from_code(level)?,
         capacity,
-    })
+    }))
 }
 
 #[pyfunction]
-fn set_log_level(level: u8) {
-    crate::logging::set_level(crate::logging::level_filter_from_u8(level));
+fn set_log_level(level: i32) -> PyResult<()> {
+    crate::logging::set_level(LogLevel::from_code(level)?);
+    Ok(())
 }
 
 #[pyfunction]
@@ -62,22 +70,10 @@ fn generate_app_id() -> String {
     crate::identity::generate_app_id()
 }
 
-fn device_type_named(name: &str) -> PyResult<DeviceType> {
-    DeviceType::ALL
-        .into_iter()
-        .find(|kind| kind.name() == name)
-        .ok_or_else(|| {
-            pyo3::exceptions::PyValueError::new_err(format!("unknown device type '{name}'"))
-        })
-}
-
-fn packet_type_named(name: &str) -> PyResult<PacketType> {
-    PacketType::ALL
-        .into_iter()
-        .find(|kind| kind.name() == name)
-        .ok_or_else(|| {
-            pyo3::exceptions::PyValueError::new_err(format!("unknown packet type '{name}'"))
-        })
+impl From<UnknownCode> for PyErr {
+    fn from(e: UnknownCode) -> Self {
+        pyo3::exceptions::PyValueError::new_err(e.to_string())
+    }
 }
 
 #[pyclass]
@@ -98,9 +94,9 @@ impl BMEnginePy {
         &self,
         device_id: String,
         device_name: String,
-        device_type: String,
+        device_type: i32,
     ) -> PyResult<()> {
-        let dt = device_type_named(&device_type)?;
+        let dt = DeviceType::from_code(device_type)?;
         let mut eng = self.inner.write().unwrap();
         eng.init_local_device(DeviceCore::new(device_id, device_name, dt));
         Ok(())
@@ -110,12 +106,12 @@ impl BMEnginePy {
         &self,
         device_id: String,
         device_name: String,
-        device_type: String,
+        device_type: i32,
         address: String,
         unreliable_port: i32,
         reliable_port: i32,
     ) -> PyResult<()> {
-        let dt = device_type_named(&device_type)?;
+        let dt = DeviceType::from_code(device_type)?;
         let mut eng = self.inner.write().unwrap();
         let mut core = DeviceCore::new(device_id, device_name, dt);
         core.address = Some(BMAddress {
@@ -234,8 +230,8 @@ fn serialize_invoke_packet<'py>(
     device_id: String,
     device_name: String,
     channel: i32,
-    packet_type: String,
-    device_type: String,
+    packet_type: i32,
+    device_type: i32,
 ) -> PyResult<Bound<'py, PyBytes>> {
     let mut rust_params = Vec::new();
     for p in params.iter() {
@@ -255,11 +251,11 @@ fn serialize_invoke_packet<'py>(
 
     let packet = BMPacket {
         sequence,
-        channel,
+        channel: ChannelType::from_code(channel)?.code(),
         timestamp: now_ms_f64(),
         rtt: 0.0,
-        packet_type: packet_type_named(&packet_type)?,
-        device_type: device_type_named(&device_type)?,
+        packet_type: PacketType::from_code(packet_type)?,
+        device_type: DeviceType::from_code(device_type)?,
         device_name,
         device_id,
         message: Some(message_bytes),
@@ -278,12 +274,12 @@ fn serialize_device_packet<'py>(
     py: Python<'py>,
     device_id: String,
     device_name: String,
-    device_type: String,
+    device_type: i32,
     sequence: i32,
     channel: i32,
-    packet_type: String,
+    packet_type: i32,
 ) -> PyResult<Bound<'py, PyBytes>> {
-    let device_type = device_type_named(&device_type)?;
+    let device_type = DeviceType::from_code(device_type)?;
     let class_id = registry::class_id_for_device_type(device_type);
 
     let core = DeviceCore::new(device_id.clone(), device_name.clone(), device_type);
@@ -299,10 +295,10 @@ fn serialize_device_packet<'py>(
 
     let packet = BMPacket {
         sequence,
-        channel,
+        channel: ChannelType::from_code(channel)?.code(),
         timestamp: now_ms_f64(),
         rtt: 0.0,
-        packet_type: packet_type_named(&packet_type)?,
+        packet_type: PacketType::from_code(packet_type)?,
         device_type,
         device_name,
         device_id,
@@ -530,6 +526,23 @@ impl PolicySnifferPy {
     }
 }
 
+fn add_int_enum(m: &Bound<'_, PyModule>, name: &str, table: &[(&str, i32)]) -> PyResult<()> {
+    let py = m.py();
+    let members = PyList::new(py, table.iter().copied())?;
+    let cls = py
+        .import("enum")?
+        .getattr("IntEnum")?
+        .call1((name, members))?;
+    cls.setattr("__module__", m.name()?)?;
+    m.add(name, cls)
+}
+
+macro_rules! add_int_enums {
+    ($m:expr, $($ty:ident),+ $(,)?) => {$(
+        add_int_enum($m, stringify!($ty), $ty::TABLE)?;
+    )+};
+}
+
 #[pymodule]
 #[pyo3(name = "bronze_monkey")]
 fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -539,7 +552,21 @@ fn bronze_monkey_py(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<FramerPy>()?;
     m.add_class::<HandshakerPy>()?;
     m.add_class::<PolicySnifferPy>()?;
-    m.add_class::<EndpointMode>()?;
+    add_int_enums!(
+        m,
+        DeviceType,
+        PacketType,
+        EndpointMode,
+        TouchState,
+        ControlMode,
+        ChannelType,
+        BMReliability,
+        LinkRole,
+        LogLevel,
+        Sensor,
+        TouchPhase,
+        VersionCheck
+    );
     m.add_function(wrap_pyfunction!(handshake, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_invoke_packet, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_device_packet, m)?)?;
@@ -803,11 +830,10 @@ fn dict_to_registry_info(d: &Bound<'_, PyDict>) -> PyResult<BMRegistryInfo> {
     let dev_dict = dev_any.cast::<PyDict>()?.clone();
     let dev_id = opt_string(dev_dict.get_item("id")?)?.unwrap_or_default();
     let dev_name = opt_string(dev_dict.get_item("name")?)?.unwrap_or_default();
-    let dev_type_name: String = match dev_dict.get_item("device_type")? {
-        Some(v) => v.extract()?,
-        None => "Any".to_string(),
+    let dev_type = match dev_dict.get_item("device_type")? {
+        Some(v) => DeviceType::from_code(v.extract()?)?,
+        None => DeviceType::Any,
     };
-    let dev_type = device_type_named(&dev_type_name)?;
 
     let addr_any = d
         .get_item("device_address")?
@@ -857,8 +883,7 @@ impl HandshakerPy {
         current: Option<(u8, u8, u16)>,
         minimum: Option<(u8, u8, u16)>,
     ) -> PyResult<Self> {
-        let role = crate::link::negotiation::LinkRole::from_code(role)
-            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("unknown link role"))?;
+        let role = crate::link::negotiation::LinkRole::from_code(role)?;
         let inner = match (current, minimum) {
             (Some(c), Some(m)) => crate::link::negotiation::Handshaker::with_version(
                 role,

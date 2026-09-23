@@ -17,6 +17,7 @@ use crate::codec::externals::bm_version::BMVersion;
 use crate::codec::externals::handshake::Handshake;
 use crate::codec::object::Object;
 use crate::engine::protocol::{deserialize_message, serialize_message};
+use crate::types::channel_type::ChannelType;
 use crate::types::device_type::DeviceType;
 use crate::types::packet_type::PacketType;
 
@@ -45,7 +46,7 @@ pub struct PacketView {
     #[serde(default)]
     pub sequence: i32,
     #[serde(default)]
-    pub channel: i32,
+    pub channel: ChannelType,
     #[serde(default)]
     pub timestamp: f64,
     #[serde(default)]
@@ -74,7 +75,7 @@ impl PacketView {
         };
         Ok(BMPacket {
             sequence: self.sequence,
-            channel: self.channel,
+            channel: self.channel.code(),
             timestamp: self.timestamp,
             rtt: self.rtt,
             packet_type: self.packet_type,
@@ -96,9 +97,10 @@ impl PacketView {
             }
             _ => None,
         };
+        let channel = ChannelType::from_code(pkt.channel)?;
         Ok(Self {
             sequence: pkt.sequence,
-            channel: pkt.channel,
+            channel,
             timestamp: pkt.timestamp,
             rtt: pkt.rtt,
             packet_type: pkt.packet_type,
@@ -144,7 +146,6 @@ mod tests {
     use crate::codec::messages::bm_invoke::BMInvoke;
     use crate::devices::bm_address::BMAddress;
     use crate::devices::device_core::DeviceCore;
-    use crate::types::channel_type::ChannelType;
 
     // BMPacket { message: BMInvoke { onHostUpdate, [BMRegistryInfo] } }
     fn host_update() -> PacketView {
@@ -165,7 +166,7 @@ mod tests {
         };
         PacketView {
             sequence: 7,
-            channel: 3,
+            channel: ChannelType::Message,
             timestamp: 1234.5,
             rtt: 0.0,
             packet_type: PacketType::Data,
@@ -241,7 +242,7 @@ mod tests {
     fn a_sensor_packet_round_trips() {
         // Sensor objects ride inside a packet like any other message.
         let view = PacketView {
-            channel: ChannelType::Acceleration.value(),
+            channel: ChannelType::Acceleration,
             packet_type: PacketType::Data,
             device_type: DeviceType::Android,
             device_id: "phone".to_string(),
@@ -253,7 +254,7 @@ mod tests {
         let WireView::Packet(back) = inspect(&bytes).unwrap() else {
             panic!("expected a packet");
         };
-        assert_eq!(back.channel, ChannelType::Acceleration.value());
+        assert_eq!(back.channel, ChannelType::Acceleration);
         let Some(Object::Acceleration(a)) = back.message else {
             panic!("expected an Acceleration back");
         };
@@ -287,7 +288,7 @@ mod tests {
     #[test]
     fn a_packet_with_no_message_round_trips() {
         let view = PacketView {
-            channel: 0,
+            channel: ChannelType::Broadcast,
             packet_type: PacketType::Ping,
             device_id: "me".to_string(),
             ..Default::default()
@@ -298,6 +299,18 @@ mod tests {
         };
         assert!(back.message.is_none());
         assert_eq!(back.packet_type, PacketType::Ping);
+    }
+
+    #[test]
+    fn a_channel_we_do_not_know_is_reported_not_guessed() {
+        let pkt = BMPacket {
+            channel: 42,
+            device_id: "game-1".to_string(),
+            ..Default::default()
+        };
+        let bytes = crate::engine::protocol::serialize_message(&pkt).unwrap();
+
+        assert!(inspect(&bytes).is_err());
     }
 
     #[test]

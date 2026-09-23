@@ -173,7 +173,7 @@ impl Engine {
         }
         let touches: Vec<Touch> = self.touch.pending.values().cloned().collect();
         let target = self.touch.target.clone();
-        let reliability = self.reliability_for(ChannelType::Touch.value());
+        let reliability = self.reliability_for(ChannelType::Touch);
 
         self.touch.last_flush_ms = self.clock_ms;
         self.touch.unreported = false;
@@ -197,8 +197,7 @@ impl Engine {
     /// game that lost the datagram is not left holding a stale position for as
     /// long as the finger lasts.
     pub(crate) fn touch_repeat_due(&self) -> Option<u64> {
-        let unreliable =
-            self.reliability_for(ChannelType::Touch.value()) == BMReliability::Unreliable.code();
+        let unreliable = self.reliability_for(ChannelType::Touch) == BMReliability::Unreliable;
         if self.touch.pending.is_empty() || !unreliable {
             return None;
         }
@@ -447,7 +446,7 @@ mod tests {
     #[test]
     fn held_back_input_still_arrives_when_touch_is_reliable() {
         let mut eng = controller();
-        eng.set_input_reliability(Some(BMReliability::ReliableOrdered.code()), None);
+        eng.set_input_reliability(Some(BMReliability::ReliableOrdered), None);
         feed(&mut eng, 0, vec![pointer(0, 1.0, TouchPhase::Began)]);
 
         let held = feed(&mut eng, 10, vec![pointer(0, 4.0, TouchPhase::Moved)]);
@@ -465,7 +464,7 @@ mod tests {
     #[test]
     fn a_set_with_nothing_new_owes_no_flush() {
         let mut eng = controller();
-        eng.set_input_reliability(Some(BMReliability::ReliableOrdered.code()), None);
+        eng.set_input_reliability(Some(BMReliability::ReliableOrdered), None);
         feed(&mut eng, 0, vec![pointer(0, 1.0, TouchPhase::Began)]);
 
         assert_eq!(eng.touch_flush_due(), None, "the set has just gone");
@@ -509,7 +508,7 @@ mod tests {
     #[test]
     fn a_reliable_set_is_not_repeated() {
         let mut eng = controller();
-        eng.set_input_reliability(Some(BMReliability::ReliableOrdered.code()), None);
+        eng.set_input_reliability(Some(BMReliability::ReliableOrdered), None);
         feed(&mut eng, 0, vec![pointer(0, 1.0, TouchPhase::Began)]);
 
         assert!(eng.handle_time(100).outgoings.is_empty());
@@ -652,7 +651,7 @@ mod tests {
             id: i32,
             x: f64,
             y: f64,
-            phase: &'static str,
+            phase: i32,
             screen_width: i16,
             screen_height: i16,
         }
@@ -672,7 +671,7 @@ mod tests {
                 id: 2,
                 x: 1.5,
                 y: 2.5,
-                phase: "Began",
+                phase: TouchPhase::Began.code(),
                 screen_width: 480,
                 screen_height: 320,
             }],
@@ -706,7 +705,7 @@ mod tests {
             #[serde(rename = "type")]
             kind: &'static str,
             target: &'static str,
-            sensor: &'static str,
+            sensor: i32,
             enabled: Option<bool>,
             interval_ms: Option<i32>,
         }
@@ -714,7 +713,7 @@ mod tests {
         let bytes = rmp_serde::to_vec_named(&Configure {
             kind: "ConfigureSensor",
             target: "phone",
-            sensor: "Touch",
+            sensor: Sensor::Touch.code(),
             enabled: None,
             interval_ms: Some(32),
         })

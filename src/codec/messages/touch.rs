@@ -25,7 +25,7 @@ impl Touch {
         let screen_width = input.read_short()?;
         let screen_height = input.read_short()?;
         let state_val = input.read_int()?;
-        let state = TouchState::from_value(state_val).ok_or("Invalid TouchState")?;
+        let state = TouchState::from_code(state_val)?;
         let id = input.read_int()?;
         Ok(Self {
             id,
@@ -42,7 +42,7 @@ impl Touch {
         out.write_float(self.y as f32)?;
         out.write_short(self.screen_width)?;
         out.write_short(self.screen_height)?;
-        out.write_int(self.state.value())?;
+        out.write_int(self.state.code())?;
         out.write_int(self.id)
     }
 }

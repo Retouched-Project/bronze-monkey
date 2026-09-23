@@ -1,103 +1,24 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::types::named::reads_as_its_name;
-use serde::Serialize;
+use crate::types::coded::crosses_as_its_code;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Default, Serialize)]
-pub enum DeviceType {
-    #[default]
-    Any,
-    Unity,
-    IPhone,
-    Flash,
-    Android,
-    Native,
-    Palm,
-    Server,
-}
-
-reads_as_its_name!(
-    DeviceType,
-    DeviceType::Any => "Any",
-    DeviceType::Unity => "Unity",
-    DeviceType::IPhone => "IPhone" | "iPhone",
-    DeviceType::Flash => "Flash",
-    DeviceType::Android => "Android",
-    DeviceType::Native => "Native",
-    DeviceType::Palm => "Palm",
-    DeviceType::Server => "Server",
-);
-
-impl From<DeviceType> for i32 {
-    fn from(value: DeviceType) -> Self {
-        value.code()
+crosses_as_its_code! {
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
+    pub enum DeviceType {
+        #[default]
+        Any = 0,
+        Unity = 1,
+        IPhone = 2,
+        Flash = 3,
+        Android = 4,
+        Native = 5,
+        Palm = 6,
+        Server = 7,
     }
 }
-
-impl TryFrom<i32> for DeviceType {
-    type Error = DeviceTypeError;
-
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
-        Self::for_value(value)
-    }
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum DeviceTypeError {
-    OutOfRange(i32),
-}
-
-impl std::fmt::Display for DeviceTypeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DeviceTypeError::OutOfRange(v) => write!(f, "DeviceType out of range: {v}"),
-        }
-    }
-}
-
-impl std::error::Error for DeviceTypeError {}
 
 impl DeviceType {
-    /// Every device type, for callers that publish the whole table.
-    pub const ALL: [DeviceType; 8] = [
-        DeviceType::Any,
-        DeviceType::Unity,
-        DeviceType::IPhone,
-        DeviceType::Flash,
-        DeviceType::Android,
-        DeviceType::Native,
-        DeviceType::Palm,
-        DeviceType::Server,
-    ];
-
-    pub fn code(self) -> i32 {
-        match self {
-            DeviceType::Any => 0,
-            DeviceType::Unity => 1,
-            DeviceType::IPhone => 2,
-            DeviceType::Flash => 3,
-            DeviceType::Android => 4,
-            DeviceType::Native => 5,
-            DeviceType::Palm => 6,
-            DeviceType::Server => 7,
-        }
-    }
-
-    pub fn for_value(v: i32) -> Result<Self, DeviceTypeError> {
-        Ok(match v {
-            0 => DeviceType::Any,
-            1 => DeviceType::Unity,
-            2 => DeviceType::IPhone,
-            3 => DeviceType::Flash,
-            4 => DeviceType::Android,
-            5 => DeviceType::Native,
-            6 => DeviceType::Palm,
-            7 => DeviceType::Server,
-            _ => return Err(DeviceTypeError::OutOfRange(v)),
-        })
-    }
-
     pub fn is_game(self) -> bool {
         matches!(
             self,
@@ -110,19 +31,6 @@ impl DeviceType {
             self,
             DeviceType::Android | DeviceType::IPhone | DeviceType::Palm
         )
-    }
-
-    pub fn name(self) -> &'static str {
-        match self {
-            DeviceType::Any => "Any",
-            DeviceType::Unity => "Unity",
-            DeviceType::IPhone => "IPhone",
-            DeviceType::Flash => "Flash",
-            DeviceType::Android => "Android",
-            DeviceType::Native => "Native",
-            DeviceType::Palm => "Palm",
-            DeviceType::Server => "Server",
-        }
     }
 
     pub fn label(self) -> &'static str {
@@ -147,33 +55,11 @@ impl std::fmt::Display for DeviceType {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn the_name_is_what_crosses() {
-        for kind in DeviceType::ALL {
-            let wrote: String = rmp_serde::from_slice(&rmp_serde::to_vec(&kind).unwrap()).unwrap();
-            assert_eq!(wrote, kind.name(), "{kind:?}");
-        }
-    }
-
     use super::*;
 
     #[test]
-    fn the_table_lists_every_code_in_order() {
-        for (index, kind) in DeviceType::ALL.iter().enumerate() {
-            assert_eq!(
-                kind.code(),
-                index as i32,
-                "{} is out of place",
-                kind.label()
-            );
-        }
-        // A variant added without updating ALL would leave this code reachable.
-        assert!(DeviceType::for_value(DeviceType::ALL.len() as i32).is_err());
-    }
-
-    #[test]
     fn a_device_hosts_or_drives_a_session_but_never_both() {
-        for kind in DeviceType::ALL {
+        for &kind in DeviceType::ALL {
             assert!(
                 !(kind.is_game() && kind.is_controller()),
                 "{} claims both roles",

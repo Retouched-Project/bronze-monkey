@@ -49,7 +49,7 @@ impl Engine {
             out.extend(self.make_object_packet(
                 target,
                 ChannelType::Bytes,
-                BMReliability::ReliableUnordered.code(),
+                BMReliability::ReliableUnordered,
                 PacketType::Data,
                 Object::BMByteChunk(piece),
             ));
@@ -86,18 +86,12 @@ impl Engine {
         &mut self,
         target: &str,
         channel: ChannelType,
-        reliability: impl Into<Option<i32>>,
+        reliability: impl Into<Option<BMReliability>>,
         pkt_type: PacketType,
         obj: Object,
     ) -> Vec<Outgoing> {
         match self.build_object_bytes(obj) {
-            Ok(msg) => self.make_packet(
-                target,
-                channel.value(),
-                reliability.into(),
-                pkt_type,
-                Some(msg),
-            ),
+            Ok(msg) => self.make_packet(target, channel, reliability.into(), pkt_type, Some(msg)),
             Err(e) => {
                 log::error!("build object packet failed: {e}");
                 Vec::new()
@@ -115,8 +109,8 @@ impl Engine {
         match self.build_invoke_payload(method, return_method, params) {
             Ok(msg) => self.make_packet(
                 target,
-                ChannelType::Message.value(),
-                Some(BMReliability::ReliableUnordered.code()),
+                ChannelType::Message,
+                Some(BMReliability::ReliableUnordered),
                 PacketType::Data,
                 Some(msg),
             ),
@@ -150,7 +144,7 @@ impl Engine {
         self.make_object_packet(
             target,
             ChannelType::DPad,
-            BMReliability::ReliableUnordered.code(),
+            BMReliability::ReliableUnordered,
             PacketType::Data,
             Object::DPadUpdate(DPadUpdate::new(x, y)),
         )
@@ -160,7 +154,7 @@ impl Engine {
         &mut self,
         target: &str,
         touches: Vec<Touch>,
-        reliability: i32,
+        reliability: BMReliability,
     ) -> Vec<Outgoing> {
         self.make_object_packet(
             target,
@@ -177,7 +171,7 @@ impl Engine {
         x: f64,
         y: f64,
         z: f64,
-        reliability: i32,
+        reliability: BMReliability,
     ) -> Vec<Outgoing> {
         self.make_object_packet(
             target,
@@ -270,7 +264,7 @@ impl Engine {
         x: f32,
         y: f32,
         z: f32,
-        reliability: i32,
+        reliability: BMReliability,
     ) -> Vec<Outgoing> {
         self.make_object_packet(
             target,
@@ -288,7 +282,7 @@ impl Engine {
         y: f32,
         z: f32,
         w: f32,
-        reliability: i32,
+        reliability: BMReliability,
     ) -> Vec<Outgoing> {
         self.make_object_packet(
             target,
@@ -347,7 +341,7 @@ impl Engine {
         mode: ControlMode,
         text_content: Option<&str>,
     ) -> Vec<Outgoing> {
-        let mut params = vec![Value::I32(mode.to_wire())];
+        let mut params = vec![Value::I32(mode.code())];
         if let Some(text) = text_content {
             params.push(Value::String(text.to_string()));
         }
@@ -432,16 +426,16 @@ impl Engine {
     pub fn make_set_reliability_for_touch(
         &mut self,
         target: &str,
-        touch_reliability: i32,
-        control_reliability: i32,
+        touch_reliability: BMReliability,
+        control_reliability: BMReliability,
     ) -> Vec<Outgoing> {
         self.make_message_invoke(
             target,
             methods::SET_RELIABILITY_FOR_TOUCH,
             None,
             vec![
-                Value::I32(touch_reliability),
-                Value::I32(control_reliability),
+                Value::I32(touch_reliability.code()),
+                Value::I32(control_reliability.code()),
             ],
         )
     }
@@ -565,7 +559,7 @@ impl Engine {
         self.make_object_packet(
             target,
             ChannelType::Broadcast,
-            BMReliability::Unreliable.code(),
+            BMReliability::Unreliable,
             PacketType::Ping,
             Object::Ping(ping),
         )
@@ -584,7 +578,7 @@ impl Engine {
         self.make_object_packet(
             target,
             ChannelType::Message,
-            BMReliability::ReliableUnordered.code(),
+            BMReliability::ReliableUnordered,
             PacketType::Ack,
             Object::AckPacket(ack),
         )
@@ -614,7 +608,7 @@ impl Engine {
         }
         self.state.acked_peers.insert(target.to_string());
         if !self.datagrams {
-            let reliable = BMReliability::ReliableUnordered.code();
+            let reliable = BMReliability::ReliableUnordered;
             out.extend(self.make_set_reliability_for_touch(target, reliable, reliable));
         }
         out
@@ -623,8 +617,8 @@ impl Engine {
     pub fn make_packet(
         &mut self,
         target: &str,
-        channel: i32,
-        reliability: Option<i32>,
+        channel: ChannelType,
+        reliability: Option<BMReliability>,
         packet_type: PacketType,
         message: Option<Vec<u8>>,
     ) -> Vec<Outgoing> {
@@ -658,14 +652,7 @@ impl Engine {
             else {
                 return Vec::new();
             };
-            self.build_packet_bytes(
-                sender,
-                channel,
-                seq,
-                timestamp_ms,
-                packet_type.code(),
-                message,
-            )
+            self.build_packet_bytes(sender, channel, seq, timestamp_ms, packet_type, message)
         };
         match built {
             Ok(bytes) => vec![self.dispatch(target.to_string(), channel, rel, bytes)],
@@ -690,22 +677,29 @@ impl Engine {
             log::warn!("cannot echo to unknown device: {target}");
             return Vec::new();
         };
+        let Ok(channel) = ChannelType::from_code(ping.channel) else {
+            log::warn!(
+                "not echoing a ping from '{target}' on channel {}, which is not one of ours",
+                ping.channel
+            );
+            return Vec::new();
+        };
         let reliability = if datagram {
-            BMReliability::Unreliable.code()
+            BMReliability::Unreliable
         } else {
-            Self::default_reliability_for_channel(ping.channel)
+            Self::default_reliability_for_channel(channel)
         };
 
         let sender = self.state.local_device.as_ref().unwrap_or(&rec.core);
         match self.build_packet_bytes(
             sender,
-            ping.channel,
+            channel,
             ping.sequence,
             ping.timestamp,
-            PacketType::Echo.code(),
+            PacketType::Echo,
             ping.message.clone(),
         ) {
-            Ok(bytes) => vec![self.dispatch(target.to_string(), ping.channel, reliability, bytes)],
+            Ok(bytes) => vec![self.dispatch(target.to_string(), channel, reliability, bytes)],
             Err(e) => {
                 log::error!("echo build failed: {e}");
                 Vec::new()
@@ -721,11 +715,11 @@ impl Engine {
     pub(crate) fn dispatch(
         &mut self,
         target: String,
-        channel: i32,
-        reliability: i32,
+        channel: ChannelType,
+        reliability: BMReliability,
         message: Vec<u8>,
     ) -> Outgoing {
-        let unreliable = reliability == BMReliability::Unreliable.code();
+        let unreliable = reliability == BMReliability::Unreliable;
         let datagram = unreliable
             .then(|| self.datagram_endpoint_of(&target))
             .flatten();
@@ -786,17 +780,17 @@ impl Engine {
     fn build_packet_bytes(
         &self,
         sender: &DeviceCore,
-        channel: i32,
+        channel: ChannelType,
         sequence: i32,
         timestamp_ms: f64,
-        packet_type: i32,
+        packet_type: PacketType,
         message: Option<Vec<u8>>,
     ) -> std::result::Result<Vec<u8>, String> {
         let pkt = BMPacket {
             sequence,
-            channel,
+            channel: channel.code(),
             timestamp: timestamp_ms,
-            packet_type: PacketType::from_i32(packet_type).unwrap_or(PacketType::Data),
+            packet_type,
             device_type: sender.device_type,
             device_name: sender.device_name.clone(),
             device_id: sender.device_id.clone(),
@@ -806,23 +800,20 @@ impl Engine {
         serialize_message(&pkt).map_err(|e| e.to_string())
     }
 
-    pub(super) fn default_reliability_for_channel(channel: i32) -> i32 {
-        if let Some(ct) = ChannelType::from_i32(channel) {
-            match ct {
-                ChannelType::Acceleration
-                | ChannelType::Touch
-                | ChannelType::Gyro
-                | ChannelType::Orientation => BMReliability::Unreliable.code(),
-                _ => BMReliability::ReliableUnordered.code(),
-            }
-        } else {
-            BMReliability::ReliableUnordered.code()
+    pub(super) fn default_reliability_for_channel(channel: ChannelType) -> BMReliability {
+        match channel {
+            ChannelType::Acceleration
+            | ChannelType::Touch
+            | ChannelType::Gyro
+            | ChannelType::Orientation => BMReliability::Unreliable,
+            _ => BMReliability::ReliableUnordered,
         }
     }
 }
 
 #[cfg(test)]
 mod session_tests {
+    use crate::codec::externals::bm_reliability::BMReliability;
     use crate::codec::messages::bm_encoding::Value;
     use crate::config::EngineConfig;
     use crate::devices::device_core::DeviceCore;
@@ -942,11 +933,15 @@ mod session_tests {
             eng.make_enable_orientation("phone", true),
             eng.make_set_orientation_interval("phone", 0.1),
             // setReliabilityForTouch(int, int)
-            eng.make_set_reliability_for_touch("phone", 1, 1),
+            eng.make_set_reliability_for_touch(
+                "phone",
+                BMReliability::ReliableUnordered,
+                BMReliability::ReliableUnordered,
+            ),
             // setCapabilities, read as a uint by a game
             eng.make_set_capabilities("phone", 3),
             // SetControlMode(int) and (int, String)
-            eng.make_set_control_mode("phone", ControlMode::Gamepad, None),
+            eng.make_set_control_mode("phone", ControlMode::Game, None),
             eng.make_set_control_mode("phone", ControlMode::Wait, Some("hold on")),
             // RequestXML(int, int, string)
             eng.make_request_xml("phone", 320, 480, "me"),

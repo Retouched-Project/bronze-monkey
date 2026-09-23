@@ -4,6 +4,7 @@
 use super::{Engine, ReceivedInvoke, RpcContext};
 use crate::codec::externals::bm_array::BMArray;
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+use crate::codec::externals::bm_reliability::BMReliability;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::object::Object;
 use crate::engine::events::{ControlConfig, Event};
@@ -613,8 +614,13 @@ impl Engine {
     }
 
     pub(crate) fn rpc_set_reliability_for_touch(ctx: &mut RpcContext) {
-        let touch = ctx.param_i32(0);
-        let sensors = ctx.param_i32(1);
+        let read = |idx: usize| {
+            let code = ctx.param_i32(idx)?;
+            BMReliability::from_code(code)
+                .inspect_err(|e| log::warn!("setReliabilityForTouch: ignoring it, {e}"))
+                .ok()
+        };
+        let (touch, sensors) = (read(0), read(1));
         ctx.engine.set_input_reliability(touch, sensors);
     }
 
@@ -678,7 +684,7 @@ impl Engine {
             methods::SET_CONTROL_MODE => {
                 control_mode = self
                     .param_i32(&inv.params, 0)
-                    .and_then(ControlMode::from_wire);
+                    .and_then(|code| ControlMode::from_code(code).ok());
                 start_string = self.param_string(&inv.params, 1);
             }
             methods::WAIT_FOR_NEW_HOST => {

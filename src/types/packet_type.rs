@@ -1,52 +1,22 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
-use crate::types::named::reads_as_its_name;
-use serde::Serialize;
+use crate::types::coded::crosses_as_its_code;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Serialize)]
-pub enum PacketType {
-    #[default]
-    Data = 0,
-    Ping = 1,
-    Ack = 2,
-    Echo = 3,
-    Analysis = 4,
-    KeepAlive = 5,
+crosses_as_its_code! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+    pub enum PacketType {
+        #[default]
+        Data = 0,
+        Ping = 1,
+        Ack = 2,
+        Echo = 3,
+        Analysis = 4,
+        KeepAlive = 5,
+    }
 }
 
-reads_as_its_name!(
-    PacketType,
-    PacketType::Data => "Data",
-    PacketType::Ping => "Ping",
-    PacketType::Ack => "Ack",
-    PacketType::Echo => "Echo",
-    PacketType::Analysis => "Analysis",
-    PacketType::KeepAlive => "KeepAlive",
-);
-
 impl PacketType {
-    /// Every packet type, for callers that publish the whole table.
-    pub const ALL: [PacketType; 6] = [
-        PacketType::Data,
-        PacketType::Ping,
-        PacketType::Ack,
-        PacketType::Echo,
-        PacketType::Analysis,
-        PacketType::KeepAlive,
-    ];
-
-    pub fn name(self) -> &'static str {
-        match self {
-            PacketType::Data => "Data",
-            PacketType::Ping => "Ping",
-            PacketType::Ack => "Ack",
-            PacketType::Echo => "Echo",
-            PacketType::Analysis => "Analysis",
-            PacketType::KeepAlive => "KeepAlive",
-        }
-    }
-
     pub fn label(&self) -> &'static str {
         match self {
             PacketType::Data => "DATA",
@@ -56,77 +26,5 @@ impl PacketType {
             PacketType::Analysis => "ANALYSIS",
             PacketType::KeepAlive => "KEEP_ALIVE",
         }
-    }
-
-    pub fn from_i32(v: i32) -> Option<Self> {
-        match v {
-            0 => Some(Self::Data),
-            1 => Some(Self::Ping),
-            2 => Some(Self::Ack),
-            3 => Some(Self::Echo),
-            4 => Some(Self::Analysis),
-            5 => Some(Self::KeepAlive),
-            _ => None,
-        }
-    }
-
-    pub fn code(&self) -> i32 {
-        *self as i32
-    }
-}
-
-impl From<PacketType> for i32 {
-    fn from(value: PacketType) -> Self {
-        value.code()
-    }
-}
-
-impl TryFrom<i32> for PacketType {
-    type Error = PacketTypeError;
-
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
-        Self::from_i32(value).ok_or(PacketTypeError::OutOfRange(value))
-    }
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum PacketTypeError {
-    OutOfRange(i32),
-}
-
-impl std::fmt::Display for PacketTypeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PacketTypeError::OutOfRange(v) => write!(f, "PacketType out of range: {v}"),
-        }
-    }
-}
-
-impl std::error::Error for PacketTypeError {}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn the_name_is_what_crosses() {
-        for kind in PacketType::ALL {
-            let wrote: String = rmp_serde::from_slice(&rmp_serde::to_vec(&kind).unwrap()).unwrap();
-            assert_eq!(wrote, kind.name(), "{kind:?}");
-        }
-    }
-
-    use super::*;
-
-    #[test]
-    fn the_table_lists_every_code_in_order() {
-        for (index, kind) in PacketType::ALL.iter().enumerate() {
-            assert_eq!(
-                kind.code(),
-                index as i32,
-                "{} is out of place",
-                kind.label()
-            );
-        }
-        // A variant added without updating ALL would leave this code reachable.
-        assert!(PacketType::from_i32(PacketType::ALL.len() as i32).is_none());
     }
 }

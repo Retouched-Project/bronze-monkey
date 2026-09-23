@@ -171,7 +171,7 @@ impl Engine {
                 self.take_touch_events(&target, events, &mut out.next_send_ms)
             }
             Command::SendTouch { target, touches } => {
-                let reliability = self.reliability_for(ChannelType::Touch.value());
+                let reliability = self.reliability_for(ChannelType::Touch);
                 self.make_touch_set(&target, touches, reliability)
             }
             Command::SendAccel { target, x, y, z } => {
@@ -180,7 +180,7 @@ impl Engine {
                 if !paced.send {
                     Vec::new()
                 } else {
-                    let reliability = self.reliability_for(ChannelType::Acceleration.value());
+                    let reliability = self.reliability_for(ChannelType::Acceleration);
                     self.make_accel(&target, x, y, z, reliability)
                 }
             }
@@ -190,7 +190,7 @@ impl Engine {
                 if !paced.send {
                     Vec::new()
                 } else {
-                    let reliability = self.reliability_for(ChannelType::Gyro.value());
+                    let reliability = self.reliability_for(ChannelType::Gyro);
                     self.make_gyro(&target, x as f32, y as f32, z as f32, reliability)
                 }
             }
@@ -200,7 +200,7 @@ impl Engine {
                 if !paced.send {
                     Vec::new()
                 } else {
-                    let reliability = self.reliability_for(ChannelType::Orientation.value());
+                    let reliability = self.reliability_for(ChannelType::Orientation);
                     self.make_orientation(
                         &target,
                         x as f32,
@@ -254,7 +254,7 @@ impl Engine {
                 touch,
                 sensors,
             } => {
-                let unreliable = BMReliability::Unreliable.code();
+                let unreliable = BMReliability::Unreliable;
                 if !self.datagrams && (touch == unreliable || sensors == unreliable) {
                     log::warn!(
                         "asking '{target}' for unreliable input leaves it nowhere to send: \
@@ -687,16 +687,16 @@ impl Engine {
         self.make_byte_chunks(target, set_id, xml)
     }
 
-    fn default_channel_for_object(object: &Object) -> i32 {
+    fn default_channel_for_object(object: &Object) -> ChannelType {
         match object {
-            Object::TouchSet(_) => ChannelType::Touch.value(),
-            Object::Acceleration(_) => ChannelType::Acceleration.value(),
-            Object::BMGyro(_) => ChannelType::Gyro.value(),
-            Object::Orientation(_) => ChannelType::Orientation.value(),
-            Object::DPadUpdate(_) => ChannelType::DPad.value(),
-            Object::BMByteChunk(_) => ChannelType::Bytes.value(),
-            Object::StringLiteral(_) => ChannelType::String.value(),
-            _ => ChannelType::Message.value(),
+            Object::TouchSet(_) => ChannelType::Touch,
+            Object::Acceleration(_) => ChannelType::Acceleration,
+            Object::BMGyro(_) => ChannelType::Gyro,
+            Object::Orientation(_) => ChannelType::Orientation,
+            Object::DPadUpdate(_) => ChannelType::DPad,
+            Object::BMByteChunk(_) => ChannelType::Bytes,
+            Object::StringLiteral(_) => ChannelType::String,
+            _ => ChannelType::Message,
         }
     }
 }
@@ -752,6 +752,49 @@ mod tests {
             }
             other => panic!("came back as something else: {other:?}"),
         }
+    }
+
+    #[test]
+    fn channel_and_reliability_cross_as_codes_and_a_name_is_refused() {
+        #[derive(serde::Serialize)]
+        struct Raw<C, R> {
+            r#type: &'static str,
+            target: &'static str,
+            channel: C,
+            reliability: R,
+            #[serde(with = "serde_bytes")]
+            payload: Vec<u8>,
+        }
+
+        let coded = rmp_serde::to_vec_named(&Raw {
+            r#type: "Raw",
+            target: "game1",
+            channel: 2,
+            reliability: 0,
+            payload: vec![1],
+        })
+        .expect("encodes");
+        match rmp_serde::from_slice::<Command>(&coded).expect("reads as a command") {
+            Command::Raw {
+                channel,
+                reliability,
+                ..
+            } => {
+                assert_eq!(channel, ChannelType::Touch);
+                assert_eq!(reliability, BMReliability::Unreliable);
+            }
+            other => panic!("came back as something else: {other:?}"),
+        }
+
+        let named = rmp_serde::to_vec_named(&Raw {
+            r#type: "Raw",
+            target: "game1",
+            channel: "Touch",
+            reliability: "Unreliable",
+            payload: vec![1],
+        })
+        .expect("encodes");
+        assert!(rmp_serde::from_slice::<Command>(&named).is_err());
     }
 
     #[test]
@@ -890,7 +933,7 @@ mod tests {
             )
             .unwrap()
             .outgoings;
-        assert_eq!(sensors[0].reliability, BMReliability::Unreliable.code());
+        assert_eq!(sensors[0].reliability, BMReliability::Unreliable);
         assert_eq!(sensors[0].via, Via::Stream, "no datagram path was declared");
 
         let mut eng = engine_with_datagrams("game1");
@@ -1160,8 +1203,8 @@ mod tests {
         let out = eng.emit(
             Command::Raw {
                 target: String::new(),
-                channel: 3,
-                reliability: 2,
+                channel: ChannelType::Message,
+                reliability: BMReliability::ReliableOrdered,
                 payload: vec![1, 2, 3],
             },
             None,

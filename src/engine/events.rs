@@ -2,6 +2,7 @@
 // Copyright (C) 2026 ddavef/KinteLiX bronze-monkey
 
 use crate::codec::externals::bm_registry_info::BMRegistryInfo;
+use crate::codec::externals::bm_reliability::BMReliability;
 use crate::codec::messages::bm_encoding::Value;
 use crate::codec::messages::touch::Touch;
 use crate::codec::object::Object;
@@ -9,6 +10,8 @@ use crate::controls::Screen;
 use crate::controls::builder::Rect;
 use crate::devices::device_core::DeviceCore;
 use crate::engine::device_registry::DeviceRecord;
+use crate::types::channel_type::ChannelType;
+use crate::types::coded::crosses_as_its_code;
 use crate::types::control_mode::ControlMode;
 use serde::{Deserialize, Serialize};
 
@@ -45,8 +48,8 @@ impl Via {
 #[cfg_attr(target_arch = "wasm32", serde(rename_all = "camelCase"))]
 pub struct Outgoing {
     pub target_device_id: String,
-    pub channel: i32,
-    pub reliability: i32,
+    pub channel: ChannelType,
+    pub reliability: BMReliability,
     pub via: Via,
     #[serde(with = "serde_bytes")]
     pub payload: Vec<u8>,
@@ -259,23 +262,24 @@ pub struct ControlConfig {
     pub start_string: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Sensor {
-    Touch,
-    Accel,
-    Gyro,
-    Orientation,
+crosses_as_its_code! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum Sensor {
+        Touch = 0,
+        Accel = 1,
+        Gyro = 2,
+        Orientation = 3,
+    }
 }
 
-/// What a caller can report a finger doing. Stationary is absent on purpose:
-/// it is a state the engine reaches once a set has gone, never one a caller
-/// observes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum TouchPhase {
-    Began,
-    Moved,
-    Ended,
-    Cancelled,
+crosses_as_its_code! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum TouchPhase {
+        Began = 1,
+        Moved = 2,
+        Ended = 4,
+        Cancelled = 5,
+    }
 }
 
 #[non_exhaustive]
@@ -335,16 +339,16 @@ impl std::error::Error for EmitError {}
 pub enum Command {
     Raw {
         target: String,
-        channel: i32,
-        reliability: i32,
+        channel: ChannelType,
+        reliability: BMReliability,
         #[serde(with = "serde_bytes")]
         payload: Vec<u8>,
     },
     SendObject {
         target: String,
         object: Object,
-        channel: Option<i32>,
-        reliability: Option<i32>,
+        channel: Option<ChannelType>,
+        reliability: Option<BMReliability>,
     },
     Invoke {
         target: String,
@@ -465,8 +469,8 @@ pub enum Command {
     },
     SetReliability {
         target: String,
-        touch: i32,
-        sensors: i32,
+        touch: BMReliability,
+        sensors: BMReliability,
     },
     SetControlMode {
         target: String,

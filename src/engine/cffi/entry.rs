@@ -12,6 +12,8 @@ use crate::engine::processing::Engine;
 use crate::link::crossdomain::Sniffer;
 use crate::link::framing::Framer;
 use crate::link::negotiation::{Handshaker, LinkRole};
+use crate::logging::LogLevel;
+use crate::types::coded::UnknownCode;
 
 use super::{catch_bool, catch_i32, catch_ptr, catch_usize, catch_void};
 
@@ -40,6 +42,10 @@ fn in_slice<'a>(ptr: *const u8, len: usize) -> &'a [u8] {
     } else {
         unsafe { std::slice::from_raw_parts(ptr, len) }
     }
+}
+
+fn read_code<T>(code: i32, from_code: fn(i32) -> Result<T, UnknownCode>) -> Option<T> {
+    from_code(code).map_err(crate::set_last_error).ok()
 }
 
 fn engine_mut<'a>(ptr: *mut Engine) -> Option<&'a mut Engine> {
@@ -495,19 +501,22 @@ pub unsafe extern "C" fn bm_scheme_assembler_reset(ptr: *mut SchemeAssembler) {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_log_configure(level: u8, capacity: usize) -> bool {
+pub extern "C" fn bm_log_configure(level: i32, capacity: usize) -> bool {
     catch_bool(|| {
-        crate::logging::install(crate::logging::LogConfig {
-            level: crate::logging::level_filter_from_u8(level),
-            capacity,
-        })
+        let Some(level) = read_code(level, LogLevel::from_code) else {
+            return false;
+        };
+        crate::logging::install(crate::logging::LogConfig { level, capacity })
     })
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn bm_log_set_level(level: u8) -> bool {
+pub extern "C" fn bm_log_set_level(level: i32) -> bool {
     catch_bool(|| {
-        crate::logging::set_level(crate::logging::level_filter_from_u8(level));
+        let Some(level) = read_code(level, LogLevel::from_code) else {
+            return false;
+        };
+        crate::logging::set_level(level);
         true
     })
 }
@@ -707,18 +716,14 @@ fn handshaker_mut<'a>(ptr: *mut Handshaker) -> Option<&'a mut Handshaker> {
     }
 }
 
-/// Creates a version negotiator for one connection. role is 0 to speak first,
-/// 1 to wait and answer.
 #[unsafe(no_mangle)]
 pub extern "C" fn bm_handshaker_new(role: i32) -> *mut Handshaker {
-    catch_ptr(|| match LinkRole::from_code(role) {
+    catch_ptr(|| match read_code(role, LinkRole::from_code) {
         Some(role) => Box::into_raw(Box::new(Handshaker::new(role))),
         None => std::ptr::null_mut(),
     })
 }
 
-/// Creates one that announces versions other than the library's own, for a
-/// caller standing in as a different build.
 #[unsafe(no_mangle)]
 pub extern "C" fn bm_handshaker_new_with_version(
     role: i32,
@@ -729,7 +734,7 @@ pub extern "C" fn bm_handshaker_new_with_version(
     minimum_minor: u8,
     minimum_build: u16,
 ) -> *mut Handshaker {
-    catch_ptr(|| match LinkRole::from_code(role) {
+    catch_ptr(|| match read_code(role, LinkRole::from_code) {
         Some(role) => {
             let local = crate::codec::externals::handshake::Handshake::new(
                 crate::codec::externals::bm_version::BMVersion::new(

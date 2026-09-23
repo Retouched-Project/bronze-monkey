@@ -6,13 +6,29 @@ use std::sync::{Mutex, OnceLock};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum LogLevel {
-    Error,
-    Warn,
-    Info,
-    Debug,
-    Trace,
+use crate::types::coded::crosses_as_its_code;
+
+crosses_as_its_code! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum LogLevel {
+        Error = 1,
+        Warn = 2,
+        Info = 3,
+        Debug = 4,
+        Trace = 5,
+    }
+}
+
+impl From<LogLevel> for log::LevelFilter {
+    fn from(l: LogLevel) -> Self {
+        match l {
+            LogLevel::Error => log::LevelFilter::Error,
+            LogLevel::Warn => log::LevelFilter::Warn,
+            LogLevel::Info => log::LevelFilter::Info,
+            LogLevel::Debug => log::LevelFilter::Debug,
+            LogLevel::Trace => log::LevelFilter::Trace,
+        }
+    }
 }
 
 impl From<log::Level> for LogLevel {
@@ -43,14 +59,14 @@ pub struct LogDrain {
 
 #[derive(Debug, Clone, Copy)]
 pub struct LogConfig {
-    pub level: log::LevelFilter,
+    pub level: LogLevel,
     pub capacity: usize,
 }
 
 impl Default for LogConfig {
     fn default() -> Self {
         Self {
-            level: log::LevelFilter::Info,
+            level: LogLevel::Info,
             capacity: 1024,
         }
     }
@@ -128,31 +144,19 @@ impl log::Log for BmLogger {
 pub fn install(config: LogConfig) -> bool {
     RING.get_or_init(|| Mutex::new(Ring::new(config.capacity)));
     let installed = log::set_logger(&LOGGER).is_ok();
-    log::set_max_level(config.level);
+    log::set_max_level(config.level.into());
     crate::log_library_loaded();
     installed
 }
 
-pub fn set_level(level: log::LevelFilter) {
-    log::set_max_level(level);
+pub fn set_level(level: LogLevel) {
+    log::set_max_level(level.into());
 }
 
 pub fn take_logs() -> LogDrain {
     match RING.get() {
         Some(ring) => ring.lock().unwrap().drain(),
         None => LogDrain::default(),
-    }
-}
-
-pub fn level_filter_from_u8(n: u8) -> log::LevelFilter {
-    match n {
-        0 => log::LevelFilter::Off,
-        1 => log::LevelFilter::Error,
-        2 => log::LevelFilter::Warn,
-        3 => log::LevelFilter::Info,
-        4 => log::LevelFilter::Debug,
-        5 => log::LevelFilter::Trace,
-        _ => log::LevelFilter::Info,
     }
 }
 
@@ -197,9 +201,15 @@ mod tests {
     }
 
     #[test]
-    fn level_mapping() {
-        assert_eq!(level_filter_from_u8(0), log::LevelFilter::Off);
-        assert_eq!(level_filter_from_u8(5), log::LevelFilter::Trace);
-        assert_eq!(level_filter_from_u8(9), log::LevelFilter::Info);
+    fn every_level_filters_at_its_own_level() {
+        for (level, filter) in [
+            (LogLevel::Error, log::LevelFilter::Error),
+            (LogLevel::Warn, log::LevelFilter::Warn),
+            (LogLevel::Info, log::LevelFilter::Info),
+            (LogLevel::Debug, log::LevelFilter::Debug),
+            (LogLevel::Trace, log::LevelFilter::Trace),
+        ] {
+            assert_eq!(log::LevelFilter::from(level), filter);
+        }
     }
 }

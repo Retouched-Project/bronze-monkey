@@ -12,38 +12,26 @@
 
 use crate::codec::externals::bm_version::BMVersion;
 use crate::codec::externals::handshake::Handshake;
+use crate::types::coded::crosses_as_its_code;
 
 use serde::{Deserialize, Serialize};
 
-/// Which side of a connection speaks first.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum LinkRole {
-    Initiator,
-    Responder,
-}
-
-impl LinkRole {
-    pub fn code(self) -> i32 {
-        match self {
-            LinkRole::Initiator => 0,
-            LinkRole::Responder => 1,
-        }
-    }
-
-    pub fn from_code(v: i32) -> Option<Self> {
-        match v {
-            0 => Some(LinkRole::Initiator),
-            1 => Some(LinkRole::Responder),
-            _ => None,
-        }
+crosses_as_its_code! {
+    /// Which side of a connection speaks first.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum LinkRole {
+        Initiator = 0,
+        Responder = 1,
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum VersionCheck {
-    Compatible,
-    LocalTooOld,
-    RemoteTooOld,
+crosses_as_its_code! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum VersionCheck {
+        Compatible = 0,
+        LocalTooOld = 1,
+        RemoteTooOld = 2,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
